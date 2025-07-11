@@ -16,5 +16,23 @@
     "capabilities": [],
     "relationships": [],
     "mcpServices": []
+  },
+  "web-dev": {
+    "id": "web-dev",
+    "name": "web-dev",
+    "systemPrompt": "You are a web development expert",
+    "status": "inactive",
+    "createdAt": "2025-07-11T12:06:28.399Z",
+    "lastModified": "2025-07-11T12:06:28.399Z",
+    "resourceLimits": {
+      "maxMemoryMB": 2048,
+      "maxCPUPercent": 50,
+      "maxConcurrentTasks": 10,
+      "maxSpawnRate": 10,
+      "maxDepth": 5
+    },
+    "capabilities": [],
+    "relationships": [],
+    "mcpServices": []
   }
 }
