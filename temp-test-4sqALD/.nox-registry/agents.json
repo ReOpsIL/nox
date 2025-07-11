@@ -1,1 +1,20 @@
-{}
+{
+  "ml-expert": {
+    "id": "ml-expert",
+    "name": "ml-expert",
+    "systemPrompt": "You are a machine learning expert",
+    "status": "inactive",
+    "createdAt": "2025-07-11T06:05:42.125Z",
+    "lastModified": "2025-07-11T06:05:42.125Z",
+    "resourceLimits": {
+      "maxMemoryMB": 2048,
+      "maxCPUPercent": 50,
+      "maxConcurrentTasks": 10,
+      "maxSpawnRate": 10,
+      "maxDepth": 5
+    },
+    "capabilities": [],
+    "relationships": [],
+    "mcpServices": []
+  }
+}
