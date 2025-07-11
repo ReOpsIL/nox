@@ -4,7 +4,7 @@
  */
 
 import { EventEmitter } from 'events';
-import * as Docker from 'dockerode';
+import Docker from 'dockerode';
 import { NoxConfig } from '../types';
 import { logger } from '../utils/logger';
 
@@ -46,7 +46,7 @@ export class DockerManager extends EventEmitter {
   /**
    * Initialize the Docker manager
    */
-  async initialize(config: NoxConfig): Promise<void> {
+  async initialize(_config: NoxConfig): Promise<void> {
     if (this.initialized) {
       logger.warn('DockerManager already initialized');
       return;
@@ -69,7 +69,11 @@ export class DockerManager extends EventEmitter {
 
     } catch (error) {
       logger.error('Failed to initialize DockerManager:', error);
-      throw new Error(`Docker connection failed: ${error.message}`);
+      if (error instanceof Error) {
+        throw new Error(`Docker connection failed: ${error.message}`);
+      } else {
+        throw new Error(`Docker connection failed: ${String(error)}`);
+      }
     }
   }
 
@@ -249,14 +253,14 @@ export class DockerManager extends EventEmitter {
     try {
       const container = this.docker.getContainer(containerId);
       await container.start();
-      
+
       // Update container info
       const containerInfo = await this.getContainerInfo(containerId);
       this.containers.set(containerId, containerInfo);
-      
+
       logger.info(`Container started: ${containerInfo.name} (${containerId})`);
       this.emit('container-started', containerInfo);
-      
+
     } catch (error) {
       logger.error(`Failed to start container ${containerId}:`, error);
       throw error;
@@ -274,20 +278,20 @@ export class DockerManager extends EventEmitter {
     try {
       const container = this.docker.getContainer(containerId);
       const containerInfo = this.containers.get(containerId);
-      
+
       if (options?.force) {
         await container.kill();
       } else {
         await container.stop({ t: options?.timeout || 30 });
       }
-      
+
       // Update container info
       const updatedInfo = await this.getContainerInfo(containerId);
       this.containers.set(containerId, updatedInfo);
-      
+
       logger.info(`Container stopped: ${containerInfo?.name || containerId}`);
       this.emit('container-stopped', updatedInfo);
-      
+
     } catch (error) {
       logger.error(`Failed to stop container ${containerId}:`, error);
       throw error;
@@ -305,14 +309,14 @@ export class DockerManager extends EventEmitter {
     try {
       const container = this.docker.getContainer(containerId);
       await container.restart({ t: timeout });
-      
+
       // Update container info
       const containerInfo = await this.getContainerInfo(containerId);
       this.containers.set(containerId, containerInfo);
-      
+
       logger.info(`Container restarted: ${containerInfo.name} (${containerId})`);
       this.emit('container-restarted', containerInfo);
-      
+
     } catch (error) {
       logger.error(`Failed to restart container ${containerId}:`, error);
       throw error;
@@ -330,14 +334,14 @@ export class DockerManager extends EventEmitter {
     try {
       const container = this.docker.getContainer(containerId);
       await container.pause();
-      
+
       // Update container info
       const containerInfo = await this.getContainerInfo(containerId);
       this.containers.set(containerId, containerInfo);
-      
+
       logger.info(`Container paused: ${containerInfo.name} (${containerId})`);
       this.emit('container-paused', containerInfo);
-      
+
     } catch (error) {
       logger.error(`Failed to pause container ${containerId}:`, error);
       throw error;
@@ -355,14 +359,14 @@ export class DockerManager extends EventEmitter {
     try {
       const container = this.docker.getContainer(containerId);
       await container.unpause();
-      
+
       // Update container info
       const containerInfo = await this.getContainerInfo(containerId);
       this.containers.set(containerId, containerInfo);
-      
+
       logger.info(`Container unpaused: ${containerInfo.name} (${containerId})`);
       this.emit('container-unpaused', containerInfo);
-      
+
     } catch (error) {
       logger.error(`Failed to unpause container ${containerId}:`, error);
       throw error;
@@ -379,10 +383,10 @@ export class DockerManager extends EventEmitter {
 
     try {
       const container = this.docker.getContainer(containerId);
-      
+
       // Get container info before removal
       const containerInfo = this.containers.get(containerId);
-      
+
       // Stop container if running
       const info = await container.inspect();
       if (info.State.Running) {
@@ -392,19 +396,19 @@ export class DockerManager extends EventEmitter {
           await container.stop({ t: 30 });
         }
       }
-      
+
       // Remove container with options
       await container.remove({ 
         v: options?.removeVolumes || false,
         force: options?.force || false
       });
-      
+
       // Remove from containers map
       this.containers.delete(containerId);
-      
+
       logger.info(`Container removed: ${containerInfo?.name || containerId}`);
       this.emit('container-removed', containerInfo || { id: containerId });
-      
+
     } catch (error) {
       logger.error(`Failed to remove container ${containerId}:`, error);
       throw error;
@@ -417,20 +421,21 @@ export class DockerManager extends EventEmitter {
   async getContainerInfo(containerId: string): Promise<ContainerInfo> {
     const container = this.docker.getContainer(containerId);
     const info = await container.inspect();
-    
+
     // Extract port mappings
     const ports: { internal: number; external: number }[] = [];
     const portBindings = info.HostConfig.PortBindings || {};
-    
+
     for (const [containerPort, hostBindings] of Object.entries(portBindings)) {
-      const internalPort = parseInt(containerPort.split('/')[0], 10);
-      
+      const portParts = containerPort.split('/');
+      const internalPort = parseInt(portParts[0] || '0', 10);
+
       if (hostBindings && Array.isArray(hostBindings) && hostBindings.length > 0) {
         const externalPort = parseInt(hostBindings[0]?.HostPort || '0', 10);
         ports.push({ internal: internalPort, external: externalPort });
       }
     }
-    
+
     return {
       id: info.Id,
       name: info.Name.replace(/^\//, ''),
@@ -449,27 +454,27 @@ export class DockerManager extends EventEmitter {
     const container = this.docker.getContainer(containerId);
     const stats = await container.stats({ stream: false });
     const info = this.containers.get(containerId);
-    
+
     // Calculate CPU usage percentage
     const cpuDelta = stats.cpu_stats.cpu_usage.total_usage - stats.precpu_stats.cpu_usage.total_usage;
     const systemCpuDelta = stats.cpu_stats.system_cpu_usage - stats.precpu_stats.system_cpu_usage;
     const cpuUsage = (cpuDelta / systemCpuDelta) * stats.cpu_stats.online_cpus * 100;
-    
+
     // Calculate memory usage
     const memoryUsage = stats.memory_stats.usage;
     const memoryLimit = stats.memory_stats.limit;
-    
+
     // Calculate network usage
     let networkRx = 0;
     let networkTx = 0;
-    
+
     if (stats.networks) {
       for (const [, network] of Object.entries(stats.networks)) {
         networkRx += network.rx_bytes;
         networkTx += network.tx_bytes;
       }
     }
-    
+
     return {
       id: containerId,
       name: info?.name || containerId,
@@ -488,7 +493,7 @@ export class DockerManager extends EventEmitter {
     if (!this.initialized) {
       throw new Error('DockerManager not initialized');
     }
-    
+
     return Array.from(this.containers.values());
   }
 
@@ -532,7 +537,19 @@ export class DockerManager extends EventEmitter {
       }
 
       const stream = await container.logs(logOptions);
-      return stream.toString();
+      // Handle different return types from dockerode
+      if (stream === null || stream === undefined) {
+        return '';
+      }
+      if (typeof stream === 'string') {
+        return stream;
+      }
+      // Cast to any to handle unknown return type
+      const anyStream = stream as any;
+      if (typeof anyStream.toString === 'function') {
+        return anyStream.toString();
+      }
+      return '';
 
     } catch (error) {
       logger.error(`Failed to get logs for container ${containerId}:`, error);
@@ -556,7 +573,7 @@ export class DockerManager extends EventEmitter {
     try {
       const container = this.docker.getContainer(containerId);
       const info = await container.inspect();
-      
+
       const health = info.State.Health;
       if (!health) {
         return {
@@ -566,38 +583,69 @@ export class DockerManager extends EventEmitter {
         };
       }
 
-      return {
-        status: health.Status?.toLowerCase() as any || 'none',
-        checks: info.Config.Healthcheck ? [{
-          test: info.Config.Healthcheck.Test?.join(' ') || '',
-          interval: info.Config.Healthcheck.Interval || '30s',
-          timeout: info.Config.Healthcheck.Timeout || '30s',
-          retries: info.Config.Healthcheck.Retries || 3
+      // Type assertion for Healthcheck
+      const healthcheck = (info.Config as any).Healthcheck;
+
+      // Create a variable for lastCheck to ensure type safety
+      let lastCheck: Date | undefined = undefined;
+      if (health.Log && health.Log.length > 0 && health.Log[health.Log.length - 1]?.Start) {
+        // Safely access the Start property with optional chaining
+        const startTime = health.Log[health.Log.length - 1]?.Start;
+        if (startTime) {
+          lastCheck = new Date(startTime);
+        }
+      }
+
+      // Explicitly cast status to the expected type
+      const status = (health.Status?.toLowerCase() as 'healthy' | 'unhealthy' | 'starting' | 'none') || 'none';
+
+      // Create the result object with the correct types
+      const result: {
+        status: 'healthy' | 'unhealthy' | 'starting' | 'none';
+        checks: { test: string; interval: string; timeout: string; retries: number }[];
+        lastCheck?: Date;
+        failingStreak: number;
+      } = {
+        status,
+        checks: healthcheck ? [{
+          test: healthcheck.Test?.join(' ') || '',
+          interval: healthcheck.Interval || '30s',
+          timeout: healthcheck.Timeout || '30s',
+          retries: healthcheck.Retries || 3
         }] : [],
-        lastCheck: health.Log && health.Log.length > 0 ?
-          new Date(health.Log[health.Log.length - 1].Start) : undefined,
         failingStreak: health.FailingStreak || 0
       };
+
+      // Only add lastCheck if it's defined
+      if (lastCheck) {
+        result.lastCheck = lastCheck;
+      }
+
+      return result;
 
     } catch (error) {
       logger.error(`Failed to check health for container ${containerId}:`, error);
       throw error;
     }
-  }\n\n  /**\n   * Load existing MCP containers\n   */
+  }
+
+  /**
+   * Load existing MCP containers
+   */
   private async loadExistingContainers(): Promise<void> {
     try {
       const containers = await this.docker.listContainers({ 
         all: true,
         filters: { label: ['com.nox.mcp=true'] }
       });
-      
+
       for (const container of containers) {
         const containerInfo = await this.getContainerInfo(container.Id);
         this.containers.set(container.Id, containerInfo);
       }
-      
+
       logger.info(`Loaded ${this.containers.size} existing MCP containers`);
-      
+
     } catch (error) {
       logger.error('Failed to load existing containers:', error);
     }

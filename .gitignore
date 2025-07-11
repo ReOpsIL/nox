@@ -48,8 +48,7 @@ logs/
 *.log
 
 # Nox Agent Registry (contains sensitive agent configurations)
-.nox-registry/
-!.nox-registry/.gitkeep
+
 
 # Claude CLI credentials and sessions
 .claude/
@@ -163,4 +162,3 @@ public
 # Storybook build outputs
 .out
 .storybook-out
-/.nox-registry/

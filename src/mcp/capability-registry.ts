@@ -37,20 +37,18 @@ export interface AgentCapabilities {
  */
 export class CapabilityRegistry extends EventEmitter {
   private initialized = false;
-  private workingDir: string;
   private capabilitiesDir: string;
   private agentCapabilities: Map<string, AgentCapabilities> = new Map();
 
   constructor(workingDir: string) {
     super();
-    this.workingDir = workingDir;
     this.capabilitiesDir = path.join(workingDir, 'capabilities');
   }
 
   /**
    * Initialize the capability registry
    */
-  async initialize(config: NoxConfig): Promise<void> {
+  async initialize(_config: NoxConfig): Promise<void> {
     if (this.initialized) {
       logger.warn('CapabilityRegistry already initialized');
       return;
@@ -390,11 +388,20 @@ export class CapabilityRegistry extends EventEmitter {
     for (const capability of agentCaps.capabilities.values()) {
       for (const source of capability.sources) {
         if (source.source === 'mcp' && source.serviceId) {
-          mcpCapabilities.push({
+          const mcpCapability: {
+            capability: Capability;
+            serviceId: string;
+            containerId?: string;
+          } = {
             capability,
-            serviceId: source.serviceId,
-            containerId: source.containerId
-          });
+            serviceId: source.serviceId
+          };
+
+          if (source.containerId) {
+            mcpCapability.containerId = source.containerId;
+          }
+
+          mcpCapabilities.push(mcpCapability);
         }
       }
     }
@@ -474,7 +481,7 @@ export class CapabilityRegistry extends EventEmitter {
     for (const agentCaps of this.agentCapabilities.values()) {
       for (const capability of agentCaps.capabilities.values()) {
         totalCapabilities++;
-        
+
         // Count capability occurrences
         const currentCount = capabilityCount.get(capability.name) || 0;
         capabilityCount.set(capability.name, currentCount + 1);
@@ -519,7 +526,7 @@ export class CapabilityRegistry extends EventEmitter {
     }> = [];
 
     const agentsToCheck = agentId ? 
-      [this.agentCapabilities.get(agentId)].filter(Boolean) : 
+      [this.agentCapabilities.get(agentId)].filter((ac): ac is AgentCapabilities => ac !== undefined) : 
       Array.from(this.agentCapabilities.values());
 
     for (const agentCaps of agentsToCheck) {
@@ -550,20 +557,21 @@ export class CapabilityRegistry extends EventEmitter {
 
   /**
    * Validate capability source data
+   * Note: This method is currently unused but kept for future use
    */
-  private validateCapabilitySource(source: CapabilitySource): void {
-    if (!source.source) {
-      throw new Error('Capability source type is required');
-    }
+  // private validateCapabilitySource(source: CapabilitySource): void {
+  //   if (!source.source) {
+  //     throw new Error('Capability source type is required');
+  //   }
 
-    if (source.source === 'mcp' && !source.serviceId) {
-      throw new Error('MCP capability source requires serviceId');
-    }
+  //   if (source.source === 'mcp' && !source.serviceId) {
+  //     throw new Error('MCP capability source requires serviceId');
+  //   }
 
-    if (source.source === 'delegated' && !source.agentId) {
-      throw new Error('Delegated capability source requires agentId');
-    }
-  }
+  //   if (source.source === 'delegated' && !source.agentId) {
+  //     throw new Error('Delegated capability source requires agentId');
+  //   }
+  // }
 
   /**
    * Load agent capabilities from disk

@@ -80,7 +80,7 @@ describe('TaskManager', () => {
       };
 
       const task = await taskManager.createTask(taskData);
-      
+
       expect(task.id).toBeDefined();
       expect(task.title).toBe('Test Task');
       expect(task.agentId).toBe('test-agent');
@@ -102,7 +102,7 @@ describe('TaskManager', () => {
 
       const createdTask = await taskManager.createTask(taskData);
       const retrievedTask = await taskManager.getTask(createdTask.id);
-      
+
       expect(retrievedTask).not.toBeNull();
       expect(retrievedTask!.id).toBe(createdTask.id);
     });
@@ -125,11 +125,15 @@ describe('TaskManager', () => {
       };
 
       const createdTask = await taskManager.createTask(taskData);
+
+      // Add a small delay to ensure timestamps are different
+      await new Promise(resolve => setTimeout(resolve, 10));
+
       const updatedTask = await taskManager.updateTask(createdTask.id, {
         status: 'inprogress',
         progress: 50
       });
-      
+
       expect(updatedTask.status).toBe('inprogress');
       expect(updatedTask.progress).toBe(50);
       expect(updatedTask.updatedAt.getTime()).toBeGreaterThan(createdTask.updatedAt.getTime());
@@ -149,7 +153,7 @@ describe('TaskManager', () => {
 
       const createdTask = await taskManager.createTask(taskData);
       const completedTask = await taskManager.completeTask(createdTask.id);
-      
+
       expect(completedTask.status).toBe('done');
       expect(completedTask.progress).toBe(100);
       expect(completedTask.completedAt).toBeInstanceOf(Date);
@@ -175,7 +179,7 @@ describe('TaskManager', () => {
 
       await taskManager.createTask(taskData);
       const agentTasks = await taskManager.getAgentTasks('test-agent');
-      
+
       expect(Array.isArray(agentTasks)).toBe(true);
       expect(agentTasks.length).toBe(1);
       expect(agentTasks[0]?.agentId).toBe('test-agent');
@@ -195,7 +199,7 @@ describe('TaskManager', () => {
 
       await taskManager.createTask(taskData);
       const todoTasks = await taskManager.getTasksByStatus('todo');
-      
+
       expect(Array.isArray(todoTasks)).toBe(true);
       expect(todoTasks.length).toBe(1);
       expect(todoTasks[0]?.status).toBe('todo');
@@ -215,7 +219,7 @@ describe('TaskManager', () => {
 
       await taskManager.createTask(taskData);
       const highPriorityTasks = await taskManager.getTasksByPriority('HIGH');
-      
+
       expect(Array.isArray(highPriorityTasks)).toBe(true);
       expect(highPriorityTasks.length).toBe(1);
       expect(highPriorityTasks[0]?.priority).toBe('HIGH');
@@ -244,7 +248,7 @@ describe('TaskManager', () => {
       };
 
       const delegatedTask = await taskManager.delegateTask('agent1', 'agent2', taskData);
-      
+
       expect(delegatedTask.agentId).toBe('agent2');
       expect(delegatedTask.requestedBy).toBe('agent1');
       expect(delegatedTask.title).toBe('Delegated Task');
@@ -258,7 +262,7 @@ describe('TaskManager', () => {
 
     it('should provide task dashboard overview', async () => {
       const dashboard = await taskManager.getTaskDashboard();
-      
+
       expect(dashboard.total).toBeGreaterThanOrEqual(0);
       expect(dashboard.byStatus).toBeDefined();
       expect(dashboard.byPriority).toBeDefined();
@@ -305,9 +309,9 @@ describe('TaskManager', () => {
     it('should emit initialization event', async () => {
       const initHandler = jest.fn();
       taskManager.on('initialized', initHandler);
-      
+
       await taskManager.initialize(mockConfig);
-      
+
       expect(initHandler).toHaveBeenCalled();
     });
   });
