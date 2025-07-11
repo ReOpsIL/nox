@@ -82,6 +82,7 @@ backup/
 backups/
 
 # Temporary files
+temp-test*
 tmp/
 temp/
 *.tmp
