@@ -1,0 +1,249 @@
+import { EventEmitter } from 'events';
+import { RegistryManager } from './registry-manager';
+import { ConfigManager } from './config-manager';
+import { GitManager } from './git-manager';
+import { AgentManager } from './agent-manager';
+import { TaskManager } from './task-manager';
+import { MessageBroker } from './message-broker';
+import { AgentConfig } from '../types';
+import { logger } from '../utils/logger';
+
+export interface SystemStatus {
+  running: boolean;
+  activeAgents: number;
+  totalTasks: number;
+  registryVersion: string;
+  uptime: string;
+  memoryUsage: number;
+  errors: string[];
+}
+
+export class NoxSystem extends EventEmitter {
+  private initialized = false;
+  private running = false;
+  private startTime?: Date;
+  private systemErrors: string[] = [];
+
+  private configManager: ConfigManager;
+  private registryManager: RegistryManager;
+  private gitManager: GitManager;
+  private agentManager: AgentManager;
+  private taskManager: TaskManager;
+  private messageBroker: MessageBroker;
+
+  constructor() {
+    super();
+    
+    // Initialize core managers
+    this.configManager = new ConfigManager();
+    this.registryManager = new RegistryManager();
+    this.gitManager = new GitManager();
+    this.agentManager = new AgentManager();
+    this.taskManager = new TaskManager();
+    this.messageBroker = new MessageBroker();
+
+    // Setup event handlers
+    this.setupEventHandlers();
+  }
+
+  private setupEventHandlers(): void {
+    // Agent lifecycle events
+    this.agentManager.on('agent-created', (agent: AgentConfig) => {
+      logger.info(`Agent created: ${agent.id}`);
+      this.emit('agent-created', agent);
+    });
+
+    this.agentManager.on('agent-deleted', (agentId: string) => {
+      logger.info(`Agent deleted: ${agentId}`);
+      this.emit('agent-deleted', agentId);
+    });
+
+    this.agentManager.on('agent-error', (agentId: string, error: Error) => {
+      logger.error(`Agent error [${agentId}]:`, error);
+      this.emit('agent-error', agentId, error);
+    });
+
+    // Task management events
+    this.taskManager.on('task-created', (task) => {
+      logger.info(`Task created: ${task.id} for agent ${task.agentId}`);
+      this.emit('task-created', task);
+    });
+
+    this.taskManager.on('task-updated', (task) => {
+      logger.info(`Task updated: ${task.id} status: ${task.status}`);
+      this.emit('task-updated', task);
+    });
+
+    // Registry events
+    this.registryManager.on('registry-updated', () => {
+      logger.info('Registry updated');
+      this.emit('registry-updated');
+    });
+
+    // Error handling
+    this.on('error', (error) => {
+      logger.error('System error:', error);
+    });
+  }
+
+  async initialize(force = false): Promise<void> {
+    try {
+      logger.info('Initializing Nox system...');
+
+      // Load configuration
+      const config = await this.configManager.loadConfig();
+      logger.info('Configuration loaded');
+
+      // Initialize registry
+      await this.registryManager.initialize(config.storage.registryPath, force);
+      logger.info('Registry initialized');
+
+      // Initialize Git repository
+      await this.gitManager.initialize(config.storage.registryPath);
+      logger.info('Git repository initialized');
+
+      // Initialize other managers
+      await this.agentManager.initialize(config);
+      await this.taskManager.initialize(config);
+      await this.messageBroker.initialize(config);
+
+      this.initialized = true;
+      logger.info('Nox system initialized successfully');
+
+    } catch (error) {
+      logger.error('Failed to initialize Nox system:', error);
+      throw error;
+    }
+  }
+
+  async start(_background = false): Promise<void> {
+    if (!this.initialized) {
+      throw new Error('System not initialized. Run "nox init" first.');
+    }
+
+    try {
+      logger.info('Starting Nox ecosystem...');
+      this.startTime = new Date();
+
+      // Start core services
+      await this.messageBroker.start();
+      await this.taskManager.start();
+      await this.agentManager.start();
+
+      // Load and start existing agents
+      const agents = await this.registryManager.listAgents();
+      const activeAgents = agents.filter(agent => agent.status === 'active');
+      
+      for (const agent of activeAgents) {
+        try {
+          await this.agentManager.spawnAgent(agent);
+          logger.info(`Restored agent: ${agent.id}`);
+        } catch (error) {
+          logger.error(`Failed to restore agent ${agent.id}:`, error);
+        }
+      }
+
+      this.running = true;
+      this.emit('system-started');
+      logger.info(`Nox ecosystem started with ${activeAgents.length} agents`);
+
+    } catch (error) {
+      logger.error('Failed to start Nox ecosystem:', error);
+      throw error;
+    }
+  }
+
+  async shutdown(): Promise<void> {
+    if (!this.running) {
+      return;
+    }
+
+    try {
+      logger.info('Shutting down Nox ecosystem...');
+
+      // Stop agents
+      await this.agentManager.shutdown();
+
+      // Stop services
+      await this.taskManager.shutdown();
+      await this.messageBroker.shutdown();
+
+      // Final registry backup
+      await this.gitManager.commit('System shutdown - final backup');
+
+      this.running = false;
+      this.emit('system-stopped');
+      logger.info('Nox ecosystem shutdown complete');
+
+    } catch (error) {
+      logger.error('Error during shutdown:', error);
+      throw error;
+    }
+  }
+
+  async getStatus(): Promise<SystemStatus> {
+    const agents = await this.registryManager.listAgents();
+    const activeAgents = agents.filter(agent => agent.status === 'active').length;
+    const totalTasks = await this.taskManager.getTotalTaskCount();
+    const registryVersion = await this.gitManager.getCurrentCommit();
+    
+    let uptime = 'Not running';
+    if (this.running && this.startTime) {
+      const uptimeMs = Date.now() - this.startTime.getTime();
+      uptime = this.formatUptime(uptimeMs);
+    }
+
+    const memoryUsage = process.memoryUsage().heapUsed / 1024 / 1024; // MB
+
+    return {
+      running: this.running,
+      activeAgents,
+      totalTasks,
+      registryVersion: registryVersion.slice(0, 8),
+      uptime,
+      memoryUsage: Math.round(memoryUsage),
+      errors: this.systemErrors.slice(-10) // Show last 10 errors
+    };
+  }
+
+  private formatUptime(ms: number): string {
+    const seconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (days > 0) return `${days}d ${hours % 24}h ${minutes % 60}m`;
+    if (hours > 0) return `${hours}h ${minutes % 60}m ${seconds % 60}s`;
+    if (minutes > 0) return `${minutes}m ${seconds % 60}s`;
+    return `${seconds}s`;
+  }
+
+  addError(error: string): void {
+    const timestamp = new Date().toISOString();
+    this.systemErrors.push(`[${timestamp}] ${error}`);
+    
+    // Keep only last 50 errors in memory
+    if (this.systemErrors.length > 50) {
+      this.systemErrors = this.systemErrors.slice(-50);
+    }
+    
+    logger.error(error);
+    this.emit('system-error', error);
+  }
+
+  clearErrors(): void {
+    this.systemErrors = [];
+  }
+
+  // Getters for managers (used by commands)
+  get registry(): RegistryManager { return this.registryManager; }
+  get config(): ConfigManager { return this.configManager; }
+  get git(): GitManager { return this.gitManager; }
+  get agents(): AgentManager { return this.agentManager; }
+  get tasks(): TaskManager { return this.taskManager; }
+  get messages(): MessageBroker { return this.messageBroker; }
+
+  // System state checks
+  get isInitialized(): boolean { return this.initialized; }
+  get isRunning(): boolean { return this.running; }
+}
