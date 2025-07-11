@@ -16,5 +16,23 @@
     "capabilities": [],
     "relationships": [],
     "mcpServices": []
+  },
+  "ml-specialist": {
+    "id": "ml-specialist",
+    "name": "ml-specialist",
+    "systemPrompt": "You are a machine learning specialist focusing on deep learning",
+    "status": "inactive",
+    "createdAt": "2025-07-11T06:05:29.874Z",
+    "lastModified": "2025-07-11T06:05:29.874Z",
+    "resourceLimits": {
+      "maxMemoryMB": 2048,
+      "maxCPUPercent": 50,
+      "maxConcurrentTasks": 10,
+      "maxSpawnRate": 10,
+      "maxDepth": 5
+    },
+    "capabilities": [],
+    "relationships": [],
+    "mcpServices": []
   }
 }
