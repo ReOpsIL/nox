@@ -5,6 +5,7 @@
 import { Router, Request, Response } from 'express';
 import { AgentManager } from '../../core/agent-manager';
 import { RegistryManager } from '../../core/registry-manager';
+import { DEFAULT_RESOURCE_LIMITS } from '../../types/agent';
 import { logger } from '../../utils/logger';
 
 /**
@@ -244,11 +245,7 @@ export function setupAgentRoutes(router: Router, agentManager: AgentManager, reg
         status: 'inactive' as const,
         createdAt: new Date(),
         lastModified: new Date(),
-        resourceLimits: {
-          maxMemory: 512,
-          maxCpu: 50,
-          timeout: 300000
-        },
+        resourceLimits: DEFAULT_RESOURCE_LIMITS,
         capabilities: Array.isArray(capabilities) ? capabilities : 
                      (typeof capabilities === 'string' ? capabilities.split(',').map(c => c.trim()) : []),
         relationships: [],

@@ -1,0 +1,117 @@
+{
+  "agent-1752272015775": {
+    "id": "agent-1752272015775",
+    "name": "NewsHunter",
+    "systemPrompt": "Specialized agent for searching and analyzing news articles about AI and autonomous coding",
+    "status": "inactive",
+    "createdAt": "2025-07-11T22:13:35.776Z",
+    "lastModified": "2025-07-11T22:13:35.776Z",
+    "resourceLimits": {
+      "maxMemoryMB": 2048,
+      "maxCPUPercent": 50,
+      "maxConcurrentTasks": 10,
+      "maxSpawnRate": 10,
+      "maxDepth": 5
+    },
+    "capabilities": [
+      "web-scraping",
+      "news-analysis",
+      "content-filtering",
+      "trend-detection"
+    ],
+    "relationships": [],
+    "mcpServices": []
+  },
+  "agent-1752272015779": {
+    "id": "agent-1752272015779",
+    "name": "CodeScout",
+    "systemPrompt": "Agent focused on discovering and evaluating autonomous coding tools and frameworks",
+    "status": "inactive",
+    "createdAt": "2025-07-11T22:13:35.779Z",
+    "lastModified": "2025-07-11T22:13:35.779Z",
+    "resourceLimits": {
+      "maxMemoryMB": 2048,
+      "maxCPUPercent": 50,
+      "maxConcurrentTasks": 10,
+      "maxSpawnRate": 10,
+      "maxDepth": 5
+    },
+    "capabilities": [
+      "code-analysis",
+      "github-monitoring",
+      "technology-assessment",
+      "documentation-parsing"
+    ],
+    "relationships": [],
+    "mcpServices": []
+  },
+  "agent-1752272015782": {
+    "id": "agent-1752272015782",
+    "name": "TrendWatcher",
+    "systemPrompt": "Monitors social media and forums for discussions about agentic coding practices",
+    "status": "inactive",
+    "createdAt": "2025-07-11T22:13:35.782Z",
+    "lastModified": "2025-07-11T22:13:35.782Z",
+    "resourceLimits": {
+      "maxMemoryMB": 2048,
+      "maxCPUPercent": 50,
+      "maxConcurrentTasks": 10,
+      "maxSpawnRate": 10,
+      "maxDepth": 5
+    },
+    "capabilities": [
+      "social-monitoring",
+      "sentiment-analysis",
+      "topic-clustering",
+      "real-time-alerts"
+    ],
+    "relationships": [],
+    "mcpServices": []
+  },
+  "agent-1752272015784": {
+    "id": "agent-1752272015784",
+    "name": "ResearchBot",
+    "systemPrompt": "Academic paper crawler specializing in autonomous programming research",
+    "status": "inactive",
+    "createdAt": "2025-07-11T22:13:35.784Z",
+    "lastModified": "2025-07-11T22:13:35.784Z",
+    "resourceLimits": {
+      "maxMemoryMB": 2048,
+      "maxCPUPercent": 50,
+      "maxConcurrentTasks": 10,
+      "maxSpawnRate": 10,
+      "maxDepth": 5
+    },
+    "capabilities": [
+      "paper-crawling",
+      "citation-analysis",
+      "research-summarization",
+      "peer-review-tracking"
+    ],
+    "relationships": [],
+    "mcpServices": []
+  },
+  "agent-1752272015786": {
+    "id": "agent-1752272015786",
+    "name": "IndustryIntel",
+    "systemPrompt": "Corporate intelligence agent tracking company announcements and product releases in agentic coding",
+    "status": "inactive",
+    "createdAt": "2025-07-11T22:13:35.786Z",
+    "lastModified": "2025-07-11T22:13:35.786Z",
+    "resourceLimits": {
+      "maxMemoryMB": 2048,
+      "maxCPUPercent": 50,
+      "maxConcurrentTasks": 10,
+      "maxSpawnRate": 10,
+      "maxDepth": 5
+    },
+    "capabilities": [
+      "press-release-monitoring",
+      "product-analysis",
+      "competitor-tracking",
+      "market-intelligence"
+    ],
+    "relationships": [],
+    "mcpServices": []
+  }
+}
