@@ -1,1 +1,20 @@
-{}
+{
+  "lead-researcher": {
+    "id": "lead-researcher",
+    "name": "lead-researcher",
+    "systemPrompt": "You are a lead researcher coordinating AI research projects",
+    "status": "inactive",
+    "createdAt": "2025-07-11T06:05:28.752Z",
+    "lastModified": "2025-07-11T06:05:28.752Z",
+    "resourceLimits": {
+      "maxMemoryMB": 2048,
+      "maxCPUPercent": 50,
+      "maxConcurrentTasks": 10,
+      "maxSpawnRate": 10,
+      "maxDepth": 5
+    },
+    "capabilities": [],
+    "relationships": [],
+    "mcpServices": []
+  }
+}
