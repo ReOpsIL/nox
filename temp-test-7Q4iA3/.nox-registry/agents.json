@@ -1,1 +1,20 @@
-{}
+{
+  "task-agent": {
+    "id": "task-agent",
+    "name": "task-agent",
+    "systemPrompt": "You are a task management expert",
+    "status": "inactive",
+    "createdAt": "2025-07-11T06:05:50.976Z",
+    "lastModified": "2025-07-11T06:05:50.976Z",
+    "resourceLimits": {
+      "maxMemoryMB": 2048,
+      "maxCPUPercent": 50,
+      "maxConcurrentTasks": 10,
+      "maxSpawnRate": 10,
+      "maxDepth": 5
+    },
+    "capabilities": [],
+    "relationships": [],
+    "mcpServices": []
+  }
+}
