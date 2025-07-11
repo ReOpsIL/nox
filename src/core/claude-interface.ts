@@ -181,14 +181,14 @@ export class ClaudeInterface extends EventEmitter {
     const lines = this.outputBuffer.split('\n');
     
     for (let i = 0; i < lines.length - 1; i++) {
-      const line = lines[i].trim();
+      const line = lines[i]?.trim();
       if (line) {
         this.processResponseLine(line);
       }
     }
     
     // Keep the last incomplete line in buffer
-    this.outputBuffer = lines[lines.length - 1];
+    this.outputBuffer = lines[lines.length - 1] || '';
   }
 
   /**
@@ -283,7 +283,9 @@ export class ClaudeInterface extends EventEmitter {
         }
 
         // Send message to Claude CLI
-        this.process!.stdin?.write(content + '\n');
+        if (this.process && this.process.stdin) {
+          this.process.stdin.write(content + '\n');
+        }
 
         if (!waitForResponse) {
           this.session!.status = 'ready';

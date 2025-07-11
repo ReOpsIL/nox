@@ -31,16 +31,16 @@ export class NoxSystem extends EventEmitter {
   private taskManager: TaskManager;
   private messageBroker: MessageBroker;
 
-  constructor() {
+  constructor(workingDir: string = process.cwd()) {
     super();
     
     // Initialize core managers
     this.configManager = new ConfigManager();
     this.registryManager = new RegistryManager();
     this.gitManager = new GitManager();
-    this.agentManager = new AgentManager();
-    this.taskManager = new TaskManager();
-    this.messageBroker = new MessageBroker();
+    this.agentManager = new AgentManager(workingDir);
+    this.taskManager = new TaskManager(workingDir);
+    this.messageBroker = new MessageBroker(workingDir);
 
     // Setup event handlers
     this.setupEventHandlers();

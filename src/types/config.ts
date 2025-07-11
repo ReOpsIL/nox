@@ -6,6 +6,8 @@ export interface NoxConfig {
   storage: StorageConfig;
   mcp: MCPConfig;
   logging: LoggingConfig;
+  agents?: AgentSystemConfig;
+  messaging?: MessagingConfig;
 }
 
 export interface SecurityConfig {
@@ -15,6 +17,9 @@ export interface SecurityConfig {
   resourceLimits: GlobalResourceLimits;
   sandboxMode: boolean;
   allowExternalCommunication: boolean;
+  autoApproveThresholds?: Record<ApprovalType, 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | null>;
+  approvalExpirationMinutes?: number;
+  approvalHistorySize?: number;
 }
 
 export type ApprovalType = 
@@ -75,12 +80,15 @@ export interface StorageConfig {
 }
 
 export interface MCPConfig {
+  enabled: boolean;
   dockerHubRegistry: string;
+  dockerHubUsername?: string;
   autoDiscovery: boolean;
   serviceTimeout: number;
   maxServicesPerAgent: number;
   networkIsolation: boolean;
   resourceLimits: MCPResourceLimits;
+  services: string[];
 }
 
 export interface MCPResourceLimits {
@@ -106,6 +114,20 @@ export interface LogRetentionConfig {
   days: number;
   maxSizeMB: number;
   compress: boolean;
+}
+
+export interface AgentSystemConfig {
+  autoRestart?: boolean;
+  defaultTimeout?: number;
+  maxRestartAttempts?: number;
+  healthCheckInterval?: number;
+}
+
+export interface MessagingConfig {
+  maxHistoryPerAgent?: number;
+  messageRetentionDays?: number;
+  maxQueueSize?: number;
+  processingInterval?: number;
 }
 
 export const DEFAULT_CONFIG: NoxConfig = {
@@ -158,7 +180,9 @@ export const DEFAULT_CONFIG: NoxConfig = {
     encryptSensitiveData: false
   },
   mcp: {
+    enabled: false,
     dockerHubRegistry: 'https://hub.docker.com/v2/repositories/mcp/',
+    dockerHubUsername: 'mcp',
     autoDiscovery: true,
     serviceTimeout: 30,
     maxServicesPerAgent: 5,
@@ -168,7 +192,8 @@ export const DEFAULT_CONFIG: NoxConfig = {
       cpu: '0.5',
       storage: '2GB',
       networkBandwidth: '100MB'
-    }
+    },
+    services: []
   },
   logging: {
     level: 'info',

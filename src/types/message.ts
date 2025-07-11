@@ -72,3 +72,16 @@ export interface ConversationLog {
   endTime?: Date;
   archived: boolean;
 }
+
+export interface AgentSubscription {
+  messageType: MessageType | 'all';
+  filter?: {
+    fromAgent?: string;
+    priority?: MessagePriority;
+    requiresApproval?: boolean;
+  };
+  callback?: (message: AgentMessage) => void | Promise<void>;
+}
+
+// Alias for compatibility
+export type Priority = MessagePriority;

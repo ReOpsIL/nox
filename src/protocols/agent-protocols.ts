@@ -34,8 +34,9 @@ export class TaskRequestProtocol extends ProtocolHandler {
       content: `Task request received: ${message.content}`,
       priority: message.priority,
       timestamp: new Date(),
+      requiresApproval: false,
       metadata: {
-        taskId: message.metadata?.taskId,
+        taskId: message.metadata?.taskId || undefined,
         replyTo: message.id
       }
     };
@@ -49,7 +50,7 @@ export class TaskRequestProtocol extends ProtocolHandler {
  */
 export class InformationRequestProtocol extends ProtocolHandler {
   canHandle(message: AgentMessage): boolean {
-    return message.type === 'info_request';
+    return message.type === 'capability_query';
   }
 
   async handle(message: AgentMessage): Promise<AgentMessage | null> {
@@ -60,10 +61,11 @@ export class InformationRequestProtocol extends ProtocolHandler {
       id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       from: message.to,
       to: message.from,
-      type: 'info_response',
+      type: 'direct',
       content: `Information request received: ${message.content}`,
       priority: message.priority,
       timestamp: new Date(),
+      requiresApproval: false,
       metadata: {
         replyTo: message.id
       }
@@ -78,49 +80,28 @@ export class InformationRequestProtocol extends ProtocolHandler {
  */
 export class CollaborationProtocol extends ProtocolHandler {
   canHandle(message: AgentMessage): boolean {
-    return message.type === 'collaboration_request' || message.type === 'collaboration_update';
+    return message.type === 'direct';
   }
 
   async handle(message: AgentMessage): Promise<AgentMessage | null> {
     logger.info(`Processing collaboration message from ${message.from} to ${message.to}`);
     
-    if (message.type === 'collaboration_request') {
-      // Handle initial collaboration request
-      const response: AgentMessage = {
-        id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        from: message.to,
-        to: message.from,
-        type: 'collaboration_response',
-        content: `Collaboration request accepted: ${message.content}`,
-        priority: message.priority,
-        timestamp: new Date(),
-        metadata: {
-          collaborationId: `collab_${Date.now()}`,
-          replyTo: message.id
-        }
-      };
-      
-      return response;
-    } else if (message.type === 'collaboration_update') {
-      // Handle collaboration update
-      const response: AgentMessage = {
-        id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        from: message.to,
-        to: message.from,
-        type: 'collaboration_update',
-        content: `Update acknowledged: ${message.content}`,
-        priority: message.priority,
-        timestamp: new Date(),
-        metadata: {
-          collaborationId: message.metadata?.collaborationId,
-          replyTo: message.id
-        }
-      };
-      
-      return response;
-    }
+    // Handle collaboration message
+    const response: AgentMessage = {
+      id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      from: message.to,
+      to: message.from,
+      type: 'direct',
+      content: `Collaboration response: ${message.content}`,
+      priority: message.priority,
+      timestamp: new Date(),
+      requiresApproval: false,
+      metadata: {
+        replyTo: message.id
+      }
+    };
     
-    return null;
+    return response;
   }
 }
 
@@ -129,7 +110,7 @@ export class CollaborationProtocol extends ProtocolHandler {
  */
 export class StatusUpdateProtocol extends ProtocolHandler {
   canHandle(message: AgentMessage): boolean {
-    return message.type === 'status_update';
+    return message.type === 'system';
   }
 
   async handle(message: AgentMessage): Promise<AgentMessage | null> {
@@ -211,6 +192,7 @@ export class ProtocolRegistry {
       content,
       priority,
       timestamp: new Date(),
+      requiresApproval: false,
       metadata
     };
   }
@@ -251,7 +233,7 @@ export class ProtocolRegistry {
     return this.createMessage(
       from,
       to,
-      'info_request',
+      'capability_query',
       query,
       priority
     );
@@ -270,7 +252,7 @@ export class ProtocolRegistry {
     return this.createMessage(
       from,
       to,
-      'collaboration_request',
+      'direct',
       topic,
       priority,
       { details }
@@ -290,7 +272,7 @@ export class ProtocolRegistry {
     return this.createMessage(
       from,
       to,
-      'status_update',
+      'system',
       status,
       priority,
       { details }

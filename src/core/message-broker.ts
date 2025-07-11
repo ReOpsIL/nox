@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events';
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { AgentMessage, NoxConfig, AgentSubscription, MessageType, Priority } from '../types';
+import { AgentMessage, NoxConfig, AgentSubscription, MessageType } from '../types';
 import { logger } from '../utils/logger';
 import { PriorityQueue } from '../utils/priority-queue';
 
@@ -11,7 +11,7 @@ import { PriorityQueue } from '../utils/priority-queue';
  */
 export class MessageBroker extends EventEmitter {
   private initialized = false;
-  private workingDir: string;
+  private _workingDir: string;
   private messagesDir: string;
   private messageQueue: PriorityQueue<AgentMessage>;
   private subscribers: Map<string, Set<AgentSubscription>> = new Map();
@@ -23,7 +23,7 @@ export class MessageBroker extends EventEmitter {
 
   constructor(workingDir: string) {
     super();
-    this.workingDir = workingDir;
+    this._workingDir = workingDir;
     this.messagesDir = path.join(workingDir, 'messages');
     this.messageQueue = new PriorityQueue<AgentMessage>((a, b) => {
       // Priority order: CRITICAL > HIGH > MEDIUM > LOW
@@ -162,7 +162,7 @@ export class MessageBroker extends EventEmitter {
     if (messageType) {
       // Remove specific subscription
       const subscriptions = this.subscribers.get(agentId)!;
-      for (const subscription of subscriptions) {
+      for (const subscription of Array.from(subscriptions)) {
         if (subscription.messageType === messageType) {
           subscriptions.delete(subscription);
           break;
@@ -227,18 +227,18 @@ export class MessageBroker extends EventEmitter {
   private async routeMessage(message: AgentMessage): Promise<void> {
     // Direct message to specific agent
     if (message.to !== 'broadcast') {
-      this.emit('message-delivered', message);
+      await this.routeDirectMessage(message);
       return;
     }
 
     // Broadcast message to all subscribers
-    for (const [agentId, subscriptions] of this.subscribers.entries()) {
+    for (const [agentId, subscriptions] of Array.from(this.subscribers.entries())) {
       // Skip sender
       if (agentId === message.from) continue;
 
       // Check if agent is subscribed to this message type
       let shouldDeliver = false;
-      for (const subscription of subscriptions) {
+      for (const subscription of Array.from(subscriptions)) {
         if (subscription.messageType === message.type || subscription.messageType === 'all') {
           shouldDeliver = true;
           break;
@@ -329,6 +329,36 @@ export class MessageBroker extends EventEmitter {
       logger.debug('Message history saved to disk');
     } catch (error) {
       logger.error('Failed to save message history:', error);
+    }
+  }
+
+  /**
+   * Set reference to agent manager for enhanced routing
+   */
+  setAgentManager(agentManager: any): void {
+    // This allows the message broker to directly communicate with agents
+    // through the agent manager when needed
+    this.agentManager = agentManager;
+  }
+
+  private agentManager: any = null;
+
+  /**
+   * Route message directly through agent manager if available
+   */
+  private async routeDirectMessage(message: AgentMessage): Promise<void> {
+    if (this.agentManager && this.agentManager.sendInterAgentMessage) {
+      try {
+        await this.agentManager.sendInterAgentMessage(message);
+        logger.debug(`Message routed through agent manager: ${message.from} -> ${message.to}`);
+      } catch (error) {
+        logger.error('Failed to route message through agent manager:', error);
+        // Fall back to regular event emission
+        this.emit('message-delivered', message);
+      }
+    } else {
+      // Regular event-based delivery
+      this.emit('message-delivered', message);
     }
   }
 

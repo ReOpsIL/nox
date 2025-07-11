@@ -110,12 +110,12 @@ export class RegistryManager extends EventEmitter {
     try {
       // Convert Map to plain object for JSON serialization
       const agentsData: Record<string, AgentConfig> = {};
-      for (const [id, agent] of this.agents) {
+      for (const [id, agent] of Array.from(this.agents)) {
         agentsData[id] = agent;
       }
 
       const relationshipsData: Record<string, AgentRelationship[]> = {};
-      for (const [agentId, rels] of this.relationships) {
+      for (const [agentId, rels] of Array.from(this.relationships)) {
         relationshipsData[agentId] = rels;
       }
 
@@ -238,7 +238,7 @@ export class RegistryManager extends EventEmitter {
     this.relationships.delete(agentId);
 
     // Remove relationships where this agent is the target
-    for (const [otherId, rels] of this.relationships) {
+    for (const [otherId, rels] of Array.from(this.relationships)) {
       const filtered = rels.filter(rel => rel.targetAgentId !== agentId);
       if (filtered.length !== rels.length) {
         this.relationships.set(otherId, filtered);

@@ -157,7 +157,7 @@ export class WebSocketServer extends EventEmitter {
   /**
    * Handle a new WebSocket connection
    */
-  private handleConnection(ws: WebSocket, req: any): void {
+  private handleConnection(ws: WebSocket, _req: any): void {
     // Generate client ID
     const clientId = `client_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
@@ -222,7 +222,7 @@ export class WebSocketServer extends EventEmitter {
   /**
    * Handle client subscription requests
    */
-  private handleSubscription(ws: WebSocket, data: any): void {
+  private handleSubscription(_ws: WebSocket, _data: any): void {
     // TODO: Implement subscription logic
     // This would allow clients to subscribe to specific events or agents
   }

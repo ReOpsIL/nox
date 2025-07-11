@@ -33,11 +33,11 @@ export interface MonitorConfig {
  * Tracks CPU, memory usage, and process responsiveness
  */
 export class ProcessMonitor extends EventEmitter {
-  private processes = new Map<string, NodeJS.Timer>();
+  private processes = new Map<string, NodeJS.Timeout>();
   private metrics = new Map<string, ProcessMetrics>();
   private config: MonitorConfig;
   private systemMetrics: SystemMetrics | null = null;
-  private systemMonitorInterval: NodeJS.Timer | null = null;
+  private systemMonitorInterval: NodeJS.Timeout | null = null;
   private isRunning = false;
 
   constructor(config: Partial<MonitorConfig> = {}) {
@@ -86,7 +86,7 @@ export class ProcessMonitor extends EventEmitter {
     }
 
     // Stop all process monitoring
-    for (const [processId, interval] of this.processes) {
+    for (const [processId, interval] of Array.from(this.processes)) {
       clearInterval(interval);
       this.processes.delete(processId);
     }

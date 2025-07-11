@@ -1,9 +1,10 @@
 import { EventEmitter } from 'events';
-import { AgentConfig, AgentProcess, NoxConfig } from '../types';
+import { AgentConfig, AgentProcess, NoxConfig, AgentMessage } from '../types';
 import { logger } from '../utils/logger';
 import { SessionManager } from './session-manager';
 import { ProcessMonitor } from '../utils/process-monitor';
 import { ClaudeInterface } from './claude-interface';
+import { protocolRegistry } from '../protocols/agent-protocols';
 
 export class AgentManager extends EventEmitter {
   private processes: Map<string, AgentProcess> = new Map();
@@ -11,12 +12,12 @@ export class AgentManager extends EventEmitter {
   private initialized = false;
   private sessionManager: SessionManager;
   private processMonitor: ProcessMonitor;
-  private workingDir: string;
+  private _workingDir: string;
   private autoRestart: boolean = true;
 
   constructor(workingDir: string) {
     super();
-    this.workingDir = workingDir;
+    this._workingDir = workingDir;
     this.sessionManager = new SessionManager(workingDir);
     this.processMonitor = new ProcessMonitor({
       checkInterval: 10000, // 10 seconds
@@ -61,14 +62,6 @@ export class AgentManager extends EventEmitter {
     logger.info('AgentManager started');
   }
 
-  async shutdown(): Promise<void> {
-    // Kill all running processes
-    const processes = Array.from(this.processes.values());
-    for (const process of processes) {
-      await this.killAgent(process.id);
-    }
-    logger.info('AgentManager shutdown complete');
-  }
 
   async spawnAgent(config: AgentConfig): Promise<AgentProcess> {
     if (!this.initialized) {
@@ -236,7 +229,7 @@ export class AgentManager extends EventEmitter {
     // Update process metrics from monitor
     const processMetrics = this.processMonitor.getAllProcessMetrics();
     
-    for (const [agentId, agentProcess] of this.processes) {
+    for (const [agentId, agentProcess] of Array.from(this.processes)) {
       try {
         // Check Claude interface health
         const claudeInterface = this.claudeInterfaces.get(agentId);
@@ -338,6 +331,163 @@ export class AgentManager extends EventEmitter {
       logger.info(`Claude interface stopped for agent ${agentId}`);
       this.emit('agent-stopped', agentId);
     });
+  }
+
+  /**
+   * Send a message from one agent to another
+   */
+  async sendInterAgentMessage(message: AgentMessage): Promise<boolean> {
+    if (!this.initialized) {
+      throw new Error('AgentManager not initialized');
+    }
+
+    const { from, to } = message;
+
+    // Check if both agents exist
+    if (!this.processes.has(from) || !this.processes.has(to)) {
+      logger.error(`Cannot send message: Agent ${from} or ${to} not found`);
+      return false;
+    }
+
+    try {
+      // Process the message through protocols
+      const response = await protocolRegistry.processMessage(message);
+
+      // Get Claude interface for the target agent
+      const targetInterface = this.claudeInterfaces.get(to);
+      if (!targetInterface) {
+        logger.error(`No Claude interface found for agent ${to}`);
+        return false;
+      }
+
+      // Send the message to the target agent
+      await targetInterface.sendMessage(message.content);
+
+      // If there's a response, send it back
+      if (response) {
+        const sourceInterface = this.claudeInterfaces.get(from);
+        if (sourceInterface) {
+          await sourceInterface.sendMessage(response.content);
+        }
+      }
+
+      logger.info(`Message sent from ${from} to ${to}: ${message.type}`);
+      this.emit('message-sent', message);
+      return true;
+
+    } catch (error) {
+      logger.error(`Failed to send message from ${from} to ${to}:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Broadcast a message to all agents
+   */
+  async broadcastMessage(message: AgentMessage): Promise<number> {
+    if (!this.initialized) {
+      throw new Error('AgentManager not initialized');
+    }
+
+    let successCount = 0;
+    const agentIds = Array.from(this.processes.keys());
+
+    for (const agentId of agentIds) {
+      if (agentId === message.from) continue; // Don't send to sender
+
+      const agentMessage: AgentMessage = {
+        ...message,
+        to: agentId
+      };
+
+      if (await this.sendInterAgentMessage(agentMessage)) {
+        successCount++;
+      }
+    }
+
+    logger.info(`Broadcast message sent to ${successCount}/${agentIds.length - 1} agents`);
+    return successCount;
+  }
+
+  /**
+   * Delegate a task from one agent to another
+   */
+  async delegateTask(
+    fromAgentId: string,
+    toAgentId: string,
+    taskTitle: string,
+    taskDescription: string,
+    priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' = 'MEDIUM'
+  ): Promise<boolean> {
+    if (!this.initialized) {
+      throw new Error('AgentManager not initialized');
+    }
+
+    // Create task delegation message
+    const message = protocolRegistry.createTaskRequest(
+      fromAgentId,
+      toAgentId,
+      taskTitle,
+      taskDescription,
+      priority
+    );
+
+    const success = await this.sendInterAgentMessage(message);
+    
+    if (success) {
+      logger.info(`Task delegated from ${fromAgentId} to ${toAgentId}: ${taskTitle}`);
+      this.emit('task-delegated', fromAgentId, toAgentId, {
+        title: taskTitle,
+        description: taskDescription,
+        priority
+      });
+    }
+
+    return success;
+  }
+
+  /**
+   * Get information from another agent
+   */
+  async queryAgentCapabilities(
+    fromAgentId: string,
+    toAgentId: string,
+    query: string
+  ): Promise<boolean> {
+    if (!this.initialized) {
+      throw new Error('AgentManager not initialized');
+    }
+
+    const message = protocolRegistry.createInfoRequest(
+      fromAgentId,
+      toAgentId,
+      query
+    );
+
+    return await this.sendInterAgentMessage(message);
+  }
+
+  /**
+   * Initiate collaboration between agents
+   */
+  async initiateCollaboration(
+    fromAgentId: string,
+    toAgentId: string,
+    topic: string,
+    details: string
+  ): Promise<boolean> {
+    if (!this.initialized) {
+      throw new Error('AgentManager not initialized');
+    }
+
+    const message = protocolRegistry.createCollaborationRequest(
+      fromAgentId,
+      toAgentId,
+      topic,
+      details
+    );
+
+    return await this.sendInterAgentMessage(message);
   }
 
   /**

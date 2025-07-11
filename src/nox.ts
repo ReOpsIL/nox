@@ -7,6 +7,7 @@ import { AgentCommands } from './commands/agent';
 import { SystemCommands } from './commands/system';
 import { RegistryCommands } from './commands/registry';
 import { TaskCommands } from './commands/task';
+import { createCommunicationCommand } from './commands/communication';
 import { logger } from './utils/logger';
 
 const program = new Command();
@@ -33,6 +34,9 @@ async function main(): Promise<void> {
     SystemCommands.register(program, noxSystem);
     RegistryCommands.register(program, noxSystem);
     TaskCommands.register(program, noxSystem);
+    
+    // Register communication commands
+    program.addCommand(createCommunicationCommand());
 
     // Initialize command - sets up .nox-registry and bootstrap
     program

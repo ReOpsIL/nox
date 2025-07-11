@@ -31,6 +31,7 @@ export interface AgentRelationship {
 export interface AgentProcess {
   id: string;
   pid?: number;
+  sessionId?: string;
   status: 'running' | 'crashed' | 'stopped' | 'starting';
   startTime: Date;
   restartCount: number;

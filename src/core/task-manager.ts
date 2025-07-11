@@ -12,7 +12,7 @@ import * as chokidar from 'chokidar';
  */
 export class TaskManager extends EventEmitter {
   private initialized = false;
-  private workingDir: string;
+  private _workingDir: string;
   private tasksDir: string;
   private tasks: Map<string, Task> = new Map();
   private tasksByAgent: Map<string, Set<string>> = new Map();
@@ -23,7 +23,7 @@ export class TaskManager extends EventEmitter {
 
   constructor(workingDir: string) {
     super();
-    this.workingDir = workingDir;
+    this._workingDir = workingDir;
     this.tasksDir = path.join(workingDir, 'tasks');
 
     // Create priority queue for tasks
@@ -37,7 +37,7 @@ export class TaskManager extends EventEmitter {
   /**
    * Initialize the task manager
    */
-  async initialize(config: NoxConfig): Promise<void> {
+  async initialize(_config: NoxConfig): Promise<void> {
     if (this.initialized) {
       logger.warn('TaskManager already initialized');
       return;
@@ -260,7 +260,7 @@ export class TaskManager extends EventEmitter {
   async getBlockedTasks(): Promise<Task[]> {
     const blockedTasks: Task[] = [];
 
-    for (const task of this.tasks.values()) {
+    for (const task of Array.from(this.tasks.values())) {
       if (task.status === 'todo' && task.dependencies.length > 0) {
         const unmetDependencies = task.dependencies.filter(depId => {
           const depTask = this.tasks.get(depId);
@@ -291,7 +291,9 @@ export class TaskManager extends EventEmitter {
       byStatus: {
         todo: 0,
         inprogress: 0,
-        done: 0
+        done: 0,
+        blocked: 0,
+        cancelled: 0
       } as Record<TaskStatus, number>,
       byPriority: {
         LOW: 0,
@@ -304,7 +306,7 @@ export class TaskManager extends EventEmitter {
     };
 
     // Count tasks by status and priority
-    for (const task of this.tasks.values()) {
+    for (const task of Array.from(this.tasks.values())) {
       result.byStatus[task.status]++;
       result.byPriority[task.priority]++;
 
@@ -312,13 +314,13 @@ export class TaskManager extends EventEmitter {
       if (!result.byAgent[task.agentId]) {
         result.byAgent[task.agentId] = {
           total: 0,
-          byStatus: { todo: 0, inprogress: 0, done: 0 }
+          byStatus: { todo: 0, inprogress: 0, done: 0, blocked: 0, cancelled: 0 }
         };
       }
 
       // Update agent stats
-      result.byAgent[task.agentId].total++;
-      result.byAgent[task.agentId].byStatus[task.status]++;
+      result.byAgent[task.agentId]!.total++;
+      result.byAgent[task.agentId]!.byStatus[task.status]++;
     }
 
     // Count blocked tasks
@@ -452,7 +454,7 @@ export class TaskManager extends EventEmitter {
     let currentTask: Partial<Task> | null = null;
 
     for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
+      const line = lines[i]?.trim() || '';
 
       // Check for section headers
       if (line.startsWith('## 🟢 In Progress')) {
@@ -504,7 +506,7 @@ export class TaskManager extends EventEmitter {
         } else if (metaLine.startsWith('Progress:')) {
           const progressMatch = metaLine.match(/Progress: (\d+)%/);
           if (progressMatch) {
-            currentTask.progress = parseInt(progressMatch[1], 10);
+            currentTask.progress = parseInt(progressMatch[1] || '0', 10);
           }
         } else if (metaLine.startsWith('Dependencies:')) {
           const deps = metaLine.substring(13).trim();
@@ -516,7 +518,7 @@ export class TaskManager extends EventEmitter {
         }
       } else if (line === '' && currentTask) {
         // Empty line ends current task
-        if (currentTask.title) {
+        if (currentTask.title && currentSection) {
           tasks.push(this.createTaskFromMarkdown(currentTask, agentId, currentSection));
           currentTask = null;
         }
@@ -524,7 +526,7 @@ export class TaskManager extends EventEmitter {
     }
 
     // Add final task if exists
-    if (currentTask && currentTask.title) {
+    if (currentTask && currentTask.title && currentSection) {
       tasks.push(this.createTaskFromMarkdown(currentTask, agentId, currentSection));
     }
 
@@ -548,9 +550,9 @@ export class TaskManager extends EventEmitter {
       priority: taskData.priority || 'MEDIUM',
       createdAt: taskData.createdAt || new Date(),
       updatedAt: taskData.updatedAt || new Date(),
-      startedAt: taskData.startedAt,
-      completedAt: taskData.completedAt,
-      deadline: taskData.deadline,
+      startedAt: taskData.startedAt || undefined,
+      completedAt: taskData.completedAt || undefined,
+      deadline: taskData.deadline || undefined,
       requestedBy: taskData.requestedBy || 'user',
       dependencies: taskData.dependencies || [],
       progress: taskData.progress || 0

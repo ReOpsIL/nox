@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events';
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { ClaudeInterface, ClaudeSession, ClaudeMessage } from './claude-interface';
+import { ClaudeInterface } from './claude-interface';
 import { AgentConfig } from '../types';
 import { logger } from '../utils/logger';
 
@@ -19,8 +19,8 @@ export interface SessionStats {
   totalSessions: number;
   activeSessions: number;
   totalMessages: number;
-  oldestSession?: Date;
-  newestSession?: Date;
+  oldestSession?: Date | undefined;
+  newestSession?: Date | undefined;
 }
 
 /**
@@ -234,7 +234,7 @@ export class SessionManager extends EventEmitter {
   async performHealthCheck(): Promise<Map<string, boolean>> {
     const healthStatus = new Map<string, boolean>();
 
-    for (const [agentId, session] of this.sessions) {
+    for (const [agentId, session] of Array.from(this.sessions)) {
       try {
         const health = session.getHealthStatus();
         healthStatus.set(agentId, health.healthy);
@@ -294,7 +294,7 @@ export class SessionManager extends EventEmitter {
       }
 
       // Clean up metadata for non-existent sessions
-      for (const [agentId, metadata] of this.sessionMetadata) {
+      for (const [agentId, metadata] of Array.from(this.sessionMetadata)) {
         if (metadata.lastActivity < cutoffTime && !this.sessions.has(agentId)) {
           this.sessionMetadata.delete(agentId);
           cleanedCount++;

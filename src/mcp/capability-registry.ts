@@ -337,10 +337,232 @@ export class CapabilityRegistry extends EventEmitter {
   }
 
   /**
+   * Get capabilities by source type
+   */
+  getCapabilitiesBySource(sourceType: 'mcp' | 'built-in' | 'learned' | 'delegated'): Capability[] {
+    if (!this.initialized) {
+      throw new Error('CapabilityRegistry not initialized');
+    }
+
+    const capabilities: Capability[] = [];
+    for (const agentCaps of this.agentCapabilities.values()) {
+      for (const capability of agentCaps.capabilities.values()) {
+        if (capability.sources.some(source => source.source === sourceType)) {
+          capabilities.push(capability);
+        }
+      }
+    }
+
+    // Remove duplicates based on capability ID
+    const uniqueCapabilities = new Map<string, Capability>();
+    for (const capability of capabilities) {
+      if (!uniqueCapabilities.has(capability.id)) {
+        uniqueCapabilities.set(capability.id, capability);
+      }
+    }
+
+    return Array.from(uniqueCapabilities.values());
+  }
+
+  /**
+   * Get MCP service capabilities for an agent
+   */
+  getMCPCapabilities(agentId: string): Array<{
+    capability: Capability;
+    serviceId: string;
+    containerId?: string;
+  }> {
+    if (!this.initialized) {
+      throw new Error('CapabilityRegistry not initialized');
+    }
+
+    const agentCaps = this.agentCapabilities.get(agentId);
+    if (!agentCaps) {
+      return [];
+    }
+
+    const mcpCapabilities: Array<{
+      capability: Capability;
+      serviceId: string;
+      containerId?: string;
+    }> = [];
+
+    for (const capability of agentCaps.capabilities.values()) {
+      for (const source of capability.sources) {
+        if (source.source === 'mcp' && source.serviceId) {
+          mcpCapabilities.push({
+            capability,
+            serviceId: source.serviceId,
+            containerId: source.containerId
+          });
+        }
+      }
+    }
+
+    return mcpCapabilities;
+  }
+
+  /**
+   * Remove all capabilities from a specific MCP service
+   */
+  async removeMCPServiceCapabilities(serviceId: string, containerId?: string): Promise<void> {
+    if (!this.initialized) {
+      throw new Error('CapabilityRegistry not initialized');
+    }
+
+    try {
+      const agentsToUpdate = new Set<string>();
+
+      for (const [agentId, agentCaps] of this.agentCapabilities.entries()) {
+        for (const [capabilityId, capability] of agentCaps.capabilities.entries()) {
+          // Remove sources that match the service
+          const originalSourceCount = capability.sources.length;
+          capability.sources = capability.sources.filter(source => {
+            if (source.source !== 'mcp' || source.serviceId !== serviceId) {
+              return true;
+            }
+            if (containerId && source.containerId !== containerId) {
+              return true;
+            }
+            return false;
+          });
+
+          // If sources were removed, mark for update
+          if (capability.sources.length !== originalSourceCount) {
+            capability.updatedAt = new Date();
+            agentCaps.updatedAt = new Date();
+            agentsToUpdate.add(agentId);
+
+            // If no sources left, remove capability
+            if (capability.sources.length === 0) {
+              agentCaps.capabilities.delete(capabilityId);
+            }
+          }
+        }
+      }
+
+      // Save updated agent capabilities
+      for (const agentId of agentsToUpdate) {
+        await this.saveAgentCapabilities(agentId);
+        logger.info(`Removed MCP service capabilities for agent ${agentId} (service: ${serviceId})`);
+        this.emit('mcp-capabilities-removed', agentId, serviceId);
+      }
+
+    } catch (error) {
+      logger.error(`Failed to remove MCP service capabilities for ${serviceId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get capability statistics
+   */
+  getCapabilityStatistics(): {
+    totalCapabilities: number;
+    capabilitiesBySource: Record<string, number>;
+    agentsWithCapabilities: number;
+    mostCommonCapabilities: Array<{ name: string; count: number }>;
+  } {
+    if (!this.initialized) {
+      throw new Error('CapabilityRegistry not initialized');
+    }
+
+    const capabilityCount = new Map<string, number>();
+    const sourceCount: Record<string, number> = {};
+    let totalCapabilities = 0;
+
+    for (const agentCaps of this.agentCapabilities.values()) {
+      for (const capability of agentCaps.capabilities.values()) {
+        totalCapabilities++;
+        
+        // Count capability occurrences
+        const currentCount = capabilityCount.get(capability.name) || 0;
+        capabilityCount.set(capability.name, currentCount + 1);
+
+        // Count sources
+        for (const source of capability.sources) {
+          sourceCount[source.source] = (sourceCount[source.source] || 0) + 1;
+        }
+      }
+    }
+
+    // Get most common capabilities
+    const mostCommon = Array.from(capabilityCount.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([name, count]) => ({ name, count }));
+
+    return {
+      totalCapabilities,
+      capabilitiesBySource: sourceCount,
+      agentsWithCapabilities: this.agentCapabilities.size,
+      mostCommonCapabilities: mostCommon
+    };
+  }
+
+  /**
+   * Find capability conflicts (overlapping capabilities from different sources)
+   */
+  findCapabilityConflicts(agentId?: string): Array<{
+    agentId: string;
+    capability: string;
+    conflictingSources: CapabilitySource[];
+  }> {
+    if (!this.initialized) {
+      throw new Error('CapabilityRegistry not initialized');
+    }
+
+    const conflicts: Array<{
+      agentId: string;
+      capability: string;
+      conflictingSources: CapabilitySource[];
+    }> = [];
+
+    const agentsToCheck = agentId ? 
+      [this.agentCapabilities.get(agentId)].filter(Boolean) : 
+      Array.from(this.agentCapabilities.values());
+
+    for (const agentCaps of agentsToCheck) {
+      for (const capability of agentCaps.capabilities.values()) {
+        if (capability.sources.length > 1) {
+          // Check for conflicts between different source types
+          const sourceTypes = new Set(capability.sources.map(s => s.source));
+          if (sourceTypes.size > 1) {
+            conflicts.push({
+              agentId: agentCaps.agentId,
+              capability: capability.name,
+              conflictingSources: capability.sources
+            });
+          }
+        }
+      }
+    }
+
+    return conflicts;
+  }
+
+  /**
    * Normalize a capability name for consistent lookup
    */
   private normalizeCapabilityName(name: string): string {
     return name.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+  }
+
+  /**
+   * Validate capability source data
+   */
+  private validateCapabilitySource(source: CapabilitySource): void {
+    if (!source.source) {
+      throw new Error('Capability source type is required');
+    }
+
+    if (source.source === 'mcp' && !source.serviceId) {
+      throw new Error('MCP capability source requires serviceId');
+    }
+
+    if (source.source === 'delegated' && !source.agentId) {
+      throw new Error('Delegated capability source requires agentId');
+    }
   }
 
   /**

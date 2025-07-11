@@ -7,6 +7,8 @@ export interface Task {
   priority: TaskPriority;
   createdAt: Date;
   updatedAt: Date;
+  startedAt?: Date;
+  completedAt?: Date;
   deadline?: Date;
   dependencies: string[];
   requestedBy: string;

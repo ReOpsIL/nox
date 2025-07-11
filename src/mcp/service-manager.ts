@@ -9,7 +9,7 @@ import * as fs from 'fs/promises';
 import fetch from 'node-fetch';
 import { NoxConfig } from '../types';
 import { logger } from '../utils/logger';
-import { DockerManager, ContainerInfo } from './docker-manager';
+import { DockerManager } from './docker-manager';
 import { ApprovalManager, ApprovalRequest } from './approval-manager';
 import { CapabilityRegistry } from './capability-registry';
 
@@ -43,7 +43,7 @@ export interface InstalledService extends MCPService {
  */
 export class ServiceManager extends EventEmitter {
   private initialized = false;
-  private workingDir: string;
+  private _workingDir: string;
   private servicesDir: string;
   private installedServices: Map<string, InstalledService> = new Map();
   private serviceCache: Map<string, MCPService> = new Map();
@@ -56,7 +56,7 @@ export class ServiceManager extends EventEmitter {
     workingDir: string
   ) {
     super();
-    this.workingDir = workingDir;
+    this._workingDir = workingDir;
     this.servicesDir = path.join(workingDir, 'mcp-services');
   }
 
@@ -120,7 +120,14 @@ export class ServiceManager extends EventEmitter {
   /**
    * Discover available MCP services from Docker Hub
    */
-  async discoverServices(query?: string): Promise<MCPService[]> {
+  async discoverServices(query?: string, options?: {
+    category?: string;
+    capabilities?: string[];
+    limit?: number;
+    offset?: number;
+    sortBy?: 'name' | 'updated' | 'created' | 'popularity';
+    includeDeprecated?: boolean;
+  }): Promise<MCPService[]> {
     if (!this.initialized) {
       throw new Error('ServiceManager not initialized');
     }
@@ -128,43 +135,129 @@ export class ServiceManager extends EventEmitter {
     try {
       logger.info(`Discovering MCP services${query ? ` matching "${query}"` : ''}`);
 
-      // Fetch repositories from Docker Hub
-      const url = `https://hub.docker.com/v2/repositories/${this.dockerHubUsername}/?page_size=100`;
-      const response = await fetch(url);
+      // Fetch repositories from Docker Hub with pagination
+      let allRepositories: any[] = [];
+      let nextUrl: string | null = `https://hub.docker.com/v2/repositories/${this.dockerHubUsername}/?page_size=100`;
       
-      if (!response.ok) {
-        throw new Error(`Failed to fetch from Docker Hub: ${response.statusText}`);
+      while (nextUrl) {
+        const response: any = await fetch(nextUrl);
+        
+        if (!response.ok) {
+          if (response.status === 404) {
+            logger.warn(`Docker Hub user ${this.dockerHubUsername} not found`);
+            return [];
+          }
+          throw new Error(`Failed to fetch from Docker Hub: ${response.status} ${response.statusText}`);
+        }
+        
+        const data: any = await response.json();
+        allRepositories = [...allRepositories, ...(data.results || [])];
+        nextUrl = data.next;
+        
+        // Limit to prevent infinite loops
+        if (allRepositories.length > 1000) {
+          logger.warn('Too many repositories found, limiting to first 1000');
+          break;
+        }
       }
       
-      const data = await response.json();
-      const repositories = data.results || [];
+      const repositories = allRepositories;
       
       // Process repositories
       const services: MCPService[] = [];
       
-      for (const repo of repositories) {
-        // Skip repositories that don't have the MCP label
-        if (!repo.labels || !repo.labels.some(label => label.includes('mcp.service'))) {
-          continue;
-        }
-        
-        // Get service details
-        const service = await this.getServiceDetails(repo.name);
-        
-        // Add to cache
-        this.serviceCache.set(service.id, service);
-        
-        // Add to results if matches query
-        if (!query || 
-            service.name.toLowerCase().includes(query.toLowerCase()) ||
-            service.description.toLowerCase().includes(query.toLowerCase()) ||
-            service.tags.some(tag => tag.toLowerCase().includes(query.toLowerCase()))) {
-          services.push(service);
+      // Process repositories in parallel for better performance
+      const servicePromises = repositories
+        .filter(repo => {
+          // Skip repositories that don't have the MCP label or indicator
+          return repo.labels && (
+            repo.labels.some((label: any) => label.includes('mcp.service')) ||
+            repo.description?.includes('[MCP]') ||
+            repo.name?.includes('mcp-')
+          );
+        })
+        .map(async (repo) => {
+          try {
+            // Get service details
+            const service = await this.getServiceDetails(repo.name);
+            
+            // Add to cache
+            this.serviceCache.set(service.id, service);
+            
+            // Check if matches query
+            if (!query || 
+                service.name.toLowerCase().includes(query.toLowerCase()) ||
+                service.description.toLowerCase().includes(query.toLowerCase()) ||
+                service.tags.some(tag => tag.toLowerCase().includes(query.toLowerCase()))) {
+              return service;
+            }
+            return null;
+          } catch (error) {
+            logger.warn(`Failed to process service ${repo.name}: ${error}`);
+            return null;
+          }
+        });
+      
+      const serviceResults = await Promise.allSettled(servicePromises);
+      
+      // Filter successful results
+      for (const result of serviceResults) {
+        if (result.status === 'fulfilled' && result.value) {
+          services.push(result.value);
         }
       }
       
-      logger.info(`Discovered ${services.length} MCP services`);
-      return services;
+      // Apply additional filtering and sorting
+      let filteredServices = services;
+      
+      if (options?.category) {
+        filteredServices = filteredServices.filter(service => 
+          service.tags.some(tag => tag.toLowerCase().includes(options.category!.toLowerCase()))
+        );
+      }
+      
+      if (options?.capabilities) {
+        filteredServices = filteredServices.filter(service =>
+          options.capabilities!.every(cap => 
+            service.capabilities.some(serviceCap => 
+              serviceCap.toLowerCase().includes(cap.toLowerCase())
+            )
+          )
+        );
+      }
+      
+      if (!options?.includeDeprecated) {
+        filteredServices = filteredServices.filter(service =>
+          !service.tags.includes('deprecated') && 
+          !service.description.toLowerCase().includes('deprecated')
+        );
+      }
+      
+      // Sort services
+      if (options?.sortBy) {
+        filteredServices.sort((a, b) => {
+          switch (options.sortBy) {
+            case 'name':
+              return a.name.localeCompare(b.name);
+            case 'updated':
+              return b.updated.getTime() - a.updated.getTime();
+            case 'created':
+              return b.created.getTime() - a.created.getTime();
+            default:
+              return 0;
+          }
+        });
+      }
+      
+      // Apply pagination
+      if (options?.offset || options?.limit) {
+        const start = options.offset || 0;
+        const end = options.limit ? start + options.limit : undefined;
+        filteredServices = filteredServices.slice(start, end);
+      }
+      
+      logger.info(`Discovered ${filteredServices.length} MCP services (${services.length} total found)`);
+      return filteredServices;
       
     } catch (error) {
       logger.error('Failed to discover MCP services:', error);
@@ -177,9 +270,16 @@ export class ServiceManager extends EventEmitter {
    */
   async getServiceDetails(serviceName: string): Promise<MCPService> {
     try {
+      // Validate service name
+      if (!serviceName || typeof serviceName !== 'string') {
+        throw new Error('Invalid service name');
+      }
+      
       // Check cache first
-      const cachedService = Array.from(this.serviceCache.values()).find(s => s.name === serviceName);
+      const cacheKey = `${this.dockerHubUsername}/${serviceName}`;
+      const cachedService = this.serviceCache.get(cacheKey);
       if (cachedService) {
+        logger.debug(`Using cached service details for ${serviceName}`);
         return cachedService;
       }
       
@@ -188,83 +288,138 @@ export class ServiceManager extends EventEmitter {
       const response = await fetch(url);
       
       if (!response.ok) {
-        throw new Error(`Failed to fetch service details: ${response.statusText}`);
+        if (response.status === 404) {
+          throw new Error(`Service ${serviceName} not found`);
+        }
+        throw new Error(`Failed to fetch service details: ${response.status} ${response.statusText}`);
       }
       
       const data = await response.json();
       
-      // Parse MCP service metadata from labels
-      const labels = data.labels || [];
-      const mcpLabels = labels.filter(label => label.startsWith('mcp.'));
+      // Validate required fields
+      if (!data.name) {
+        throw new Error(`Invalid service data: missing name for ${serviceName}`);
+      }
       
-      // Extract metadata
+      // Parse MCP service metadata from labels and description
+      const labels = data.labels || [];
+      const mcpLabels = labels.filter((label: any) => label.startsWith('mcp.'));
+      
+      // Extract metadata from labels
       const metadata: Record<string, any> = {};
       for (const label of mcpLabels) {
-        const [key, value] = label.split('=');
+        const [key, ...valueParts] = label.split('=');
+        const value = valueParts.join('='); // Handle values with = in them
         const metaKey = key.replace('mcp.', '');
         metadata[metaKey] = value;
       }
       
+      // Also check for metadata in description (JSON format)
+      if (data.description) {
+        try {
+          const descriptionMatch = data.description.match(/\[MCP\]\s*({.*})/s);
+          if (descriptionMatch) {
+            const descriptionMetadata = JSON.parse(descriptionMatch[1]);
+            Object.assign(metadata, descriptionMetadata);
+          }
+        } catch (error) {
+          logger.debug(`Failed to parse description metadata for ${serviceName}: ${error}`);
+        }
+      }
+      
       // Parse capabilities
-      const capabilities = metadata.capabilities ? metadata.capabilities.split(',').map(c => c.trim()) : [];
+      const capabilities = metadata.capabilities ? metadata.capabilities.split(',').map((c: string) => c.trim()) : [];
       
       // Parse ports
       const ports: { internal: number; external: number }[] = [];
       if (metadata.ports) {
         const portMappings = metadata.ports.split(',');
         for (const mapping of portMappings) {
-          const [internal, external] = mapping.split(':').map(p => parseInt(p.trim(), 10));
+          const [internal, external] = mapping.split(':').map((p: any) => parseInt(p.trim(), 10));
           ports.push({ internal, external });
         }
       }
       
-      // Parse environment variables
+      // Parse environment variables with better validation
       const environment: { name: string; required: boolean; default?: string; description: string }[] = [];
       if (metadata.environment) {
-        const envVars = metadata.environment.split(',');
-        for (const envVar of envVars) {
-          const [name, required, defaultValue, description] = envVar.split(':').map(e => e.trim());
-          environment.push({
-            name,
-            required: required === 'true',
-            default: defaultValue !== 'null' ? defaultValue : undefined,
-            description: description || ''
-          });
+        try {
+          const envVars = metadata.environment.split(',');
+          for (const envVar of envVars) {
+            const parts = envVar.split(':').map((e: any) => e.trim());
+            if (parts.length >= 2) {
+              const [name, required, defaultValue, ...descriptionParts] = parts;
+              environment.push({
+                name: name || '',
+                required: required === 'true',
+                default: defaultValue && defaultValue !== 'null' ? defaultValue : undefined,
+                description: descriptionParts.join(':') || ''
+              });
+            }
+          }
+        } catch (error) {
+          logger.warn(`Failed to parse environment variables for ${serviceName}: ${error}`);
         }
       }
       
-      // Parse volumes
+      // Parse volumes with better validation
       const volumes: { host: string; container: string; description: string }[] = [];
       if (metadata.volumes) {
-        const volumeMappings = metadata.volumes.split(',');
-        for (const mapping of volumeMappings) {
-          const [host, container, description] = mapping.split(':').map(v => v.trim());
-          volumes.push({ host, container, description });
+        try {
+          const volumeMappings = metadata.volumes.split(',');
+          for (const mapping of volumeMappings) {
+            const parts = mapping.split(':').map((v: any) => v.trim());
+            if (parts.length >= 2) {
+              const [host, container, ...descriptionParts] = parts;
+              volumes.push({ 
+                host: host || '', 
+                container: container || '', 
+                description: descriptionParts.join(':') || '' 
+              });
+            }
+          }
+        } catch (error) {
+          logger.warn(`Failed to parse volumes for ${serviceName}: ${error}`);
         }
       }
       
-      // Create service object
+      // Validate and create service object
+      const serviceId = `${this.dockerHubUsername}/${serviceName}`;
+      const version = metadata.version || 'latest';
+      const imageTag = `${this.dockerHubUsername}/${serviceName}:${version}`;
+      
+      // Validate required fields
+      if (!capabilities || capabilities.length === 0) {
+        logger.warn(`Service ${serviceName} has no capabilities defined`);
+      }
+      
       const service: MCPService = {
-        id: `${this.dockerHubUsername}/${serviceName}`,
+        id: serviceId,
         name: serviceName,
-        description: data.description || '',
-        version: metadata.version || 'latest',
-        image: `${this.dockerHubUsername}/${serviceName}:${metadata.version || 'latest'}`,
-        capabilities,
-        ports,
-        environment,
-        volumes,
+        description: data.description || metadata.description || '',
+        version,
+        image: imageTag,
+        capabilities: capabilities || [],
+        ports: ports || [],
+        environment: environment || [],
+        volumes: volumes || [],
         author: data.user || this.dockerHubUsername,
         website: metadata.website,
         documentation: metadata.documentation,
-        tags: metadata.tags ? metadata.tags.split(',').map(t => t.trim()) : [],
-        created: new Date(data.date_registered),
-        updated: new Date(data.last_updated)
+        tags: metadata.tags ? 
+          metadata.tags.split(',').map((t: any) => t.trim()).filter((t: string) => t.length > 0) : 
+          [],
+        created: new Date(data.date_registered || Date.now()),
+        updated: new Date(data.last_updated || Date.now())
       };
+      
+      // Additional validation
+      this.validateService(service);
       
       // Add to cache
       this.serviceCache.set(service.id, service);
       
+      logger.debug(`Service details retrieved for ${serviceName}: ${service.capabilities.length} capabilities, ${service.ports.length} ports`);
       return service;
       
     } catch (error) {
@@ -296,7 +451,7 @@ export class ServiceManager extends EventEmitter {
       if (this.serviceCache.has(serviceId)) {
         service = this.serviceCache.get(serviceId)!;
       } else {
-        const serviceName = serviceId.split('/')[1];
+        const serviceName = serviceId.split('/')[1] || serviceId;
         service = await this.getServiceDetails(serviceName);
       }
       
@@ -328,8 +483,8 @@ export class ServiceManager extends EventEmitter {
       
       // Check for missing required env vars
       const missingEnvVars = service.environment
-        .filter(e => e.required && !env[e.name])
-        .map(e => e.name);
+        .filter((e: any) => e.required && !env[e.name])
+        .map((e: any) => e.name);
         
       if (missingEnvVars.length > 0) {
         throw new Error(`Missing required environment variables: ${missingEnvVars.join(', ')}`);
@@ -375,7 +530,7 @@ export class ServiceManager extends EventEmitter {
       const installedService: InstalledService = {
         ...service,
         containerId: containerInfo.id,
-        agentId,
+        agentId: agentId || undefined,
         status: containerInfo.status === 'running' ? 'running' : 'error',
         installedAt: new Date()
       };
@@ -475,6 +630,152 @@ export class ServiceManager extends EventEmitter {
   }
 
   /**
+   * Search for services by capability or keyword
+   */
+  async searchServices(criteria: {
+    capabilities?: string[];
+    keyword?: string;
+    category?: string;
+    author?: string;
+    limit?: number;
+  }): Promise<MCPService[]> {
+    if (!this.initialized) {
+      throw new Error('ServiceManager not initialized');
+    }
+
+    try {
+      // First discover services if cache is empty
+      if (this.serviceCache.size === 0) {
+        await this.discoverServices();
+      }
+
+      let results = Array.from(this.serviceCache.values());
+
+      // Filter by capabilities
+      if (criteria.capabilities && criteria.capabilities.length > 0) {
+        results = results.filter(service =>
+          criteria.capabilities!.every(cap =>
+            service.capabilities.some(serviceCap =>
+              serviceCap.toLowerCase().includes(cap.toLowerCase())
+            )
+          )
+        );
+      }
+
+      // Filter by keyword
+      if (criteria.keyword) {
+        const keyword = criteria.keyword.toLowerCase();
+        results = results.filter(service =>
+          service.name.toLowerCase().includes(keyword) ||
+          service.description.toLowerCase().includes(keyword) ||
+          service.tags.some(tag => tag.toLowerCase().includes(keyword))
+        );
+      }
+
+      // Filter by category
+      if (criteria.category) {
+        results = results.filter(service =>
+          service.tags.some(tag =>
+            tag.toLowerCase().includes(criteria.category!.toLowerCase())
+          )
+        );
+      }
+
+      // Filter by author
+      if (criteria.author) {
+        results = results.filter(service =>
+          service.author.toLowerCase().includes(criteria.author!.toLowerCase())
+        );
+      }
+
+      // Apply limit
+      if (criteria.limit) {
+        results = results.slice(0, criteria.limit);
+      }
+
+      logger.info(`Found ${results.length} services matching search criteria`);
+      return results;
+
+    } catch (error) {
+      logger.error('Failed to search services:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Check service compatibility with agent requirements
+   */
+  async checkServiceCompatibility(serviceId: string, requirements?: {
+    maxMemory?: string;
+    maxCpu?: string;
+    requiredCapabilities?: string[];
+    blockedCapabilities?: string[];
+  }): Promise<{
+    compatible: boolean;
+    issues: string[];
+    warnings: string[];
+  }> {
+    const issues: string[] = [];
+    const warnings: string[] = [];
+
+    try {
+      const service = this.serviceCache.get(serviceId);
+      if (!service) {
+        const serviceName = serviceId.split('/')[1] || serviceId;
+        const serviceDetails = await this.getServiceDetails(serviceName);
+        if (!serviceDetails) {
+          issues.push('Service not found');
+          return { compatible: false, issues, warnings };
+        }
+      }
+
+      const serviceToCheck = service || this.serviceCache.get(serviceId)!;
+
+      // Check required capabilities
+      if (requirements?.requiredCapabilities) {
+        const missingCapabilities = requirements.requiredCapabilities.filter(cap =>
+          !serviceToCheck.capabilities.includes(cap)
+        );
+        if (missingCapabilities.length > 0) {
+          issues.push(`Missing required capabilities: ${missingCapabilities.join(', ')}`);
+        }
+      }
+
+      // Check blocked capabilities
+      if (requirements?.blockedCapabilities) {
+        const blockedCapabilities = requirements.blockedCapabilities.filter(cap =>
+          serviceToCheck.capabilities.includes(cap)
+        );
+        if (blockedCapabilities.length > 0) {
+          issues.push(`Service has blocked capabilities: ${blockedCapabilities.join(', ')}`);
+        }
+      }
+
+      // Check if service has any capabilities
+      if (serviceToCheck.capabilities.length === 0) {
+        warnings.push('Service has no defined capabilities');
+      }
+
+      // Check if service has required environment variables
+      const requiredEnvVars = serviceToCheck.environment.filter(env => env.required);
+      if (requiredEnvVars.length > 0) {
+        warnings.push(`Service requires ${requiredEnvVars.length} environment variables`);
+      }
+
+      return {
+        compatible: issues.length === 0,
+        issues,
+        warnings
+      };
+
+    } catch (error) {
+      logger.error(`Failed to check service compatibility for ${serviceId}:`, error);
+      issues.push('Failed to check compatibility');
+      return { compatible: false, issues, warnings };
+    }
+  }
+
+  /**
    * Request approval for service installation
    */
   private async requestApproval(service: MCPService, agentId?: string): Promise<boolean> {
@@ -511,11 +812,12 @@ export class ServiceManager extends EventEmitter {
         const saved = JSON.parse(data);
         
         for (const [containerId, service] of Object.entries(saved.services || {})) {
+          const serviceData = service as any;
           this.installedServices.set(containerId, {
-            ...service as any,
-            installedAt: new Date(service.installedAt),
-            created: new Date(service.created),
-            updated: new Date(service.updated)
+            ...serviceData,
+            installedAt: new Date(serviceData.installedAt),
+            created: new Date(serviceData.created),
+            updated: new Date(serviceData.updated)
           });
         }
         
@@ -555,6 +857,48 @@ export class ServiceManager extends EventEmitter {
     } catch (error) {
       logger.error('Failed to save installed services:', error);
     }
+  }
+
+  /**
+   * Validate an MCP service definition
+   */
+  private validateService(service: MCPService): void {
+    // Check for required fields
+    if (!service.id || !service.name || !service.image) {
+      throw new Error(`Invalid service: missing required fields`);
+    }
+    
+    // Validate capabilities
+    for (const capability of service.capabilities) {
+      if (typeof capability !== 'string' || capability.length === 0) {
+        throw new Error(`Invalid capability: ${capability}`);
+      }
+    }
+    
+    // Validate ports
+    for (const port of service.ports) {
+      if (!port.internal || !port.external || 
+          port.internal < 1 || port.internal > 65535 ||
+          port.external < 1 || port.external > 65535) {
+        throw new Error(`Invalid port mapping: ${port.internal}:${port.external}`);
+      }
+    }
+    
+    // Validate environment variables
+    for (const env of service.environment) {
+      if (!env.name || typeof env.name !== 'string') {
+        throw new Error(`Invalid environment variable: missing name`);
+      }
+    }
+    
+    // Validate volumes
+    for (const volume of service.volumes) {
+      if (!volume.container || typeof volume.container !== 'string') {
+        throw new Error(`Invalid volume: missing container path`);
+      }
+    }
+    
+    logger.debug(`Service ${service.name} validation passed`);
   }
 
   /**
