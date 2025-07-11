@@ -507,7 +507,83 @@ export class DockerManager extends EventEmitter {
     }
   }
 
-  /**\n   * Get container logs\n   */\n  async getContainerLogs(containerId: string, options?: {\n    tail?: number;\n    since?: Date;\n    follow?: boolean;\n  }): Promise<string> {\n    if (!this.initialized) {\n      throw new Error('DockerManager not initialized');\n    }\n\n    try {\n      const container = this.docker.getContainer(containerId);\n      const logOptions: any = {\n        stdout: true,\n        stderr: true,\n        tail: options?.tail || 100\n      };\n\n      if (options?.since) {\n        logOptions.since = Math.floor(options.since.getTime() / 1000);\n      }\n\n      const stream = await container.logs(logOptions);\n      return stream.toString();\n\n    } catch (error) {\n      logger.error(`Failed to get logs for container ${containerId}:`, error);\n      throw error;\n    }\n  }\n\n  /**\n   * Check container health\n   */\n  async checkContainerHealth(containerId: string): Promise<{\n    status: 'healthy' | 'unhealthy' | 'starting' | 'none';\n    checks: { test: string; interval: string; timeout: string; retries: number }[];\n    lastCheck?: Date;\n    failingStreak: number;\n  }> {\n    if (!this.initialized) {\n      throw new Error('DockerManager not initialized');\n    }\n\n    try {\n      const container = this.docker.getContainer(containerId);\n      const info = await container.inspect();\n      \n      const health = info.State.Health;\n      if (!health) {\n        return {\n          status: 'none',\n          checks: [],\n          failingStreak: 0\n        };\n      }\n\n      return {\n        status: health.Status?.toLowerCase() as any || 'none',\n        checks: info.Config.Healthcheck ? [{\n          test: info.Config.Healthcheck.Test?.join(' ') || '',\n          interval: info.Config.Healthcheck.Interval || '30s',\n          timeout: info.Config.Healthcheck.Timeout || '30s',\n          retries: info.Config.Healthcheck.Retries || 3\n        }] : [],\n        lastCheck: health.Log && health.Log.length > 0 ?\n          new Date(health.Log[health.Log.length - 1].Start) : undefined,\n        failingStreak: health.FailingStreak || 0\n      };\n\n    } catch (error) {\n      logger.error(`Failed to check health for container ${containerId}:`, error);\n      throw error;\n    }\n  }\n\n  /**\n   * Load existing MCP containers\n   */
+  /**
+   * Get container logs
+   */
+  async getContainerLogs(containerId: string, options?: {
+    tail?: number;
+    since?: Date;
+    follow?: boolean;
+  }): Promise<string> {
+    if (!this.initialized) {
+      throw new Error('DockerManager not initialized');
+    }
+
+    try {
+      const container = this.docker.getContainer(containerId);
+      const logOptions: any = {
+        stdout: true,
+        stderr: true,
+        tail: options?.tail || 100
+      };
+
+      if (options?.since) {
+        logOptions.since = Math.floor(options.since.getTime() / 1000);
+      }
+
+      const stream = await container.logs(logOptions);
+      return stream.toString();
+
+    } catch (error) {
+      logger.error(`Failed to get logs for container ${containerId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Check container health
+   */
+  async checkContainerHealth(containerId: string): Promise<{
+    status: 'healthy' | 'unhealthy' | 'starting' | 'none';
+    checks: { test: string; interval: string; timeout: string; retries: number }[];
+    lastCheck?: Date;
+    failingStreak: number;
+  }> {
+    if (!this.initialized) {
+      throw new Error('DockerManager not initialized');
+    }
+
+    try {
+      const container = this.docker.getContainer(containerId);
+      const info = await container.inspect();
+      
+      const health = info.State.Health;
+      if (!health) {
+        return {
+          status: 'none',
+          checks: [],
+          failingStreak: 0
+        };
+      }
+
+      return {
+        status: health.Status?.toLowerCase() as any || 'none',
+        checks: info.Config.Healthcheck ? [{
+          test: info.Config.Healthcheck.Test?.join(' ') || '',
+          interval: info.Config.Healthcheck.Interval || '30s',
+          timeout: info.Config.Healthcheck.Timeout || '30s',
+          retries: info.Config.Healthcheck.Retries || 3
+        }] : [],
+        lastCheck: health.Log && health.Log.length > 0 ?
+          new Date(health.Log[health.Log.length - 1].Start) : undefined,
+        failingStreak: health.FailingStreak || 0
+      };
+
+    } catch (error) {
+      logger.error(`Failed to check health for container ${containerId}:`, error);
+      throw error;
+    }
+  }\n\n  /**\n   * Load existing MCP containers\n   */
   private async loadExistingContainers(): Promise<void> {
     try {
       const containers = await this.docker.listContainers({ 

@@ -12,12 +12,12 @@ export class AgentManager extends EventEmitter {
   private initialized = false;
   private sessionManager: SessionManager;
   private processMonitor: ProcessMonitor;
-  private _workingDir: string;
+  private workingDir: string;
   private autoRestart: boolean = true;
 
   constructor(workingDir: string) {
     super();
-    this._workingDir = workingDir;
+    this.workingDir = workingDir;
     this.sessionManager = new SessionManager(workingDir);
     this.processMonitor = new ProcessMonitor({
       checkInterval: 10000, // 10 seconds

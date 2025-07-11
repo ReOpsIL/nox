@@ -7,7 +7,9 @@ import { EventEmitter } from 'events';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import { NoxConfig } from '../types';
-import { logger } from '../utils/logger';\nimport { CLIApprovalInterface } from './cli-approval-interface';\nimport { ApprovalNotificationManager } from './approval-notifications';
+import { logger } from '../utils/logger';
+import { CLIApprovalInterface } from './cli-approval-interface';
+import { ApprovalNotificationManager } from './approval-notifications';
 
 export type ApprovalType = 'mcp_installation' | 'agent_creation' | 'external_communication' | 'resource_allocation';
 export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
@@ -56,7 +58,9 @@ export class ApprovalManager extends EventEmitter {
   };
   private defaultExpirationMinutes = 60; // 1 hour
   private maxHistorySize = 1000;
-  private userInteractionCallback?: (request: ApprovalRequest) => Promise<boolean>;\n  private cliInterface?: CLIApprovalInterface;\n  private notificationManager?: ApprovalNotificationManager;
+  private userInteractionCallback?: (request: ApprovalRequest) => Promise<boolean>;
+  private cliInterface?: CLIApprovalInterface;
+  private notificationManager?: ApprovalNotificationManager;
 
   constructor(workingDir: string) {
     super();

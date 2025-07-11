@@ -35,8 +35,8 @@ export class TaskRequestProtocol extends ProtocolHandler {
       priority: message.priority,
       timestamp: new Date(),
       requiresApproval: false,
-      metadata: {
-        taskId: message.metadata?.taskId || undefined,
+      ...(metadata && { metadata }): {
+        ...(message.metadata?.taskId && { taskId: message.metadata.taskId }),
         replyTo: message.id
       }
     };
@@ -66,7 +66,7 @@ export class InformationRequestProtocol extends ProtocolHandler {
       priority: message.priority,
       timestamp: new Date(),
       requiresApproval: false,
-      metadata: {
+      ...(metadata && { metadata }): {
         replyTo: message.id
       }
     };
@@ -96,7 +96,7 @@ export class CollaborationProtocol extends ProtocolHandler {
       priority: message.priority,
       timestamp: new Date(),
       requiresApproval: false,
-      metadata: {
+      ...(metadata && { metadata }): {
         replyTo: message.id
       }
     };
@@ -193,7 +193,7 @@ export class ProtocolRegistry {
       priority,
       timestamp: new Date(),
       requiresApproval: false,
-      metadata
+      ...(metadata && { metadata })
     };
   }
 

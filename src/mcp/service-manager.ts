@@ -43,7 +43,7 @@ export interface InstalledService extends MCPService {
  */
 export class ServiceManager extends EventEmitter {
   private initialized = false;
-  private _workingDir: string;
+  private workingDir: string;
   private servicesDir: string;
   private installedServices: Map<string, InstalledService> = new Map();
   private serviceCache: Map<string, MCPService> = new Map();
@@ -56,7 +56,7 @@ export class ServiceManager extends EventEmitter {
     workingDir: string
   ) {
     super();
-    this._workingDir = workingDir;
+    this.workingDir = workingDir;
     this.servicesDir = path.join(workingDir, 'mcp-services');
   }
 
