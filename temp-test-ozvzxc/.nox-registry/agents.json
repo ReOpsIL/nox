@@ -2,10 +2,10 @@
   "update-agent": {
     "id": "update-agent",
     "name": "update-agent",
-    "systemPrompt": "Original prompt",
+    "systemPrompt": "Updated prompt",
     "status": "inactive",
     "createdAt": "2025-07-11T06:05:23.453Z",
-    "lastModified": "2025-07-11T06:05:23.453Z",
+    "lastModified": "2025-07-11T06:05:24.660Z",
     "resourceLimits": {
       "maxMemoryMB": 2048,
       "maxCPUPercent": 50,
