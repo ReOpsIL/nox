@@ -1,1 +1,20 @@
-{}
+{
+  "update-agent": {
+    "id": "update-agent",
+    "name": "update-agent",
+    "systemPrompt": "Original prompt",
+    "status": "inactive",
+    "createdAt": "2025-07-11T06:05:23.453Z",
+    "lastModified": "2025-07-11T06:05:23.453Z",
+    "resourceLimits": {
+      "maxMemoryMB": 2048,
+      "maxCPUPercent": 50,
+      "maxConcurrentTasks": 10,
+      "maxSpawnRate": 10,
+      "maxDepth": 5
+    },
+    "capabilities": [],
+    "relationships": [],
+    "mcpServices": []
+  }
+}
