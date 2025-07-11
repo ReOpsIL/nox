@@ -95,7 +95,9 @@ export class SystemCommands {
       .option('--follow', 'Follow log output')
       .action(async (options) => {
         console.log(chalk.blue('📋 System Logs\n'));
-        console.log(chalk.yellow('Note: Full logging implementation pending'));
+        // ⚠️  MOCK/DUMMY IMPLEMENTATION - NO ACTUAL LOG READING ⚠️
+        console.log(chalk.yellow('⚠️  PLACEHOLDER IMPLEMENTATION - NO ACTUAL LOG FUNCTIONALITY'));
+        console.log(chalk.red('TODO: Implement actual log file reading from system log files'));
         console.log(chalk.gray('This would show the last ' + options.tail + ' lines of system logs'));
         
         if (options.follow) {

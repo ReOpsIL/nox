@@ -4,6 +4,9 @@ import { logger } from '../utils/logger';
 
 export class MessageBroker extends EventEmitter {
   private initialized = false;
+  // ⚠️  MOCK/DUMMY IMPLEMENTATION - IN-MEMORY ONLY, NO PERSISTENCE ⚠️
+  // TODO: Replace with persistent message queue (Redis, database, or file-based)
+  // Messages are lost on system restart!
   private messageQueue: AgentMessage[] = [];
 
   constructor() {

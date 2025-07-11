@@ -1,61 +1,34 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-node_modules
-build/
-develop-eggs/
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Build outputs
 dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
+build/
+*.tsbuildinfo
 
-# PyInstaller
-*.manifest
-*.spec
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
 
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
 
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.py,cover
-.hypothesis/
-.pytest_cache/
-cover/
+# nyc test coverage
+.nyc_output
 
-# Virtual environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
+# Jest coverage
+coverage/
 
 # Environment variables
+.env
 .env.local
 .env.development
 .env.test
@@ -73,11 +46,6 @@ Thumbs.db
 # Logs
 logs/
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-lerna-debug.log*
-.pnpm-debug.log*
 
 # Nox Agent Registry (contains sensitive agent configurations)
 .nox-registry/
@@ -119,6 +87,7 @@ tmp/
 temp/
 *.tmp
 *.temp
+test-cli/
 
 # Database files
 *.db
@@ -131,15 +100,6 @@ temp/
 *.key
 *.token
 api_keys.txt
-
-# System files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
 
 # Local development
 local/
@@ -154,33 +114,52 @@ site/
 # Jupyter Notebook
 .ipynb_checkpoints
 
-# pyenv
-.python-version
+# Cache directories
+.cache/
+.parcel-cache/
 
-# pipenv
-Pipfile.lock
+# Optional npm cache directory
+.npm
 
-# poetry
-poetry.lock
+# Optional eslint cache
+.eslintcache
 
-# Celery
-celerybeat-schedule
-celerybeat.pid
+# Optional stylelint cache
+.stylelintcache
 
-# SageMath parsed files
-*.sage.py
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
 
-# Spyder project settings
-.spyderproject
-.spyproject
+# Optional REPL history
+.node_repl_history
 
-# Rope project settings
-.ropeproject
+# Output of 'npm pack'
+*.tgz
 
-# mkdocs documentation
-/site
+# Yarn Integrity file
+.yarn-integrity
 
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.json
+# dotenv environment variables file
+.env.test
+
+# parcel-bundler cache (https://parceljs.org/)
+.cache
+.parcel-cache
+
+# Next.js build output
+.next
+
+# Nuxt.js build / generate output
+.nuxt
+dist
+
+# Gatsby files
+.cache/
+public
+
+# Storybook build outputs
+.out
+.storybook-out

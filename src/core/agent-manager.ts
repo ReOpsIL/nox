@@ -36,7 +36,10 @@ export class AgentManager extends EventEmitter {
       throw new Error('AgentManager not initialized');
     }
 
-    // For now, create a mock process
+    // ⚠️  MOCK/DUMMY IMPLEMENTATION - NEEDS REAL CLAUDE CLI INTEGRATION ⚠️
+    // TODO: Replace with actual Claude CLI process spawning
+    // This should spawn a real Claude CLI process using child_process.spawn()
+    // and establish communication channels for agent interaction
     const process: AgentProcess = {
       id: config.id,
       status: 'running',
