@@ -1,1 +1,20 @@
-{}
+{
+  "delete-agent": {
+    "id": "delete-agent",
+    "name": "delete-agent",
+    "systemPrompt": "Agent to delete",
+    "status": "inactive",
+    "createdAt": "2025-07-11T06:05:26.264Z",
+    "lastModified": "2025-07-11T06:05:26.264Z",
+    "resourceLimits": {
+      "maxMemoryMB": 2048,
+      "maxCPUPercent": 50,
+      "maxConcurrentTasks": 10,
+      "maxSpawnRate": 10,
+      "maxDepth": 5
+    },
+    "capabilities": [],
+    "relationships": [],
+    "mcpServices": []
+  }
+}
