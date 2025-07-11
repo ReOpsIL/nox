@@ -482,13 +482,15 @@ System: "
 ## Security & Safety Framework
 
 ### Resource Protection Mechanisms
-```python
-# Agent resource limits (per agent)
-MAX_AGENT_SPAWNS_PER_HOUR = 10
-MAX_CONCURRENT_AGENTS = 50
-MAX_MEMORY_PER_AGENT = "2GB"
-MAX_DOCKER_CONTAINERS_PER_AGENT = 5
-CLAUDE_API_CALLS_PER_MINUTE = 60
+```typescript
+// Agent resource limits (per agent)
+const RESOURCE_LIMITS = {
+  MAX_AGENT_SPAWNS_PER_HOUR: 10,
+  MAX_CONCURRENT_AGENTS: 50,
+  MAX_MEMORY_PER_AGENT: "2GB",
+  MAX_DOCKER_CONTAINERS_PER_AGENT: 5,
+  CLAUDE_API_CALLS_PER_MINUTE: 60
+};
 ```
 
 ### Anti-Runaway Protection
@@ -508,43 +510,92 @@ CLAUDE_API_CALLS_PER_MINUTE = 60
 
 ### Agent Persistence & State Management
 ```
-Agent State Storage:
-├── .nox-registry/agents/[agent_id]/
-│   ├── config.json          # System prompt, settings
-│   ├── memory/              # Conversation history
-│   ├── state.json           # Current task context
-│   └── relationships.json   # Connected agents
+JSON-Based Agent Registry:
+├── .nox-registry/
+│   ├── agents.json              # All agent configurations
+│   ├── mcp-services.json        # Installed MCP services
+│   ├── agent-relationships.json # Inter-agent connections
+│   ├── resource-usage.json      # Resource consumption tracking
+│   ├── agents/[agent_id]/
+│   │   ├── conversations/       # Chat history (JSON files)
+│   │   ├── state.json          # Current context & memory
+│   │   └── tasks.json          # Task history & metrics
+│   └── tasks/                  # Agent task markdown files
 ```
 
 ### Inter-Agent Communication Protocol
-```python
-# Message format between agents
-{
-    "from": "research_agent",
-    "to": "data_scientist", 
-    "type": "task_request|response|broadcast|direct",
-    "content": "message content",
-    "priority": "HIGH|MEDIUM|LOW|CRITICAL",
-    "timestamp": "2024-01-15T14:30:00Z",
-    "requires_approval": false
+```typescript
+// Message format between agents
+interface AgentMessage {
+  from: string;
+  to: string | "broadcast";
+  type: "task_request" | "response" | "broadcast" | "direct" | "system";
+  content: string;
+  priority: "HIGH" | "MEDIUM" | "LOW" | "CRITICAL";
+  timestamp: string; // ISO 8601
+  requires_approval: boolean;
+  metadata?: {
+    task_id?: string;
+    deadline?: string;
+    dependencies?: string[];
+  };
 }
 ```
 
 ### Claude CLI Integration Architecture
-- **Process Manager**: Supervisor manages individual Claude CLI processes
+```typescript
+// Agent process management
+class AgentManager {
+  private agents: Map<string, ChildProcess> = new Map();
+  
+  async spawnAgent(agentId: string, systemPrompt: string) {
+    const claudeProcess = spawn('claude', ['--interactive'], {
+      stdio: ['pipe', 'pipe', 'pipe']
+    });
+    
+    // Initialize agent with system prompt
+    claudeProcess.stdin.write(`${systemPrompt}\n`);
+    
+    this.agents.set(agentId, claudeProcess);
+    this.setupEventHandlers(agentId, claudeProcess);
+  }
+}
+```
+
+**Key Features:**
+- **Process Manager**: PM2 manages individual Claude CLI processes
 - **Session Persistence**: Each agent maintains persistent Claude CLI session
 - **State Synchronization**: Agent registry syncs with active Claude CLI instances
 - **Health Monitoring**: Automatic restart of crashed agent processes
 
 ### MCP Service Discovery Implementation
-```python
-# MCP service discovery workflow
-1. Agent scans Docker Hub API: https://hub.docker.com/v2/repositories/mcp/
-2. Evaluates service descriptions for task relevance
-3. Requests user approval for new service installation
-4. Pulls container: docker pull mcp/[service_name]
-5. Configures service integration in agent's MCP client
-6. Updates agent's capability registry
+```typescript
+// MCP service discovery workflow
+class MCPServiceManager {
+  async discoverServices(query: string): Promise<MCPService[]> {
+    // 1. Scan Docker Hub API
+    const response = await fetch('https://hub.docker.com/v2/repositories/mcp/');
+    const services = await response.json();
+    
+    // 2. Filter relevant services
+    return services.results.filter(service => 
+      service.description.toLowerCase().includes(query.toLowerCase())
+    );
+  }
+  
+  async installService(serviceName: string, agentId: string): Promise<void> {
+    // 3. Request user approval
+    const approved = await this.requestApproval(`Install ${serviceName}?`);
+    if (!approved) return;
+    
+    // 4. Pull and configure container
+    await docker.pull(`mcp/${serviceName}`);
+    await this.configureServiceForAgent(serviceName, agentId);
+    
+    // 5. Update agent capabilities
+    await this.updateAgentCapabilities(agentId, serviceName);
+  }
+}
 ```
 
 ## Bootstrap & Startup Procedures
@@ -552,10 +603,11 @@ Agent State Storage:
 ### System Requirements
 ```bash
 # Prerequisites
-- Python 3.11+
+- Node.js 18+ with npm/yarn
 - Docker & Docker Compose
 - Claude CLI installed and configured
 - Git (for registry versioning)
+- PM2 (process manager): npm install -g pm2
 - Minimum 8GB RAM, 20GB disk space
 ```
 
@@ -564,28 +616,32 @@ Agent State Storage:
 # 1. Install Nox
 git clone https://github.com/user/nox.git
 cd nox
-pip install -r requirements.txt
+npm install
 
-# 2. Initialize system
-python nox.py init
-# Creates .nox-registry/, initializes git repo, sets up supervisor
+# 2. Build TypeScript
+npm run build
 
-# 3. Create first agent
-python nox.py add-agent bootstrap "You are the bootstrap agent. Help users create their first specialized agents and guide system setup."
+# 3. Initialize system
+npm run init
+# Creates .nox-registry/, initializes git repo, sets up PM2
 
-# 4. Start agent ecosystem
-python nox.py start
-# Launches supervisor, starts all enabled agents
+# 4. Create first agent
+npm run add-agent bootstrap "You are the bootstrap agent. Help users create their first specialized agents and guide system setup."
+
+# 5. Start agent ecosystem
+npm start
+# Launches PM2 ecosystem, starts all enabled agents
 ```
 
 ### First Run Experience
 ```
-$ python nox.py start
+$ npm start
 🚀 Nox Agent Ecosystem Starting...
 ✓ Registry initialized at .nox-registry/
 ✓ Git repository created
 ✓ Bootstrap agent created
-✓ Supervisor started
+✓ PM2 ecosystem started
+✓ WebSocket server listening on :3000
 
 💬 bootstrap_agent: "Hello! I'm your first agent. Let's create some specialized helpers. 
 What kind of work do you want to automate?"
@@ -598,36 +654,77 @@ System: /add-agent devops_helper "You are a DevOps specialist..."
 ```
 
 ### Configuration Management
-```python
-# nox.config.json
+```json
+// nox.config.json
 {
-    "security": {
-        "max_agents": 50,
-        "spawn_rate_limit": 10,
-        "require_approval_for": ["agent_creation", "mcp_installation", "external_communication"],
-        "resource_limits": {
-            "memory_per_agent": "2GB",
-            "claude_calls_per_minute": 60
-        }
-    },
-    "claude_cli": {
-        "session_timeout": 3600,
-        "auto_restart_on_crash": true,
-        "backup_conversations": true
-    },
-    "git": {
-        "auto_commit": true,
-        "backup_interval": 300,
-        "remote_backup": "optional_github_url"
+  "security": {
+    "max_agents": 50,
+    "spawn_rate_limit": 10,
+    "require_approval_for": ["agent_creation", "mcp_installation", "external_communication"],
+    "resource_limits": {
+      "memory_per_agent": "2GB",
+      "claude_calls_per_minute": 60,
+      "max_concurrent_tasks": 10
     }
+  },
+  "claude_cli": {
+    "session_timeout": 3600,
+    "auto_restart_on_crash": true,
+    "backup_conversations": true,
+    "cli_path": "claude"
+  },
+  "git": {
+    "auto_commit": true,
+    "backup_interval": 300,
+    "remote_backup": "optional_github_url"
+  },
+  "server": {
+    "port": 3000,
+    "websocket_enabled": true,
+    "dashboard_enabled": true
+  },
+  "storage": {
+    "format": "json",
+    "compression": true,
+    "backup_retention_days": 30
+  }
 }
+```
+
+### Package.json Scripts
+```json
+{
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/nox.js start",
+    "dev": "ts-node src/nox.ts start --dev",
+    "init": "node dist/nox.js init",
+    "add-agent": "node dist/nox.js add-agent",
+    "dashboard": "node dist/dashboard.js",
+    "test": "jest",
+    "lint": "eslint src/**/*.ts"
+  }
+}
+```
+
+### Tech Stack Overview
+```typescript
+// Core Dependencies
+- Node.js 18+ with TypeScript
+- Commander.js (CLI framework)
+- ws (WebSocket real-time communication)
+- dockerode (Docker API integration)
+- chokidar (file watching for task updates)
+- simple-git (Git operations)
+- PM2 (process management)
 ```
 
 ### Getting Started
 
-1. **Install Prerequisites**: Python 3.11+, Docker, Claude CLI
-2. **Clone & Install**: `git clone [repo] && pip install -r requirements.txt`
-3. **Initialize**: `python nox.py init` (creates registry, bootstrap agent)
-4. **Start System**: `python nox.py start` (launches agent ecosystem)
-5. **Create Agents**: Use bootstrap agent to create specialized helpers
-6. **Monitor**: Use `/task-dashboard` and `/view-all-tasks` to track activity
+1. **Install Prerequisites**: Node.js 18+, Docker, Claude CLI, PM2
+2. **Clone & Install**: `git clone [repo] && npm install`
+3. **Build**: `npm run build` (compile TypeScript)
+4. **Initialize**: `npm run init` (creates JSON registry, bootstrap agent)
+5. **Start System**: `npm start` (launches PM2 ecosystem with WebSocket server)
+6. **Create Agents**: Use bootstrap agent to create specialized helpers
+7. **Monitor**: Access dashboard at http://localhost:3000 or use CLI commands
