@@ -16,5 +16,23 @@
     "capabilities": [],
     "relationships": [],
     "mcpServices": []
+  },
+  "data_scientist": {
+    "id": "data_scientist",
+    "name": "data_scientist",
+    "systemPrompt": "You are a data scientist expert in statistical analysis, machine learning, and data visualization. Help with data analysis tasks, model building, and insights generation.",
+    "status": "inactive",
+    "createdAt": "2025-07-11T05:32:36.855Z",
+    "lastModified": "2025-07-11T05:32:36.855Z",
+    "resourceLimits": {
+      "maxMemoryMB": 2048,
+      "maxCPUPercent": 50,
+      "maxConcurrentTasks": 10,
+      "maxSpawnRate": 10,
+      "maxDepth": 5
+    },
+    "capabilities": [],
+    "relationships": [],
+    "mcpServices": []
   }
 }
