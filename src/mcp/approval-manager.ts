@@ -8,8 +8,6 @@ import * as path from 'path';
 import * as fs from 'fs/promises';
 import { NoxConfig } from '../types';
 import { logger } from '../utils/logger';
-import { CLIApprovalInterface } from './cli-approval-interface';
-import { ApprovalNotificationManager } from './approval-notifications';
 
 export type ApprovalType = 'mcp_installation' | 'agent_creation' | 'external_communication' | 'resource_allocation';
 export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';

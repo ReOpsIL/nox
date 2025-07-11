@@ -12,12 +12,10 @@ export class AgentManager extends EventEmitter {
   private initialized = false;
   private sessionManager: SessionManager;
   private processMonitor: ProcessMonitor;
-  private workingDir: string;
   private autoRestart: boolean = true;
 
   constructor(workingDir: string) {
     super();
-    this.workingDir = workingDir;
     this.sessionManager = new SessionManager(workingDir);
     this.processMonitor = new ProcessMonitor({
       checkInterval: 10000, // 10 seconds
@@ -110,14 +108,14 @@ export class AgentManager extends EventEmitter {
 
       logger.info(`Agent successfully spawned with Claude CLI: ${config.id}`);
       this.emit('agent-created', config);
-      
+
       return agentProcess;
 
     } catch (error) {
       // Cleanup on failure
       this.claudeInterfaces.delete(config.id);
       this.processes.delete(config.id);
-      
+
       logger.error(`Failed to spawn agent ${config.id}:`, error);
       throw error;
     }
@@ -228,7 +226,7 @@ export class AgentManager extends EventEmitter {
 
     // Update process metrics from monitor
     const processMetrics = this.processMonitor.getAllProcessMetrics();
-    
+
     for (const [agentId, agentProcess] of Array.from(this.processes)) {
       try {
         // Check Claude interface health
@@ -306,7 +304,7 @@ export class AgentManager extends EventEmitter {
     this.sessionManager.on('session-process-exit', (agentId: string, exitInfo: any) => {
       logger.warn(`Claude CLI process exited for agent ${agentId}:`, exitInfo);
       this.emit('agent-claude-exit', agentId, exitInfo);
-      
+
       // Auto-restart if enabled
       if (this.autoRestart) {
         this.emit('agent-needs-restart', agentId);
@@ -433,7 +431,7 @@ export class AgentManager extends EventEmitter {
     );
 
     const success = await this.sendInterAgentMessage(message);
-    
+
     if (success) {
       logger.info(`Task delegated from ${fromAgentId} to ${toAgentId}: ${taskTitle}`);
       this.emit('task-delegated', fromAgentId, toAgentId, {

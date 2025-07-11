@@ -528,7 +528,7 @@ export class ServiceManager extends EventEmitter {
       const installedService: InstalledService = {
         ...service,
         containerId: containerInfo.id,
-        agentId: agentId || null,
+        agentId: agentId || undefined,
         status: containerInfo.status === 'running' ? 'running' : 'error',
         installedAt: new Date()
       };

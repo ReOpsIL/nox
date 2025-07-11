@@ -42,7 +42,7 @@ export class ProcessMonitor extends EventEmitter {
 
   constructor(config: Partial<MonitorConfig> = {}) {
     super();
-    
+
     this.config = {
       checkInterval: config.checkInterval || 5000, // 5 seconds
       cpuThreshold: config.cpuThreshold || 80, // 80%
@@ -61,10 +61,10 @@ export class ProcessMonitor extends EventEmitter {
     }
 
     this.isRunning = true;
-    
+
     // Start system monitoring
     this.startSystemMonitoring();
-    
+
     logger.info('ProcessMonitor started');
     this.emit('started');
   }
@@ -92,7 +92,7 @@ export class ProcessMonitor extends EventEmitter {
     }
 
     this.metrics.clear();
-    
+
     logger.info('ProcessMonitor stopped');
     this.emit('stopped');
   }
@@ -123,7 +123,7 @@ export class ProcessMonitor extends EventEmitter {
     }, this.config.checkInterval);
 
     this.processes.set(processId, interval);
-    
+
     logger.info(`Started monitoring process: ${processId} (PID: ${pid})`);
     this.emit('process-added', processId, pid);
   }
@@ -139,7 +139,7 @@ export class ProcessMonitor extends EventEmitter {
     }
 
     this.metrics.delete(processId);
-    
+
     logger.info(`Stopped monitoring process: ${processId}`);
     this.emit('process-removed', processId);
   }
@@ -219,8 +219,10 @@ export class ProcessMonitor extends EventEmitter {
         this.emit('system-warning', 'high-memory', `System memory usage: ${memoryUsagePercent.toFixed(1)}%`);
       }
 
-      if (this.systemMetrics.loadAverage[0] > this.systemMetrics.cpuCount * 2) {
-        this.emit('system-warning', 'high-load', `System load: ${this.systemMetrics.loadAverage[0].toFixed(2)}`);
+      if (this.systemMetrics && this.systemMetrics.loadAverage && this.systemMetrics.cpuCount) {
+        if (this.systemMetrics.loadAverage[0] > this.systemMetrics.cpuCount * 2) {
+          this.emit('system-warning', 'high-load', `System load: ${this.systemMetrics.loadAverage[0].toFixed(2)}`);
+        }
       }
 
     } catch (error) {
@@ -277,12 +279,12 @@ export class ProcessMonitor extends EventEmitter {
     try {
       // Note: This is a simplified implementation
       // In a real implementation, you might use tools like ps, pidusage, or system APIs
-      
+
       if (pid === process.pid) {
         // Current Node.js process
         const memUsage = process.memoryUsage();
         const cpuUsage = process.cpuUsage();
-        
+
         return {
           cpuUsage: (cpuUsage.user + cpuUsage.system) / 1000000, // Convert to percentage (simplified)
           memoryUsage: memUsage.rss,
@@ -375,7 +377,7 @@ export class ProcessMonitor extends EventEmitter {
     totalMemoryUsage: number;
   } {
     const allMetrics = Array.from(this.metrics.values());
-    
+
     return {
       totalProcesses: allMetrics.length,
       runningProcesses: allMetrics.filter(m => m.status === 'running').length,

@@ -539,22 +539,37 @@ export class TaskManager extends EventEmitter {
     agentId: string, 
     status: 'todo' | 'inprogress' | 'done'
   ): Task {
-    return {
-      id: taskData.id || `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    // Create a base task with required fields
+    const task: Task = {
+      id: `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       agentId,
-      title: taskData.title!,
-      description: taskData.description || '',
-      status: taskData.status || status,
-      priority: taskData.priority || 'MEDIUM',
-      createdAt: taskData.createdAt || new Date(),
-      updatedAt: taskData.updatedAt || new Date(),
-      startedAt: taskData.startedAt || undefined,
-      completedAt: taskData.completedAt || undefined,
-      deadline: taskData.deadline || undefined,
-      requestedBy: taskData.requestedBy || 'user',
-      dependencies: taskData.dependencies || [],
-      progress: taskData.progress || 0
+      title: '',
+      description: '',
+      status: status as TaskStatus,
+      priority: 'MEDIUM',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      dependencies: [],
+      requestedBy: 'user',
+      progress: 0
     };
+
+    // Apply properties from taskData if they exist
+    if (taskData.id) task.id = taskData.id;
+    if (taskData.title) task.title = taskData.title;
+    if (taskData.description) task.description = taskData.description;
+    if (taskData.status) task.status = taskData.status;
+    if (taskData.priority) task.priority = taskData.priority;
+    if (taskData.createdAt) task.createdAt = taskData.createdAt;
+    if (taskData.updatedAt) task.updatedAt = taskData.updatedAt;
+    if (taskData.startedAt) task.startedAt = taskData.startedAt;
+    if (taskData.completedAt) task.completedAt = taskData.completedAt;
+    if (taskData.deadline) task.deadline = taskData.deadline;
+    if (taskData.requestedBy) task.requestedBy = taskData.requestedBy;
+    if (taskData.dependencies) task.dependencies = taskData.dependencies;
+    if (taskData.progress !== undefined) task.progress = taskData.progress;
+
+    return task;
   }
 
   /**
