@@ -596,9 +596,11 @@ export class CapabilityRegistry extends EventEmitter {
           };
 
           // Load capabilities
-          for (const [id, capability] of Object.entries(saved.capabilities)) {
+          for (const [id, capabilityData] of Object.entries(saved.capabilities)) {
+            // Type assertion to handle the unknown type from JSON
+            const capability = capabilityData as any;
             agentCaps.capabilities.set(id, {
-              ...capability as any,
+              ...capability,
               addedAt: new Date(capability.addedAt),
               updatedAt: new Date(capability.updatedAt)
             });
