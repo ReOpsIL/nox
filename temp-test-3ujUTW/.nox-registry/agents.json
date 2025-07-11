@@ -1,1 +1,20 @@
-{}
+{
+  "researcher": {
+    "id": "researcher",
+    "name": "researcher",
+    "systemPrompt": "You are a research assistant specializing in AI and machine learning",
+    "status": "inactive",
+    "createdAt": "2025-07-11T06:05:16.327Z",
+    "lastModified": "2025-07-11T06:05:16.327Z",
+    "resourceLimits": {
+      "maxMemoryMB": 2048,
+      "maxCPUPercent": 50,
+      "maxConcurrentTasks": 10,
+      "maxSpawnRate": 10,
+      "maxDepth": 5
+    },
+    "capabilities": [],
+    "relationships": [],
+    "mcpServices": []
+  }
+}
