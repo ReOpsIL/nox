@@ -1,1 +1,20 @@
-{}
+{
+  "active-agent": {
+    "id": "active-agent",
+    "name": "active-agent",
+    "systemPrompt": "Active agent",
+    "status": "inactive",
+    "createdAt": "2025-07-11T12:03:07.207Z",
+    "lastModified": "2025-07-11T12:03:07.207Z",
+    "resourceLimits": {
+      "maxMemoryMB": 2048,
+      "maxCPUPercent": 50,
+      "maxConcurrentTasks": 10,
+      "maxSpawnRate": 10,
+      "maxDepth": 5
+    },
+    "capabilities": [],
+    "relationships": [],
+    "mcpServices": []
+  }
+}
