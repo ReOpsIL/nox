@@ -12,7 +12,6 @@ import * as chokidar from 'chokidar';
  */
 export class TaskManager extends EventEmitter {
   private initialized = false;
-  private workingDir: string;
   private tasksDir: string;
   private tasks: Map<string, Task> = new Map();
   private tasksByAgent: Map<string, Set<string>> = new Map();
@@ -23,7 +22,6 @@ export class TaskManager extends EventEmitter {
 
   constructor(workingDir: string) {
     super();
-    this.workingDir = workingDir;
     this.tasksDir = path.join(workingDir, 'tasks');
 
     // Create priority queue for tasks

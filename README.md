@@ -547,15 +547,15 @@ interface AgentMessage {
 // Agent process management
 class AgentManager {
   private agents: Map<string, ChildProcess> = new Map();
-  
+
   async spawnAgent(agentId: string, systemPrompt: string) {
     const claudeProcess = spawn('claude', ['--interactive'], {
       stdio: ['pipe', 'pipe', 'pipe']
     });
-    
+
     // Initialize agent with system prompt
     claudeProcess.stdin.write(`${systemPrompt}\n`);
-    
+
     this.agents.set(agentId, claudeProcess);
     this.setupEventHandlers(agentId, claudeProcess);
   }
@@ -576,22 +576,22 @@ class MCPServiceManager {
     // 1. Scan Docker Hub API
     const response = await fetch('https://hub.docker.com/v2/repositories/mcp/');
     const services = await response.json();
-    
+
     // 2. Filter relevant services
     return services.results.filter(service => 
       service.description.toLowerCase().includes(query.toLowerCase())
     );
   }
-  
+
   async installService(serviceName: string, agentId: string): Promise<void> {
     // 3. Request user approval
     const approved = await this.requestApproval(`Install ${serviceName}?`);
     if (!approved) return;
-    
+
     // 4. Pull and configure container
     await docker.pull(`mcp/${serviceName}`);
     await this.configureServiceForAgent(serviceName, agentId);
-    
+
     // 5. Update agent capabilities
     await this.updateAgentCapabilities(agentId, serviceName);
   }
@@ -728,3 +728,37 @@ System: /add-agent devops_helper "You are a DevOps specialist..."
 5. **Start System**: `npm start` (launches PM2 ecosystem with WebSocket server)
 6. **Create Agents**: Use bootstrap agent to create specialized helpers
 7. **Monitor**: Access dashboard at http://localhost:3000 or use CLI commands
+
+### Running the Application
+
+#### Development Mode
+```bash
+# Run in development mode with hot reloading
+npm run run:dev
+```
+
+#### Production Mode
+```bash
+# Run in production mode with PM2 process management
+npm run run:prod
+```
+
+### Deployment Options
+
+#### Standard Deployment
+```bash
+# Deploy to a target directory
+npm run deploy /path/to/deployment/directory
+```
+
+#### Docker Deployment
+```bash
+# Deploy using Docker and Docker Compose
+npm run deploy:docker
+```
+
+The Docker deployment creates:
+- A Dockerfile based on Node.js 18 Alpine
+- A docker-compose.yml file for orchestration
+- A persistent volume for the Nox registry
+- Exposes the dashboard on port 3000

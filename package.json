@@ -23,7 +23,11 @@
     "test:coverage": "jest --coverage",
     "test:watch": "jest --watch",
     "lint": "eslint src/**/*.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "run:dev": "bash scripts/run-dev.sh",
+    "run:prod": "bash scripts/run-prod.sh",
+    "deploy": "bash scripts/deploy.sh",
+    "deploy:docker": "bash scripts/deploy-docker.sh"
   },
   "dependencies": {
     "@types/dockerode": "^3.3.42",

@@ -24,7 +24,7 @@ export class TaskRequestProtocol extends ProtocolHandler {
 
   async handle(message: AgentMessage): Promise<AgentMessage | null> {
     logger.info(`Processing task request from ${message.from} to ${message.to}`);
-    
+
     // Create response message
     const response: AgentMessage = {
       id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -35,12 +35,12 @@ export class TaskRequestProtocol extends ProtocolHandler {
       priority: message.priority,
       timestamp: new Date(),
       requiresApproval: false,
-      ...(metadata && { metadata }): {
+      metadata: {
         ...(message.metadata?.taskId && { taskId: message.metadata.taskId }),
         replyTo: message.id
       }
     };
-    
+
     return response;
   }
 }
@@ -55,7 +55,7 @@ export class InformationRequestProtocol extends ProtocolHandler {
 
   async handle(message: AgentMessage): Promise<AgentMessage | null> {
     logger.info(`Processing information request from ${message.from} to ${message.to}`);
-    
+
     // Create response message
     const response: AgentMessage = {
       id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -66,11 +66,11 @@ export class InformationRequestProtocol extends ProtocolHandler {
       priority: message.priority,
       timestamp: new Date(),
       requiresApproval: false,
-      ...(metadata && { metadata }): {
+      metadata: {
         replyTo: message.id
       }
     };
-    
+
     return response;
   }
 }
@@ -85,7 +85,7 @@ export class CollaborationProtocol extends ProtocolHandler {
 
   async handle(message: AgentMessage): Promise<AgentMessage | null> {
     logger.info(`Processing collaboration message from ${message.from} to ${message.to}`);
-    
+
     // Handle collaboration message
     const response: AgentMessage = {
       id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -96,11 +96,11 @@ export class CollaborationProtocol extends ProtocolHandler {
       priority: message.priority,
       timestamp: new Date(),
       requiresApproval: false,
-      ...(metadata && { metadata }): {
+      metadata: {
         replyTo: message.id
       }
     };
-    
+
     return response;
   }
 }
@@ -115,7 +115,7 @@ export class StatusUpdateProtocol extends ProtocolHandler {
 
   async handle(message: AgentMessage): Promise<AgentMessage | null> {
     logger.info(`Processing status update from ${message.from} to ${message.to}`);
-    
+
     // Status updates don't require a response
     return null;
   }
@@ -164,7 +164,7 @@ export class ProtocolRegistry {
       logger.warn(`No protocol handler found for message type: ${message.type}`);
       return null;
     }
-    
+
     try {
       return await handler.handle(message);
     } catch (error) {

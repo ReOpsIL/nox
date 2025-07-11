@@ -11,7 +11,6 @@ import { PriorityQueue } from '../utils/priority-queue';
  */
 export class MessageBroker extends EventEmitter {
   private initialized = false;
-  private workingDir: string;
   private messagesDir: string;
   private messageQueue: PriorityQueue<AgentMessage>;
   private subscribers: Map<string, Set<AgentSubscription>> = new Map();
@@ -23,7 +22,6 @@ export class MessageBroker extends EventEmitter {
 
   constructor(workingDir: string) {
     super();
-    this.workingDir = workingDir;
     this.messagesDir = path.join(workingDir, 'messages');
     this.messageQueue = new PriorityQueue<AgentMessage>((a, b) => {
       // Priority order: CRITICAL > HIGH > MEDIUM > LOW

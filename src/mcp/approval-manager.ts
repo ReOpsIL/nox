@@ -46,7 +46,6 @@ export interface ApprovalRecord {
  */
 export class ApprovalManager extends EventEmitter {
   private initialized = false;
-  private workingDir: string;
   private approvalsDir: string;
   private pendingApprovals: Map<string, ApprovalRecord> = new Map();
   private approvalHistory: ApprovalRecord[] = [];
@@ -59,12 +58,9 @@ export class ApprovalManager extends EventEmitter {
   private defaultExpirationMinutes = 60; // 1 hour
   private maxHistorySize = 1000;
   private userInteractionCallback?: (request: ApprovalRequest) => Promise<boolean>;
-  private cliInterface?: CLIApprovalInterface;
-  private notificationManager?: ApprovalNotificationManager;
 
   constructor(workingDir: string) {
     super();
-    this.workingDir = workingDir;
     this.approvalsDir = path.join(workingDir, 'approvals');
   }
 
@@ -174,7 +170,7 @@ export class ApprovalManager extends EventEmitter {
 
       if (canAutoApprove) {
         logger.info(`Auto-approving request: ${request.id} (risk level ${request.riskLevel} below threshold ${autoApproveThreshold})`);
-        
+
         // Create approval record
         const record: ApprovalRecord = {
           request,
@@ -237,10 +233,10 @@ export class ApprovalManager extends EventEmitter {
           if (record && record.status === 'pending') {
             this.off('approval-responded', listener);
             this.pendingApprovals.delete(request.id);
-            
+
             record.status = 'expired';
             this.approvalHistory.push(record);
-            
+
             this.emit('approval-expired', record);
             resolve(false);
           }
@@ -353,7 +349,7 @@ export class ApprovalManager extends EventEmitter {
       'HIGH': 2,
       'CRITICAL': 3
     };
-    
+
     return levels[level] <= levels[threshold];
   }
 
@@ -362,23 +358,23 @@ export class ApprovalManager extends EventEmitter {
    */
   private cleanupExpiredApprovals(): void {
     const now = new Date();
-    
+
     for (const [requestId, record] of this.pendingApprovals.entries()) {
       if (record.request.expiresAt && record.request.expiresAt < now) {
         // Mark as expired
         record.status = 'expired';
-        
+
         // Remove from pending approvals
         this.pendingApprovals.delete(requestId);
-        
+
         // Add to history
         this.approvalHistory.push(record);
-        
+
         logger.info(`Approval request expired: ${record.request.title} (${requestId})`);
         this.emit('approval-expired', record);
       }
     }
-    
+
     this.trimApprovalHistory();
   }
 
@@ -398,11 +394,11 @@ export class ApprovalManager extends EventEmitter {
     try {
       const filePath = path.join(this.approvalsDir, 'approval-history.json');
       const exists = await fs.access(filePath).then(() => true).catch(() => false);
-      
+
       if (exists) {
         const data = await fs.readFile(filePath, 'utf-8');
         const saved = JSON.parse(data);
-        
+
         // Parse dates in approval records
         this.approvalHistory = saved.history.map((record: any) => ({
           ...record,
@@ -416,7 +412,7 @@ export class ApprovalManager extends EventEmitter {
             respondedAt: new Date(record.response.respondedAt)
           } : undefined
         }));
-        
+
         // Load pending approvals
         for (const record of saved.pending || []) {
           const parsedRecord = {
@@ -427,7 +423,7 @@ export class ApprovalManager extends EventEmitter {
               expiresAt: record.request.expiresAt ? new Date(record.request.expiresAt) : undefined
             }
           };
-          
+
           // Only add if not expired
           if (parsedRecord.request.expiresAt && parsedRecord.request.expiresAt > new Date()) {
             this.pendingApprovals.set(parsedRecord.request.id, parsedRecord);
@@ -437,10 +433,10 @@ export class ApprovalManager extends EventEmitter {
             this.approvalHistory.push(parsedRecord);
           }
         }
-        
+
         logger.info(`Loaded ${this.approvalHistory.length} approval records and ${this.pendingApprovals.size} pending approvals`);
       }
-      
+
     } catch (error) {
       logger.error('Failed to load approval history:', error);
     }
@@ -457,10 +453,10 @@ export class ApprovalManager extends EventEmitter {
         history: this.approvalHistory,
         pending: Array.from(this.pendingApprovals.values())
       };
-      
+
       await fs.writeFile(filePath, JSON.stringify(data, null, 2));
       logger.debug('Approval history saved to disk');
-      
+
     } catch (error) {
       logger.error('Failed to save approval history:', error);
     }
