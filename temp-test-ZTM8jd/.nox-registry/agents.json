@@ -2,10 +2,10 @@
   "v1-agent": {
     "id": "v1-agent",
     "name": "v1-agent",
-    "systemPrompt": "Version 1 agent",
+    "systemPrompt": "Updated version 1 agent with new capabilities",
     "status": "inactive",
     "createdAt": "2025-07-11T06:05:36.335Z",
-    "lastModified": "2025-07-11T06:05:36.335Z",
+    "lastModified": "2025-07-11T06:05:39.885Z",
     "resourceLimits": {
       "maxMemoryMB": 2048,
       "maxCPUPercent": 50,
