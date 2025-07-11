@@ -1,1 +1,20 @@
-{}
+{
+  "duplicate-test": {
+    "id": "duplicate-test",
+    "name": "duplicate-test",
+    "systemPrompt": "First agent",
+    "status": "inactive",
+    "createdAt": "2025-07-11T12:03:57.592Z",
+    "lastModified": "2025-07-11T12:03:57.592Z",
+    "resourceLimits": {
+      "maxMemoryMB": 2048,
+      "maxCPUPercent": 50,
+      "maxConcurrentTasks": 10,
+      "maxSpawnRate": 10,
+      "maxDepth": 5
+    },
+    "capabilities": [],
+    "relationships": [],
+    "mcpServices": []
+  }
+}
