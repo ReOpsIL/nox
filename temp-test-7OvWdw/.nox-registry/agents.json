@@ -52,5 +52,23 @@
     "capabilities": [],
     "relationships": [],
     "mcpServices": []
+  },
+  "research-assistant": {
+    "id": "research-assistant",
+    "name": "research-assistant",
+    "systemPrompt": "You are a research assistant supporting literature reviews",
+    "status": "inactive",
+    "createdAt": "2025-07-11T06:05:32.318Z",
+    "lastModified": "2025-07-11T06:05:32.318Z",
+    "resourceLimits": {
+      "maxMemoryMB": 2048,
+      "maxCPUPercent": 50,
+      "maxConcurrentTasks": 10,
+      "maxSpawnRate": 10,
+      "maxDepth": 5
+    },
+    "capabilities": [],
+    "relationships": [],
+    "mcpServices": []
   }
 }
