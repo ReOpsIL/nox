@@ -1,1 +1,20 @@
-{}
+{
+  "inactive-agent": {
+    "id": "inactive-agent",
+    "name": "inactive-agent",
+    "systemPrompt": "Inactive agent",
+    "status": "inactive",
+    "createdAt": "2025-07-11T06:05:31.475Z",
+    "lastModified": "2025-07-11T06:05:31.475Z",
+    "resourceLimits": {
+      "maxMemoryMB": 2048,
+      "maxCPUPercent": 50,
+      "maxConcurrentTasks": 10,
+      "maxSpawnRate": 10,
+      "maxDepth": 5
+    },
+    "capabilities": [],
+    "relationships": [],
+    "mcpServices": []
+  }
+}
