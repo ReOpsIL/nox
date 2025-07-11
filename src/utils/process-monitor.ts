@@ -219,13 +219,16 @@ export class ProcessMonitor extends EventEmitter {
         this.emit('system-warning', 'high-memory', `System memory usage: ${memoryUsagePercent.toFixed(1)}%`);
       }
 
-      if (this.systemMetrics && this.systemMetrics.loadAverage && this.systemMetrics.cpuCount) {
-        if (this.systemMetrics.loadAverage[0] > this.systemMetrics.cpuCount * 2) {
-          this.emit('system-warning', 'high-load', `System load: ${this.systemMetrics.loadAverage[0].toFixed(2)}`);
+      // Check for high CPU load
+      const loadAvg = this.systemMetrics.loadAverage;
+      if (loadAvg && loadAvg.length > 0) {
+        const load = loadAvg[0];
+        if (load !== undefined && load > this.systemMetrics.cpuCount * 2) {
+          this.emit('system-warning', 'high-load', `System load: ${load.toFixed(2)}`);
         }
       }
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to collect system metrics:', error);
     }
   }
@@ -266,7 +269,7 @@ export class ProcessMonitor extends EventEmitter {
       // Check for alerts
       this.checkProcessAlerts(processId, updatedMetrics);
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Failed to check process ${processId} (PID: ${pid}):`, error);
       this.handleProcessError(processId, pid, error);
     }
@@ -300,7 +303,8 @@ export class ProcessMonitor extends EventEmitter {
         uptime: Date.now() / 1000 // Mock data
       };
 
-    } catch (error) {
+    } catch (error: unknown) {
+      logger.debug(`Error getting process metrics for PID ${pid}: ${error instanceof Error ? error.message : String(error)}`);
       return null;
     }
   }
@@ -360,7 +364,7 @@ export class ProcessMonitor extends EventEmitter {
   /**
    * Handle process monitoring errors
    */
-  private handleProcessError(processId: string, pid: number, error: any): void {
+  private handleProcessError(processId: string, pid: number, error: unknown): void {
     logger.error(`Process monitoring error for ${processId} (PID: ${pid}):`, error);
     this.emit('process-error', processId, pid, error);
   }
