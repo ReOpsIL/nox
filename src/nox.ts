@@ -67,7 +67,7 @@ async function main(): Promise<void> {
           
           if (!options.background) {
             console.log(chalk.green('✅ Nox ecosystem is running!'));
-            console.log(chalk.yellow('🌐 Dashboard available at http://localhost:3000'));
+            console.log(chalk.yellow('🌐 Dashboard available at http://localhost:3001'));
             console.log(chalk.gray('Press Ctrl+C to stop'));
             
             // Keep process alive

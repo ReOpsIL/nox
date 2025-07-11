@@ -3,11 +3,11 @@
  * Serves the dashboard UI and API endpoints
  */
 
-import * as express from 'express';
+import express from 'express';
 import * as http from 'http';
 import * as path from 'path';
-import * as cors from 'cors';
-import * as helmet from 'helmet';
+import cors from 'cors';
+import helmet from 'helmet';
 import { EventEmitter } from 'events';
 import { NoxConfig } from '../types';
 import { logger } from '../utils/logger';
@@ -20,6 +20,7 @@ import { setupAgentRoutes } from './routes/agent-routes';
 import { setupTaskRoutes } from './routes/task-routes';
 import { setupMetricsRoutes } from './routes/metrics-routes';
 import { setupSystemRoutes } from './routes/system-routes';
+import { RegistryManager } from '../core/registry-manager';
 
 /**
  * Dashboard Server - Provides web interface for monitoring and managing the Nox system
@@ -36,8 +37,9 @@ export class DashboardServer extends EventEmitter {
     private taskManager: TaskManager,
     private messageBroker: MessageBroker,
     private metricsManager: MetricsManager,
-    private websocketServer: WebSocketServer,
-    private workingDir: string
+    _websocketServer: WebSocketServer,
+    private registryManager: RegistryManager,
+    _workingDir: string
   ) {
     super();
     this.app = express();
@@ -55,15 +57,12 @@ export class DashboardServer extends EventEmitter {
     }
 
     try {
-      // Set port from config if available
-      if (config.dashboard?.port) {
-        this.port = config.dashboard.port;
+      // Set dashboard port from config if available, otherwise use default 3001
+      if (config.server?.dashboardPort) {
+        this.port = config.server.dashboardPort;
       }
 
-      // Set frontend path from config if available
-      if (config.dashboard?.frontendPath) {
-        this.frontendPath = config.dashboard.frontendPath;
-      }
+      // Use default frontend path (already set in constructor)
 
       // Configure Express middleware
       this.configureMiddleware();
@@ -163,13 +162,13 @@ export class DashboardServer extends EventEmitter {
     this.app.use(express.urlencoded({ extended: true }));
 
     // Request logging
-    this.app.use((req, res, next) => {
+    this.app.use((req, _res, next) => {
       logger.debug(`${req.method} ${req.url}`);
       next();
     });
 
     // Error handling
-    this.app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    this.app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
       logger.error('Express error:', err);
       res.status(500).json({
         error: 'Internal Server Error',
@@ -187,13 +186,13 @@ export class DashboardServer extends EventEmitter {
     this.app.use('/api', apiRouter);
 
     // Set up route handlers
-    setupAgentRoutes(apiRouter, this.agentManager);
+    setupAgentRoutes(apiRouter, this.agentManager, this.registryManager);
     setupTaskRoutes(apiRouter, this.taskManager);
     setupMetricsRoutes(apiRouter, this.metricsManager);
     setupSystemRoutes(apiRouter, this.agentManager, this.messageBroker, this.taskManager);
 
     // Health check endpoint
-    apiRouter.get('/health', (req, res) => {
+    apiRouter.get('/health', (_req: express.Request, res: express.Response) => {
       res.json({
         status: 'ok',
         uptime: process.uptime(),
@@ -202,9 +201,9 @@ export class DashboardServer extends EventEmitter {
     });
 
     // WebSocket info endpoint
-    apiRouter.get('/websocket-info', (req, res) => {
+    apiRouter.get('/websocket-info', (req: express.Request, res: express.Response) => {
       res.json({
-        url: `ws://${req.headers.host?.split(':')[0] || 'localhost'}:${this.websocketServer.getPort()}`
+        url: `ws://${req.headers.host?.split(':')[0] || 'localhost'}:8080` // Using default WebSocket port
       });
     });
   }
@@ -213,19 +212,80 @@ export class DashboardServer extends EventEmitter {
    * Set up static file serving for frontend
    */
   private setupStaticServing(): void {
-    // Serve static files from frontend build directory
-    this.app.use(express.static(this.frontendPath));
+    // Check if frontend build directory exists
+    const fs = require('fs');
+    const frontendExists = fs.existsSync(this.frontendPath) && 
+                          fs.existsSync(path.join(this.frontendPath, 'index.html'));
 
-    // Serve index.html for all routes not handled by API
-    this.app.get('*', (req, res) => {
-      // Skip API routes
-      if (req.url.startsWith('/api/')) {
-        return res.status(404).json({ error: 'Not Found' });
-      }
+    if (frontendExists) {
+      // Serve static files from frontend build directory
+      this.app.use(express.static(this.frontendPath));
+      logger.info(`Serving frontend from ${this.frontendPath}`);
 
-      // Serve index.html for all other routes (SPA support)
-      res.sendFile(path.join(this.frontendPath, 'index.html'));
-    });
+      // Serve index.html for all routes not handled by API
+      this.app.get('*', (req: express.Request, res: express.Response) => {
+        // Skip API routes
+        if (req.url.startsWith('/api/')) {
+          return res.status(404).json({ error: 'Not Found' });
+        }
+
+        // Serve index.html for all other routes (SPA support)
+        return res.sendFile(path.join(this.frontendPath, 'index.html'));
+      });
+    } else {
+      logger.warn(`Frontend build not found at ${this.frontendPath}. Serving API-only mode.`);
+      
+      // Serve a simple message for non-API routes
+      this.app.get('*', (req: express.Request, res: express.Response) => {
+        // Skip API routes
+        if (req.url.startsWith('/api/')) {
+          return res.status(404).json({ error: 'Not Found' });
+        }
+
+        // Serve a simple HTML page indicating API-only mode
+        return res.send(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>NOX Dashboard - API Mode</title>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
+              .container { background: white; padding: 30px; border-radius: 8px; max-width: 600px; margin: 0 auto; }
+              h1 { color: #333; }
+              .api-links { margin: 20px 0; }
+              .api-links a { display: block; margin: 5px 0; color: #007acc; text-decoration: none; }
+              .api-links a:hover { text-decoration: underline; }
+              .status { color: #28a745; font-weight: bold; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <h1>🚀 NOX Agent Ecosystem</h1>
+              <p class="status">✅ Dashboard Server Running (API Mode)</p>
+              <p>The NOX dashboard is running in API-only mode. The frontend UI build is not available.</p>
+              
+              <h3>📡 Available API Endpoints:</h3>
+              <div class="api-links">
+                <a href="/api/system/status">/api/system/status</a>
+                <a href="/api/agents">/api/agents</a>
+                <a href="/api/tasks">/api/tasks</a>
+                <a href="/api/system/health">/api/system/health</a>
+                <a href="/api/metrics/system">/api/metrics/system</a>
+              </div>
+              
+              <h3>🔧 To Enable Full Dashboard:</h3>
+              <p>Build the frontend by running:</p>
+              <pre style="background: #f8f9fa; padding: 10px; border-radius: 4px;">
+cd frontend && npm install && npm run build
+              </pre>
+              
+              <p><em>Port 3001 • WebSocket on Port 3000</em></p>
+            </div>
+          </body>
+          </html>
+        `);
+      });
+    }
   }
 
   /**

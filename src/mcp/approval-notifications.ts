@@ -270,7 +270,7 @@ Reason: {{reason}}
    * Send desktop notification
    */
   private async sendDesktopNotification(
-    channel: NotificationChannel,
+    _channel: NotificationChannel,
     notification: any
   ): Promise<void> {
     // This would integrate with system notification APIs
@@ -288,7 +288,7 @@ Reason: {{reason}}
     channel: NotificationChannel,
     notification: any
   ): Promise<void> {
-    const { to, from, smtp } = channel.config;
+    const { to, from: _from, smtp: _smtp } = channel.config;
     
     // This would integrate with email service
     logger.info(`Email notification would be sent to: ${to}`);
@@ -337,7 +337,7 @@ Reason: {{reason}}
     }
 
     // Handle conditional blocks (basic implementation)
-    rendered = rendered.replace(/{{#(\w+)}}(.*?){{\/\1}}/gs, (match, key, content) => {
+    rendered = rendered.replace(/{{#(\w+)}}(.*?){{\/\1}}/gs, (_match, key, content) => {
       return context[key] ? content : '';
     });
 

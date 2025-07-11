@@ -5,6 +5,9 @@ import { GitManager } from './git-manager';
 import { AgentManager } from './agent-manager';
 import { TaskManager } from './task-manager';
 import { MessageBroker } from './message-broker';
+import { DashboardServer } from '../dashboard/server';
+import { MetricsManager } from '../monitoring/metrics';
+import { WebSocketServer } from '../server/websocket';
 import { AgentConfig } from '../types';
 import { logger } from '../utils/logger';
 
@@ -30,6 +33,9 @@ export class NoxSystem extends EventEmitter {
   private agentManager: AgentManager;
   private taskManager: TaskManager;
   private messageBroker: MessageBroker;
+  private metricsManager: MetricsManager;
+  private websocketServer: WebSocketServer;
+  private dashboardServer: DashboardServer;
 
   constructor(workingDir: string = process.cwd()) {
     super();
@@ -41,6 +47,19 @@ export class NoxSystem extends EventEmitter {
     this.agentManager = new AgentManager(workingDir);
     this.taskManager = new TaskManager(workingDir);
     this.messageBroker = new MessageBroker(workingDir);
+    
+    // Initialize monitoring and dashboard components
+    this.metricsManager = new MetricsManager(this.agentManager, this.messageBroker, this.taskManager, workingDir);
+    this.websocketServer = new WebSocketServer(this.agentManager, this.messageBroker, this.taskManager);
+    this.dashboardServer = new DashboardServer(
+      this.agentManager,
+      this.taskManager,
+      this.messageBroker,
+      this.metricsManager,
+      this.websocketServer,
+      this.registryManager,
+      workingDir
+    );
 
     // Setup event handlers
     this.setupEventHandlers();
@@ -107,6 +126,11 @@ export class NoxSystem extends EventEmitter {
       await this.taskManager.initialize(config);
       await this.messageBroker.initialize(config);
 
+      // Initialize monitoring and dashboard components
+      await this.metricsManager.initialize(config);
+      await this.websocketServer.initialize(config);
+      await this.dashboardServer.initialize(config);
+
       this.initialized = true;
       logger.info('Nox system initialized successfully');
 
@@ -116,9 +140,74 @@ export class NoxSystem extends EventEmitter {
     }
   }
 
+  /**
+   * Check if the system is already initialized by verifying config and registry existence
+   */
+  private async checkIfInitialized(): Promise<boolean> {
+    try {
+      // Check if config file exists
+      const configExists = await this.configManager.configExists();
+      if (!configExists) {
+        return false;
+      }
+
+      // Check if registry directory exists
+      const config = await this.configManager.loadConfig();
+      const fs = await import('fs/promises');
+      try {
+        await fs.access(config.storage.registryPath);
+        return true;
+      } catch {
+        return false;
+      }
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Load existing configuration and initialize components
+   */
+  private async loadExistingConfiguration(): Promise<void> {
+    try {
+      // Load configuration
+      const config = await this.configManager.loadConfig();
+
+      // Initialize registry
+      await this.registryManager.initialize(config.storage.registryPath, false);
+
+      // Initialize Git repository
+      await this.gitManager.initialize(config.storage.registryPath);
+
+      // Initialize other components
+      await this.taskManager.initialize(config);
+      await this.messageBroker.initialize(config);
+      await this.agentManager.initialize(config);
+
+      // Initialize monitoring and dashboard components
+      await this.metricsManager.initialize(config);
+      await this.websocketServer.initialize(config);
+      await this.dashboardServer.initialize(config);
+
+      // Mark as initialized
+      this.initialized = true;
+      logger.info('Existing system configuration loaded successfully');
+    } catch (error) {
+      logger.error('Failed to load existing configuration:', error);
+      throw error;
+    }
+  }
+
   async start(_background = false): Promise<void> {
+    // Check if system is already initialized
     if (!this.initialized) {
-      throw new Error('System not initialized. Run "nox init" first.');
+      const isAlreadyInitialized = await this.checkIfInitialized();
+      if (isAlreadyInitialized) {
+        logger.info('System already initialized, loading existing configuration...');
+        await this.loadExistingConfiguration();
+      } else {
+        throw new Error('System not initialized. Run "nox init" first.');
+      }
     }
 
     try {
@@ -129,6 +218,11 @@ export class NoxSystem extends EventEmitter {
       await this.messageBroker.start();
       await this.taskManager.start();
       await this.agentManager.start();
+
+      // Start monitoring and dashboard services
+      await this.metricsManager.start();
+      await this.websocketServer.start();
+      await this.dashboardServer.start();
 
       // Load and start existing agents
       const agents = await this.registryManager.listAgents();

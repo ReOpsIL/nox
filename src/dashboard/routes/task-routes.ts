@@ -2,7 +2,7 @@
  * Task Routes - API endpoints for task management and visualization
  */
 
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { TaskManager } from '../../core/task-manager';
 import { logger } from '../../utils/logger';
 import { Task, TaskStatus, TaskPriority } from '../../types';
@@ -18,15 +18,15 @@ export function setupTaskRoutes(router: Router, taskManager: TaskManager): void 
    * GET /api/tasks
    * Get all tasks with optional filtering
    */
-  taskRouter.get('/', async (req, res) => {
+  taskRouter.get('/', async (req: Request, res: Response) => {
     try {
       // Parse query parameters for filtering
       const agentId = req.query.agentId as string;
       const status = req.query.status as TaskStatus;
       const priority = req.query.priority as TaskPriority;
-      
+
       let tasks: Task[] = [];
-      
+
       // Get tasks based on filters
       if (agentId) {
         tasks = await taskManager.getAgentTasks(agentId);
@@ -45,37 +45,39 @@ export function setupTaskRoutes(router: Router, taskManager: TaskManager): void 
             message: 'Please use filters to narrow down the results'
           });
         }
-        
+
         // Get tasks for all agents
         const dashboard = await taskManager.getTaskDashboard();
         const agentIds = Object.keys(dashboard.byAgent);
-        
+
         for (const id of agentIds) {
           const agentTasks = await taskManager.getAgentTasks(id);
           tasks = tasks.concat(agentTasks);
         }
       }
-      
+
       // Apply additional filtering if multiple filters are provided
       if (status && tasks.length > 0) {
         tasks = tasks.filter(task => task.status === status);
       }
-      
+
       if (priority && tasks.length > 0) {
         tasks = tasks.filter(task => task.priority === priority);
       }
-      
+
       res.json({
         success: true,
         tasks
       });
-    } catch (error) {
+      return;
+    } catch (error: any) {
       logger.error('Error getting tasks:', error);
       res.status(500).json({
         success: false,
         error: 'Failed to get tasks',
         message: error.message
       });
+      return;
     }
   });
 
@@ -83,14 +85,14 @@ export function setupTaskRoutes(router: Router, taskManager: TaskManager): void 
    * GET /api/tasks/dashboard
    * Get task dashboard overview
    */
-  taskRouter.get('/dashboard', async (req, res) => {
+  taskRouter.get('/dashboard', async (_req: Request, res: Response) => {
     try {
       const dashboard = await taskManager.getTaskDashboard();
       res.json({
         success: true,
         dashboard
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Error getting task dashboard:', error);
       res.status(500).json({
         success: false,
@@ -104,14 +106,14 @@ export function setupTaskRoutes(router: Router, taskManager: TaskManager): void 
    * GET /api/tasks/blocked
    * Get blocked tasks
    */
-  taskRouter.get('/blocked', async (req, res) => {
+  taskRouter.get('/blocked', async (_req: Request, res: Response) => {
     try {
       const blockedTasks = await taskManager.getBlockedTasks();
       res.json({
         success: true,
         tasks: blockedTasks
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Error getting blocked tasks:', error);
       res.status(500).json({
         success: false,
@@ -125,11 +127,11 @@ export function setupTaskRoutes(router: Router, taskManager: TaskManager): void 
    * GET /api/tasks/:taskId
    * Get a specific task
    */
-  taskRouter.get('/:taskId', async (req, res) => {
+  taskRouter.get('/:taskId', async (req: Request, res: Response) => {
     try {
-      const taskId = req.params.taskId;
+      const taskId = req.params.taskId as string;
       const task = await taskManager.getTask(taskId);
-      
+
       if (!task) {
         return res.status(404).json({
           success: false,
@@ -137,18 +139,20 @@ export function setupTaskRoutes(router: Router, taskManager: TaskManager): void 
           message: `Task ${taskId} not found`
         });
       }
-      
+
       res.json({
         success: true,
         task
       });
-    } catch (error) {
+      return;
+    } catch (error: any) {
       logger.error(`Error getting task ${req.params.taskId}:`, error);
       res.status(500).json({
         success: false,
         error: 'Failed to get task',
         message: error.message
       });
+      return;
     }
   });
 
@@ -156,7 +160,7 @@ export function setupTaskRoutes(router: Router, taskManager: TaskManager): void 
    * POST /api/tasks
    * Create a new task
    */
-  taskRouter.post('/', async (req, res) => {
+  taskRouter.post('/', async (req: Request, res: Response) => {
     try {
       const {
         agentId,
@@ -167,7 +171,7 @@ export function setupTaskRoutes(router: Router, taskManager: TaskManager): void 
         dependencies,
         requestedBy
       } = req.body;
-      
+
       // Validate required fields
       if (!agentId || !title) {
         return res.status(400).json({
@@ -176,7 +180,7 @@ export function setupTaskRoutes(router: Router, taskManager: TaskManager): void 
           message: 'Agent ID and title are required'
         });
       }
-      
+
       // Create task
       const task = await taskManager.createTask({
         agentId,
@@ -184,23 +188,25 @@ export function setupTaskRoutes(router: Router, taskManager: TaskManager): void 
         description: description || '',
         status: 'todo',
         priority: priority || 'MEDIUM',
-        deadline: deadline ? new Date(deadline) : undefined,
+        deadline: deadline ? new Date(deadline) : new Date(),
         dependencies: dependencies || [],
         requestedBy: requestedBy || 'user',
         progress: 0
       });
-      
+
       res.status(201).json({
         success: true,
         task
       });
-    } catch (error) {
+      return;
+    } catch (error: any) {
       logger.error('Error creating task:', error);
       res.status(500).json({
         success: false,
         error: 'Failed to create task',
         message: error.message
       });
+      return;
     }
   });
 
@@ -208,24 +214,24 @@ export function setupTaskRoutes(router: Router, taskManager: TaskManager): void 
    * PUT /api/tasks/:taskId
    * Update a task
    */
-  taskRouter.put('/:taskId', async (req, res) => {
+  taskRouter.put('/:taskId', async (req: Request, res: Response) => {
     try {
-      const taskId = req.params.taskId;
+      const taskId = req.params.taskId as string;
       const updates = req.body;
-      
+
       // Convert deadline to Date object if provided
       if (updates.deadline) {
         updates.deadline = new Date(updates.deadline);
       }
-      
+
       // Update task
       const task = await taskManager.updateTask(taskId, updates);
-      
+
       res.json({
         success: true,
         task
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error(`Error updating task ${req.params.taskId}:`, error);
       res.status(500).json({
         success: false,
@@ -239,16 +245,16 @@ export function setupTaskRoutes(router: Router, taskManager: TaskManager): void 
    * POST /api/tasks/:taskId/complete
    * Mark a task as complete
    */
-  taskRouter.post('/:taskId/complete', async (req, res) => {
+  taskRouter.post('/:taskId/complete', async (req: Request, res: Response) => {
     try {
-      const taskId = req.params.taskId;
+      const taskId = req.params.taskId as string;
       const task = await taskManager.completeTask(taskId);
-      
+
       res.json({
         success: true,
         task
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error(`Error completing task ${req.params.taskId}:`, error);
       res.status(500).json({
         success: false,
@@ -262,7 +268,7 @@ export function setupTaskRoutes(router: Router, taskManager: TaskManager): void 
    * POST /api/tasks/delegate
    * Delegate a task from one agent to another
    */
-  taskRouter.post('/delegate', async (req, res) => {
+  taskRouter.post('/delegate', async (req: Request, res: Response) => {
     try {
       const {
         fromAgentId,
@@ -273,7 +279,7 @@ export function setupTaskRoutes(router: Router, taskManager: TaskManager): void 
         deadline,
         dependencies
       } = req.body;
-      
+
       // Validate required fields
       if (!fromAgentId || !toAgentId || !title) {
         return res.status(400).json({
@@ -282,7 +288,7 @@ export function setupTaskRoutes(router: Router, taskManager: TaskManager): void 
           message: 'From agent ID, to agent ID, and title are required'
         });
       }
-      
+
       // Delegate task
       const task = await taskManager.delegateTask(
         fromAgentId,
@@ -292,23 +298,26 @@ export function setupTaskRoutes(router: Router, taskManager: TaskManager): void 
           description: description || '',
           status: 'todo',
           priority: priority || 'MEDIUM',
-          deadline: deadline ? new Date(deadline) : undefined,
+          deadline: deadline ? new Date(deadline) : new Date(),
           dependencies: dependencies || [],
+          requestedBy: fromAgentId,
           progress: 0
         }
       );
-      
+
       res.status(201).json({
         success: true,
         task
       });
-    } catch (error) {
+      return;
+    } catch (error: any) {
       logger.error('Error delegating task:', error);
       res.status(500).json({
         success: false,
         error: 'Failed to delegate task',
         message: error.message
       });
+      return;
     }
   });
 }

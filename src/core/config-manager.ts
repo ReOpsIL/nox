@@ -23,6 +23,10 @@ export class ConfigManager {
     return possiblePaths[0] || path.join(process.cwd(), 'nox.config.json');
   }
 
+  async configExists(): Promise<boolean> {
+    return await FileUtils.exists(this.configPath);
+  }
+
   async loadConfig(): Promise<NoxConfig> {
     try {
       // Try to load existing config

@@ -1,91 +1,86 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Link } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
+import { connectWebSocket, WebSocketClient } from './api/websocket.ts';
 import './App.css';
 
-// Import pages
-import Dashboard from './pages/Dashboard';
-import Agents from './pages/Agents';
-import Tasks from './pages/Tasks';
-import SystemHealth from './pages/SystemHealth';
-import Settings from './pages/Settings';
-
-// Import components
-import Header from './components/Header';
-import Sidebar from './components/Sidebar';
-import Footer from './components/Footer';
-import NotificationCenter from './components/NotificationCenter';
-
-// Import API
-import { connectWebSocket } from './api/websocket';
+// Components
+import Dashboard from './components/Dashboard.tsx';
+import Agents from './components/Agents.tsx';
+import Tasks from './components/Tasks.tsx';
+import SystemHealth from './components/SystemHealth.tsx';
+import Settings from './components/Settings.tsx';
+import Sidebar from './components/Sidebar.tsx';
+import Header from './components/Header.tsx';
 
 const App: React.FC = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [notifications, setNotifications] = useState<any[]>([]);
-  const [connected, setConnected] = useState(false);
+  const [wsClient, setWsClient] = useState<WebSocketClient | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
+  const [systemStatus, setSystemStatus] = useState<any>(null);
 
   useEffect(() => {
-    // Connect to WebSocket for real-time updates
-    const socket = connectWebSocket();
-    
-    socket.onopen = () => {
-      setConnected(true);
+    // Initialize WebSocket connection
+    const client = connectWebSocket();
+    setWsClient(client);
+    setConnectionStatus('connecting');
+
+    // Set up event listeners
+    client.on('connected', () => {
+      setConnectionStatus('connected');
       console.log('WebSocket connected');
-    };
-    
-    socket.onclose = () => {
-      setConnected(false);
+    });
+
+    client.on('disconnected', () => {
+      setConnectionStatus('disconnected');
       console.log('WebSocket disconnected');
-    };
-    
-    socket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      
-      // Handle different message types
-      if (data.type === 'notification') {
-        setNotifications(prev => [...prev, data.data]);
-      }
-      
-      // Other message types can be handled here
-    };
-    
+    });
+
+    client.on('system_status_update', (data: any) => {
+      setSystemStatus(data);
+    });
+
+    // Fetch initial system status
+    fetchSystemStatus();
+
+    // Clean up on unmount
     return () => {
-      socket.close();
+      client.disconnect();
     };
   }, []);
 
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
-
-  const dismissNotification = (id: string) => {
-    setNotifications(notifications.filter(notification => notification.id !== id));
+  const fetchSystemStatus = async () => {
+    try {
+      const response = await fetch('/api/system/status');
+      if (response.ok) {
+        const data = await response.json();
+        // Handle API response format with success/data wrappers
+        const statusData = data.success ? (data.status || data.data || data) : data;
+        setSystemStatus(statusData);
+      }
+    } catch (error) {
+      console.error('Failed to fetch system status:', error);
+    }
   };
 
   return (
     <div className="app">
-      <Header toggleSidebar={toggleSidebar} connected={connected} />
+      <Header 
+        connectionStatus={connectionStatus}
+        systemStatus={systemStatus}
+      />
       
-      <div className="app-container">
-        <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <div className="app-body">
+        <Sidebar />
         
         <main className="main-content">
           <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/agents" element={<Agents />} />
-            <Route path="/agents/:agentId" element={<Agents />} />
-            <Route path="/tasks" element={<Tasks />} />
-            <Route path="/system" element={<SystemHealth />} />
+            <Route path="/" element={<Dashboard wsClient={wsClient} systemStatus={systemStatus} />} />
+            <Route path="/agents" element={<Agents wsClient={wsClient} />} />
+            <Route path="/tasks" element={<Tasks wsClient={wsClient} />} />
+            <Route path="/health" element={<SystemHealth wsClient={wsClient} systemStatus={systemStatus} />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>
         </main>
       </div>
-      
-      <NotificationCenter 
-        notifications={notifications} 
-        onDismiss={dismissNotification} 
-      />
-      
-      <Footer />
     </div>
   );
 };

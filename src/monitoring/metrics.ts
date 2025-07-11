@@ -61,12 +61,12 @@ export interface AgentMetrics {
  */
 export class MetricsManager extends EventEmitter {
   private initialized = false;
-  private workingDir: string;
+  // private __workingDir: string;
   private metricsDir: string;
   private systemMetricsHistory: SystemMetrics[] = [];
   private agentMetricsHistory: Map<string, AgentMetrics[]> = new Map();
   private collectionInterval: NodeJS.Timeout | null = null;
-  private retentionPeriodDays = 7; // Default: keep metrics for 7 days
+  // private __retentionPeriodDays = 7; // Default: keep metrics for 7 days
   private collectionIntervalMs = 60000; // Default: collect metrics every minute
   private maxDataPoints = 10080; // Default: 7 days of minute-by-minute data (7*24*60)
   private messageCountsByMinute: Map<string, number> = new Map();
@@ -80,7 +80,7 @@ export class MetricsManager extends EventEmitter {
     workingDir: string
   ) {
     super();
-    this.workingDir = workingDir;
+    // this.__workingDir = workingDir;
     this.metricsDir = path.join(workingDir, 'metrics');
   }
 
@@ -99,11 +99,11 @@ export class MetricsManager extends EventEmitter {
 
       // Set configuration
       if (config.metrics?.retentionPeriodDays) {
-        this.retentionPeriodDays = config.metrics.retentionPeriodDays;
+        // this.__retentionPeriodDays = config.metrics.retentionPeriodDays;
       }
 
-      if (config.metrics?.collectionIntervalMs) {
-        this.collectionIntervalMs = config.metrics.collectionIntervalMs;
+      if (config.metrics?.aggregationInterval) {
+        this.collectionIntervalMs = config.metrics.aggregationInterval * 1000; // Convert seconds to milliseconds
       }
 
       if (config.metrics?.maxDataPoints) {
@@ -180,15 +180,15 @@ export class MetricsManager extends EventEmitter {
       const agents = await this.agentManager.listRunningAgents();
       for (const agent of agents) {
         const agentMetrics = await this.collectAgentMetrics(agent.id);
-        
+
         // Get or create agent metrics history
         if (!this.agentMetricsHistory.has(agent.id)) {
           this.agentMetricsHistory.set(agent.id, []);
         }
-        
+
         const history = this.agentMetricsHistory.get(agent.id)!;
         history.push(agentMetrics);
-        
+
         // Trim agent metrics history if needed
         if (history.length > this.maxDataPoints) {
           this.agentMetricsHistory.set(agent.id, history.slice(-this.maxDataPoints));
@@ -268,25 +268,25 @@ export class MetricsManager extends EventEmitter {
   private async collectAgentMetrics(agentId: string): Promise<AgentMetrics> {
     // Get agent status
     const agentProcess = await this.agentManager.getAgentStatus(agentId);
-    
+
     // Get agent message history
     const messageHistory = await this.messageBroker.getMessageHistory(agentId);
     const messagesSent = messageHistory.filter(m => m.from === agentId).length;
     const messagesReceived = messageHistory.filter(m => m.to === agentId).length;
-    
+
     // Get agent tasks
     const tasks = await this.taskManager.getAgentTasks(agentId);
     const tasksCreated = tasks.length;
     const tasksCompleted = tasks.filter(t => t.status === 'done').length;
-    
+
     // Calculate uptime
     const uptime = agentProcess ? 
       (Date.now() - agentProcess.startTime.getTime()) / 1000 : 0;
-    
+
     // Get last activity
     const lastActivity = agentProcess ? 
       agentProcess.lastHealthCheck : new Date();
-    
+
     return {
       agentId,
       timestamp: new Date(),
@@ -308,18 +308,18 @@ export class MetricsManager extends EventEmitter {
   private async getCpuUsage(): Promise<number> {
     return new Promise<number>((resolve) => {
       const startMeasure = process.cpuUsage();
-      
+
       // Measure CPU usage over 100ms
       setTimeout(() => {
         const endMeasure = process.cpuUsage(startMeasure);
         const userCPUUsage = endMeasure.user;
         const sysCPUUsage = endMeasure.system;
         const totalCPUUsage = userCPUUsage + sysCPUUsage;
-        
+
         // Convert to percentage (based on measurement time and number of cores)
         const cpuCount = os.cpus().length;
         const percentage = (totalCPUUsage / 1000 / 100 / cpuCount) * 100;
-        
+
         resolve(Math.min(percentage, 100)); // Cap at 100%
       }, 100);
     });
@@ -331,28 +331,28 @@ export class MetricsManager extends EventEmitter {
   private calculateMessagesPerMinute(): number {
     const now = new Date();
     const currentMinute = `${now.getHours()}:${now.getMinutes()}`;
-    
+
     // Get message broker stats
     const messageStats = this.messageBroker.getStats();
     const currentTotal = this.totalMessagesProcessed + messageStats.queueSize;
-    
+
     // Calculate difference from last count
     const diff = currentTotal - this.lastMessageCount;
     this.lastMessageCount = currentTotal;
-    
+
     // Store in minute buckets
     this.messageCountsByMinute.set(currentMinute, diff);
-    
+
     // Keep only the last 60 minutes
     if (this.messageCountsByMinute.size > 60) {
       const oldestKey = Array.from(this.messageCountsByMinute.keys())[0];
-      this.messageCountsByMinute.delete(oldestKey);
+      this.messageCountsByMinute.delete(oldestKey as string);
     }
-    
+
     // Calculate average per minute
     const sum = Array.from(this.messageCountsByMinute.values())
       .reduce((acc, count) => acc + count, 0);
-    
+
     return Math.round(sum / this.messageCountsByMinute.size);
   }
 
@@ -367,23 +367,23 @@ export class MetricsManager extends EventEmitter {
     if (!this.initialized) {
       throw new Error('MetricsManager not initialized');
     }
-    
+
     // Filter by time range if specified
     let metrics = this.systemMetricsHistory;
-    
+
     if (startTime) {
       metrics = metrics.filter(m => m.timestamp >= startTime);
     }
-    
+
     if (endTime) {
       metrics = metrics.filter(m => m.timestamp <= endTime);
     }
-    
+
     // Apply interval sampling if specified
     if (interval) {
       metrics = this.sampleMetrics(metrics, interval);
     }
-    
+
     return metrics;
   }
 
@@ -399,26 +399,26 @@ export class MetricsManager extends EventEmitter {
     if (!this.initialized) {
       throw new Error('MetricsManager not initialized');
     }
-    
+
     // Get agent metrics
     const metrics = this.agentMetricsHistory.get(agentId) || [];
-    
+
     // Filter by time range if specified
     let filteredMetrics = metrics;
-    
+
     if (startTime) {
       filteredMetrics = filteredMetrics.filter(m => m.timestamp >= startTime);
     }
-    
+
     if (endTime) {
       filteredMetrics = filteredMetrics.filter(m => m.timestamp <= endTime);
     }
-    
+
     // Apply interval sampling if specified
     if (interval) {
       filteredMetrics = this.sampleMetrics(filteredMetrics, interval);
     }
-    
+
     return filteredMetrics;
   }
 
@@ -429,8 +429,8 @@ export class MetricsManager extends EventEmitter {
     if (!this.initialized || this.systemMetricsHistory.length === 0) {
       return null;
     }
-    
-    return this.systemMetricsHistory[this.systemMetricsHistory.length - 1];
+
+    return this.systemMetricsHistory[this.systemMetricsHistory.length - 1] || null;
   }
 
   /**
@@ -440,14 +440,14 @@ export class MetricsManager extends EventEmitter {
     if (!this.initialized) {
       return null;
     }
-    
+
     const metrics = this.agentMetricsHistory.get(agentId) || [];
-    
+
     if (metrics.length === 0) {
       return null;
     }
-    
-    return metrics[metrics.length - 1];
+
+    return metrics[metrics.length - 1] || null;
   }
 
   /**
@@ -460,14 +460,14 @@ export class MetricsManager extends EventEmitter {
     if (metrics.length === 0) {
       return [];
     }
-    
+
     const result: T[] = [];
     let currentBucket: Date | null = null;
     let currentMetric: T | null = null;
-    
+
     for (const metric of metrics) {
       const bucketTime = this.getBucketTime(metric.timestamp, interval);
-      
+
       if (!currentBucket || bucketTime.getTime() !== currentBucket.getTime()) {
         if (currentMetric) {
           result.push(currentMetric);
@@ -476,12 +476,12 @@ export class MetricsManager extends EventEmitter {
         currentMetric = metric;
       }
     }
-    
+
     // Add the last bucket
     if (currentMetric) {
       result.push(currentMetric);
     }
-    
+
     return result;
   }
 
@@ -490,7 +490,7 @@ export class MetricsManager extends EventEmitter {
    */
   private getBucketTime(timestamp: Date, interval: 'minute' | 'hour' | 'day'): Date {
     const date = new Date(timestamp);
-    
+
     if (interval === 'minute') {
       date.setSeconds(0, 0);
     } else if (interval === 'hour') {
@@ -498,7 +498,7 @@ export class MetricsManager extends EventEmitter {
     } else if (interval === 'day') {
       date.setHours(0, 0, 0, 0);
     }
-    
+
     return date;
   }
 
@@ -510,48 +510,48 @@ export class MetricsManager extends EventEmitter {
       // Load system metrics
       const systemMetricsPath = path.join(this.metricsDir, 'system-metrics.json');
       const systemMetricsExists = await fs.access(systemMetricsPath).then(() => true).catch(() => false);
-      
+
       if (systemMetricsExists) {
         const data = await fs.readFile(systemMetricsPath, 'utf-8');
         const parsed = JSON.parse(data);
-        
+
         this.systemMetricsHistory = parsed.metrics.map((m: any) => ({
           ...m,
           timestamp: new Date(m.timestamp)
         }));
-        
+
         this.totalMessagesProcessed = parsed.totalMessagesProcessed || 0;
-        
+
         logger.info(`Loaded ${this.systemMetricsHistory.length} system metrics`);
       }
-      
+
       // Load agent metrics
       const agentMetricsDir = path.join(this.metricsDir, 'agents');
       const agentMetricsDirExists = await fs.access(agentMetricsDir).then(() => true).catch(() => false);
-      
+
       if (agentMetricsDirExists) {
         const files = await fs.readdir(agentMetricsDir);
         const jsonFiles = files.filter(f => f.endsWith('.json'));
-        
+
         for (const file of jsonFiles) {
           const agentId = path.basename(file, '.json');
           const filePath = path.join(agentMetricsDir, file);
-          
+
           const data = await fs.readFile(filePath, 'utf-8');
           const parsed = JSON.parse(data);
-          
+
           const metrics = parsed.metrics.map((m: any) => ({
             ...m,
             timestamp: new Date(m.timestamp),
             lastActivity: new Date(m.lastActivity)
           }));
-          
+
           this.agentMetricsHistory.set(agentId, metrics);
         }
-        
+
         logger.info(`Loaded metrics for ${this.agentMetricsHistory.size} agents`);
       }
-      
+
     } catch (error) {
       logger.error('Failed to load metrics:', error);
     }
@@ -569,13 +569,13 @@ export class MetricsManager extends EventEmitter {
         totalMessagesProcessed: this.totalMessagesProcessed,
         metrics: this.systemMetricsHistory
       };
-      
+
       await fs.writeFile(systemMetricsPath, JSON.stringify(systemMetricsData, null, 2));
-      
+
       // Save agent metrics
       const agentMetricsDir = path.join(this.metricsDir, 'agents');
       await fs.mkdir(agentMetricsDir, { recursive: true });
-      
+
       for (const [agentId, metrics] of this.agentMetricsHistory.entries()) {
         const filePath = path.join(agentMetricsDir, `${agentId}.json`);
         const data = {
@@ -583,12 +583,12 @@ export class MetricsManager extends EventEmitter {
           lastUpdated: new Date().toISOString(),
           metrics
         };
-        
+
         await fs.writeFile(filePath, JSON.stringify(data, null, 2));
       }
-      
+
       logger.debug('Metrics saved to disk');
-      
+
     } catch (error) {
       logger.error('Failed to save metrics:', error);
     }
@@ -602,7 +602,7 @@ export class MetricsManager extends EventEmitter {
     this.messageBroker.on('message-sent', () => {
       this.totalMessagesProcessed++;
     });
-    
+
     // Listen for agent manager events
     this.agentManager.on('agent-created', () => {
       // Force metrics collection on agent creation
@@ -610,7 +610,7 @@ export class MetricsManager extends EventEmitter {
         logger.error('Failed to collect metrics after agent creation:', error);
       });
     });
-    
+
     this.agentManager.on('agent-deleted', (agentId) => {
       // Remove agent metrics when agent is deleted
       this.agentMetricsHistory.delete(agentId);

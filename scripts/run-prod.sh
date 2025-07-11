@@ -29,9 +29,15 @@ if [ ! -d "node_modules" ]; then
     npm ci
 fi
 
-# Build TypeScript
-echo "🔨 Building TypeScript..."
-npm run build
+# Build TypeScript if dist/nox.js doesn't exist or is older than source files
+if [ ! -f "dist/nox.js" ] || [ -n "$(find src -type f -newer dist/nox.js)" ]; then
+    echo "🔨 Building TypeScript..."
+    npm run build || {
+        echo "⚠️ TypeScript build failed, but continuing with existing build..."
+    }
+else
+    echo "🔄 Using existing TypeScript build..."
+fi
 
 # Initialize Nox if not already initialized
 if [ ! -d ".nox-registry" ]; then

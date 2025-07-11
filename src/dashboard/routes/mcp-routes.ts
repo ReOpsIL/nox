@@ -22,15 +22,22 @@ export function setupMCPRoutes(
   router.get('/services', async (req: Request, res: Response) => {
     try {
       const { query, category, capabilities, limit, sortBy } = req.query;
-      
+
+      const options: {
+        category?: string;
+        capabilities?: string[];
+        limit?: number;
+        sortBy?: 'name' | 'updated' | 'created' | 'popularity';
+      } = {};
+
+      if (category) options.category = category as string;
+      if (capabilities) options.capabilities = (capabilities as string).split(',');
+      if (limit) options.limit = parseInt(limit as string);
+      if (sortBy) options.sortBy = sortBy as 'name' | 'updated' | 'created' | 'popularity';
+
       const services = await serviceManager.discoverServices(
         query as string,
-        {
-          category: category as string,
-          capabilities: capabilities ? (capabilities as string).split(',') : undefined,
-          limit: limit ? parseInt(limit as string) : undefined,
-          sortBy: sortBy as 'name' | 'updated' | 'created' | 'popularity'
-        }
+        options
       );
 
       res.json({
@@ -38,7 +45,7 @@ export function setupMCPRoutes(
         data: services,
         total: services.length
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Failed to get MCP services:', error);
       res.status(500).json({
         success: false,
@@ -51,13 +58,13 @@ export function setupMCPRoutes(
   router.get('/services/:serviceName', async (req: Request, res: Response) => {
     try {
       const { serviceName } = req.params;
-      const service = await serviceManager.getServiceDetails(serviceName);
+      const service = await serviceManager.getServiceDetails(serviceName as string);
 
       res.json({
         success: true,
         data: service
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error(`Failed to get service details for ${req.params.serviceName}:`, error);
       res.status(404).json({
         success: false,
@@ -70,7 +77,7 @@ export function setupMCPRoutes(
   router.post('/services/search', async (req: Request, res: Response) => {
     try {
       const { capabilities, keyword, category, author, limit } = req.body;
-      
+
       const services = await serviceManager.searchServices({
         capabilities,
         keyword,
@@ -84,7 +91,7 @@ export function setupMCPRoutes(
         data: services,
         total: services.length
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Failed to search services:', error);
       res.status(500).json({
         success: false,
@@ -98,14 +105,14 @@ export function setupMCPRoutes(
     try {
       const { serviceId } = req.params;
       const { requirements } = req.body;
-      
-      const compatibility = await serviceManager.checkServiceCompatibility(serviceId, requirements);
+
+      const compatibility = await serviceManager.checkServiceCompatibility(serviceId as string, requirements);
 
       res.json({
         success: true,
         data: compatibility
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error(`Failed to check compatibility for ${req.params.serviceId}:`, error);
       res.status(500).json({
         success: false,
@@ -120,7 +127,7 @@ export function setupMCPRoutes(
       const { serviceId } = req.params;
       const { agentId, autoApprove, env, volumes } = req.body;
 
-      const installedService = await serviceManager.installService(serviceId, agentId, {
+      const installedService = await serviceManager.installService(serviceId as string, agentId, {
         autoApprove,
         env,
         volumes
@@ -130,11 +137,11 @@ export function setupMCPRoutes(
         success: true,
         data: installedService
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error(`Failed to install service ${req.params.serviceId}:`, error);
       res.status(500).json({
         success: false,
-        error: (error as Error).message
+        error: error.message
       });
     }
   });
@@ -143,13 +150,13 @@ export function setupMCPRoutes(
   router.delete('/services/installed/:containerId', async (req: Request, res: Response) => {
     try {
       const { containerId } = req.params;
-      await serviceManager.uninstallService(containerId);
+      await serviceManager.uninstallService(containerId as string);
 
       res.json({
         success: true,
         message: 'Service uninstalled successfully'
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error(`Failed to uninstall service ${req.params.containerId}:`, error);
       res.status(500).json({
         success: false,
@@ -169,7 +176,7 @@ export function setupMCPRoutes(
         data: services,
         total: services.length
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Failed to get installed services:', error);
       res.status(500).json({
         success: false,
@@ -179,7 +186,7 @@ export function setupMCPRoutes(
   });
 
   // Get container status
-  router.get('/containers', async (req: Request, res: Response) => {
+  router.get('/containers', async (_req: Request, res: Response) => {
     try {
       const containers = await dockerManager.listContainers();
 
@@ -188,12 +195,13 @@ export function setupMCPRoutes(
         data: containers,
         total: containers.length
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Failed to get containers:', error);
       res.status(500).json({
         success: false,
         error: 'Failed to retrieve container status'
       });
+      return;
     }
   });
 
@@ -205,19 +213,19 @@ export function setupMCPRoutes(
 
       switch (action) {
         case 'start':
-          await dockerManager.startContainer(containerId);
+          await dockerManager.startContainer(containerId as string);
           break;
         case 'stop':
-          await dockerManager.stopContainer(containerId, { timeout, force });
+          await dockerManager.stopContainer(containerId as string, { timeout, force });
           break;
         case 'restart':
-          await dockerManager.restartContainer(containerId, timeout);
+          await dockerManager.restartContainer(containerId as string, timeout);
           break;
         case 'pause':
-          await dockerManager.pauseContainer(containerId);
+          await dockerManager.pauseContainer(containerId as string);
           break;
         case 'unpause':
-          await dockerManager.unpauseContainer(containerId);
+          await dockerManager.unpauseContainer(containerId as string);
           break;
         default:
           return res.status(400).json({
@@ -230,12 +238,14 @@ export function setupMCPRoutes(
         success: true,
         message: `Container ${action} completed`
       });
-    } catch (error) {
+      return;
+    } catch (error: any) {
       logger.error(`Failed to ${req.params.action} container ${req.params.containerId}:`, error);
       res.status(500).json({
         success: false,
         error: `Failed to ${req.params.action} container`
       });
+      return;
     }
   });
 
@@ -245,16 +255,21 @@ export function setupMCPRoutes(
       const { containerId } = req.params;
       const { tail, since } = req.query;
 
-      const logs = await dockerManager.getContainerLogs(containerId, {
-        tail: tail ? parseInt(tail as string) : undefined,
-        since: since ? new Date(since as string) : undefined
-      });
+      const logOptions: {
+        tail?: number;
+        since?: Date;
+      } = {};
+
+      if (tail) logOptions.tail = parseInt(tail as string);
+      if (since) logOptions.since = new Date(since as string);
+
+      const logs = await dockerManager.getContainerLogs(containerId as string, logOptions);
 
       res.json({
         success: true,
         data: { logs }
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error(`Failed to get logs for container ${req.params.containerId}:`, error);
       res.status(500).json({
         success: false,
@@ -267,13 +282,13 @@ export function setupMCPRoutes(
   router.get('/containers/:containerId/health', async (req: Request, res: Response) => {
     try {
       const { containerId } = req.params;
-      const health = await dockerManager.checkContainerHealth(containerId);
+      const health = await dockerManager.checkContainerHealth(containerId as string);
 
       res.json({
         success: true,
         data: health
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error(`Failed to check health for container ${req.params.containerId}:`, error);
       res.status(500).json({
         success: false,
@@ -286,7 +301,7 @@ export function setupMCPRoutes(
   router.get('/approvals', async (req: Request, res: Response) => {
     try {
       const { status, limit } = req.query;
-      
+
       let approvals;
       if (status === 'pending') {
         approvals = approvalManager.getPendingApprovals();
@@ -301,7 +316,7 @@ export function setupMCPRoutes(
         data: approvals,
         total: approvals.length
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Failed to get approval requests:', error);
       res.status(500).json({
         success: false,
@@ -317,7 +332,7 @@ export function setupMCPRoutes(
       const { approved, respondedBy, reason } = req.body;
 
       const success = await approvalManager.respondToApproval(
-        requestId,
+        requestId as string,
         approved,
         respondedBy,
         reason
@@ -334,7 +349,7 @@ export function setupMCPRoutes(
           error: 'Approval request not found'
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.error(`Failed to respond to approval ${req.params.requestId}:`, error);
       res.status(500).json({
         success: false,
@@ -368,7 +383,7 @@ export function setupMCPRoutes(
         data: capabilities,
         total: Array.isArray(capabilities) ? capabilities.length : 0
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Failed to get capabilities:', error);
       res.status(500).json({
         success: false,
@@ -378,7 +393,7 @@ export function setupMCPRoutes(
   });
 
   // Get capability statistics
-  router.get('/capabilities/stats', async (req: Request, res: Response) => {
+  router.get('/capabilities/stats', async (_req: Request, res: Response) => {
     try {
       const stats = capabilityRegistry.getCapabilityStatistics();
 
@@ -386,7 +401,7 @@ export function setupMCPRoutes(
         success: true,
         data: stats
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Failed to get capability statistics:', error);
       res.status(500).json({
         success: false,
@@ -406,7 +421,7 @@ export function setupMCPRoutes(
         data: conflicts,
         total: conflicts.length
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Failed to get capability conflicts:', error);
       res.status(500).json({
         success: false,

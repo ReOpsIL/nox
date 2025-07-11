@@ -1,17 +1,47 @@
-import { EventEmitter } from 'events';
+/**
+ * Simple event emitter for browser environments
+ */
+class EventEmitter {
+  private listeners: { [event: string]: Function[] } = {};
+
+  on(event: string, listener: Function) {
+    if (!this.listeners[event]) {
+      this.listeners[event] = [];
+    }
+    this.listeners[event].push(listener);
+  }
+
+  emit(event: string, ...args: any[]) {
+    if (this.listeners[event]) {
+      this.listeners[event].forEach(listener => listener(...args));
+    }
+  }
+
+  off(event: string, listener: Function) {
+    if (this.listeners[event]) {
+      this.listeners[event] = this.listeners[event].filter(l => l !== listener);
+    }
+  }
+}
 
 /**
  * WebSocket API client for real-time updates
  */
 export class WebSocketClient extends EventEmitter {
   private socket: WebSocket | null = null;
-  private reconnectTimeout: NodeJS.Timeout | null = null;
+  private reconnectTimeout: number | null = null;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 10;
   private reconnectDelay = 2000; // Start with 2 seconds
   private clientId: string | null = null;
   private connected = false;
   private url: string;
+
+  // WebSocket-like interface for compatibility
+  onopen: ((event: Event) => void) | null = null;
+  onclose: ((event: CloseEvent) => void) | null = null;
+  onmessage: ((event: MessageEvent) => void) | null = null;
+  onerror: ((event: Event) => void) | null = null;
 
   constructor() {
     super();
@@ -51,7 +81,7 @@ export class WebSocketClient extends EventEmitter {
     }
 
     if (this.reconnectTimeout) {
-      clearTimeout(this.reconnectTimeout);
+      window.clearTimeout(this.reconnectTimeout);
       this.reconnectTimeout = null;
     }
 
@@ -99,13 +129,27 @@ export class WebSocketClient extends EventEmitter {
   }
 
   /**
+   * Close the WebSocket connection
+   */
+  close(): void {
+    if (this.socket) {
+      this.socket.close();
+    }
+  }
+
+  /**
    * Handle WebSocket open event
    */
-  private handleOpen(): void {
+  private handleOpen(event: Event): void {
     console.log('WebSocket connected');
     this.connected = true;
     this.reconnectAttempts = 0;
     this.emit('connected');
+    
+    // Call compatibility callback
+    if (this.onopen) {
+      this.onopen(event);
+    }
   }
 
   /**
@@ -124,6 +168,11 @@ export class WebSocketClient extends EventEmitter {
       // Emit the message event
       this.emit('message', message);
       
+      // Call compatibility callback
+      if (this.onmessage) {
+        this.onmessage(event);
+      }
+      
       // Also emit an event specific to the message type
       this.emit(message.type, message.data);
       
@@ -141,6 +190,11 @@ export class WebSocketClient extends EventEmitter {
     this.connected = false;
     this.emit('disconnected', { code: event.code, reason: event.reason });
     
+    // Call compatibility callback
+    if (this.onclose) {
+      this.onclose(event);
+    }
+    
     // Attempt to reconnect
     this.scheduleReconnect();
   }
@@ -151,6 +205,11 @@ export class WebSocketClient extends EventEmitter {
   private handleError(error: Event): void {
     console.error('WebSocket error:', error);
     this.emit('error', error);
+    
+    // Call compatibility callback
+    if (this.onerror) {
+      this.onerror(error);
+    }
   }
 
   /**
@@ -158,7 +217,7 @@ export class WebSocketClient extends EventEmitter {
    */
   private scheduleReconnect(): void {
     if (this.reconnectTimeout) {
-      clearTimeout(this.reconnectTimeout);
+      window.clearTimeout(this.reconnectTimeout);
     }
 
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
@@ -170,10 +229,10 @@ export class WebSocketClient extends EventEmitter {
     const delay = Math.min(30000, this.reconnectDelay * Math.pow(1.5, this.reconnectAttempts));
     console.log(`Scheduling WebSocket reconnect in ${delay}ms (attempt ${this.reconnectAttempts + 1}/${this.maxReconnectAttempts})`);
     
-    this.reconnectTimeout = setTimeout(() => {
+    this.reconnectTimeout = window.setTimeout(() => {
       this.reconnectAttempts++;
       this.connect();
-    }, delay);
+    }, delay) as unknown as number;
   }
 
   /**

@@ -2,7 +2,7 @@
  * System Routes - API endpoints for system information and management
  */
 
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import * as os from 'os';
 import { AgentManager } from '../../core/agent-manager';
 import { MessageBroker } from '../../core/message-broker';
@@ -25,7 +25,7 @@ export function setupSystemRoutes(
    * GET /api/system/info
    * Get system information
    */
-  systemRouter.get('/info', async (req, res) => {
+  systemRouter.get('/info', async (_req: Request, res: Response) => {
     try {
       const info = {
         hostname: os.hostname(),
@@ -43,12 +43,12 @@ export function setupSystemRoutes(
         processUptime: process.uptime(),
         processMemoryUsage: process.memoryUsage()
       };
-      
+
       res.json({
         success: true,
         info
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Error getting system info:', error);
       res.status(500).json({
         success: false,
@@ -62,26 +62,26 @@ export function setupSystemRoutes(
    * GET /api/system/status
    * Get system status
    */
-  systemRouter.get('/status', async (req, res) => {
+  systemRouter.get('/status', async (_req: Request, res: Response) => {
     try {
       // Get agent status
       const agents = await agentManager.listRunningAgents();
       const agentCount = agents.length;
       const activeAgentCount = agents.filter(a => a.status === 'running').length;
-      
+
       // Get message broker status
       const messageStats = messageBroker.getStats();
-      
+
       // Get task status
       const taskDashboard = await taskManager.getTaskDashboard();
-      
+
       // Calculate overall system health
       const systemHealth = calculateSystemHealth(
         activeAgentCount / Math.max(agentCount, 1),
         messageStats.queueSize,
         taskDashboard.blocked
       );
-      
+
       res.json({
         success: true,
         status: {
@@ -110,7 +110,7 @@ export function setupSystemRoutes(
           }
         }
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Error getting system status:', error);
       res.status(500).json({
         success: false,
@@ -124,24 +124,24 @@ export function setupSystemRoutes(
    * POST /api/system/shutdown
    * Shutdown the system
    */
-  systemRouter.post('/shutdown', async (req, res) => {
+  systemRouter.post('/shutdown', async (_req: Request, res: Response) => {
     try {
       // This is a placeholder - in a real system, you would implement
       // a proper shutdown sequence with authentication and authorization
-      
+
       // For now, we'll just return a message
       res.json({
         success: true,
         message: 'System shutdown initiated',
         warning: 'This is a placeholder - no actual shutdown is performed'
       });
-      
+
       // In a real implementation, you would do something like:
       // await agentManager.shutdown();
       // await messageBroker.shutdown();
       // await taskManager.shutdown();
       // process.exit(0);
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Error shutting down system:', error);
       res.status(500).json({
         success: false,
@@ -155,18 +155,18 @@ export function setupSystemRoutes(
    * POST /api/system/restart
    * Restart the system
    */
-  systemRouter.post('/restart', async (req, res) => {
+  systemRouter.post('/restart', async (_req: Request, res: Response) => {
     try {
       // This is a placeholder - in a real system, you would implement
       // a proper restart sequence with authentication and authorization
-      
+
       // For now, we'll just return a message
       res.json({
         success: true,
         message: 'System restart initiated',
         warning: 'This is a placeholder - no actual restart is performed'
       });
-      
+
       // In a real implementation, you would do something like:
       // await agentManager.shutdown();
       // await messageBroker.shutdown();
@@ -178,7 +178,7 @@ export function setupSystemRoutes(
       //   }).unref();
       // });
       // process.exit(0);
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Error restarting system:', error);
       res.status(500).json({
         success: false,
@@ -192,18 +192,18 @@ export function setupSystemRoutes(
    * GET /api/system/logs
    * Get system logs
    */
-  systemRouter.get('/logs', async (req, res) => {
+  systemRouter.get('/logs', async (_req: Request, res: Response) => {
     try {
       // This is a placeholder - in a real system, you would implement
       // a proper log retrieval mechanism
-      
+
       // For now, we'll just return a message
       res.json({
         success: true,
         message: 'Log retrieval not implemented',
         logs: []
       });
-      
+
       // In a real implementation, you would do something like:
       // const logs = await logManager.getLogs({
       //   level: req.query.level,
@@ -212,7 +212,7 @@ export function setupSystemRoutes(
       //   limit: parseInt(req.query.limit) || 100
       // });
       // res.json({ success: true, logs });
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Error getting system logs:', error);
       res.status(500).json({
         success: false,
@@ -233,20 +233,20 @@ function calculateSystemHealth(
 ): number {
   // This is a simplified health calculation - in a real system,
   // you would implement a more sophisticated algorithm
-  
+
   // Agent health (0-40 points)
   const agentHealth = agentHealthRatio * 40;
-  
+
   // Message queue health (0-30 points)
   // Lower score as queue size increases
   const queueHealth = Math.max(0, 30 - Math.min(30, messageQueueSize / 10));
-  
+
   // Task health (0-30 points)
   // Lower score as blocked tasks increase
   const taskHealth = Math.max(0, 30 - Math.min(30, blockedTasks * 3));
-  
+
   // Overall health score
   const healthScore = agentHealth + queueHealth + taskHealth;
-  
+
   return Math.round(healthScore);
 }

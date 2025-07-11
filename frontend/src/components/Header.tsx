@@ -3,20 +3,34 @@ import { Link } from 'react-router-dom';
 import './Header.css';
 
 interface HeaderProps {
-  toggleSidebar: () => void;
-  connected: boolean;
+  connectionStatus: 'disconnected' | 'connecting' | 'connected';
+  systemStatus: any;
 }
 
-const Header: React.FC<HeaderProps> = ({ toggleSidebar, connected }) => {
+const Header: React.FC<HeaderProps> = ({ connectionStatus, systemStatus }) => {
+  const getConnectionIcon = () => {
+    switch (connectionStatus) {
+      case 'connected': return '🟢';
+      case 'connecting': return '🟡';
+      default: return '🔴';
+    }
+  };
+
+  const getConnectionText = () => {
+    switch (connectionStatus) {
+      case 'connected': return 'Connected';
+      case 'connecting': return 'Connecting...';
+      default: return 'Disconnected';
+    }
+  };
+
   return (
     <header className="header">
       <div className="header-left">
-        <button className="menu-button" onClick={toggleSidebar} aria-label="Toggle menu">
-          <span className="menu-icon"></span>
-        </button>
         <Link to="/" className="logo">
-          <h1>Nox Dashboard</h1>
+          <h1>🚀 NOX Agent Ecosystem</h1>
         </Link>
+        <span className="version">v1.0.0</span>
       </div>
       
       <div className="header-center">
@@ -24,13 +38,26 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, connected }) => {
           <Link to="/" className="nav-link">Dashboard</Link>
           <Link to="/agents" className="nav-link">Agents</Link>
           <Link to="/tasks" className="nav-link">Tasks</Link>
-          <Link to="/system" className="nav-link">System Health</Link>
+          <Link to="/health" className="nav-link">System Health</Link>
         </nav>
       </div>
       
       <div className="header-right">
-        <div className={`connection-status ${connected ? 'connected' : 'disconnected'}`}>
-          {connected ? 'Connected' : 'Disconnected'}
+        <div className="status-indicators">
+          <div className="status-item">
+            <span className="status-label">Health:</span>
+            <span className={`status-value ${systemStatus?.health > 80 ? 'healthy' : systemStatus?.health > 60 ? 'warning' : 'critical'}`}>
+              {systemStatus?.health > 80 ? '🟢' : systemStatus?.health > 60 ? '🟡' : '🔴'} 
+              {systemStatus?.health || 0}/100
+            </span>
+          </div>
+          
+          <div className="status-item">
+            <span className="status-label">WebSocket:</span>
+            <span className={`status-value ${connectionStatus}`}>
+              {getConnectionIcon()} {getConnectionText()}
+            </span>
+          </div>
         </div>
         
         <div className="header-actions">

@@ -1,3 +1,11 @@
+export interface MetricsConfig {
+  enabled: boolean;
+  retentionPeriodDays: number;
+  aggregationInterval: number;
+  storageType: 'memory' | 'file' | 'database';
+  maxDataPoints: number;
+}
+
 export interface NoxConfig {
   security: SecurityConfig;
   claudeCli: ClaudeCliConfig;
@@ -8,6 +16,7 @@ export interface NoxConfig {
   logging: LoggingConfig;
   agents?: AgentSystemConfig;
   messaging?: MessagingConfig;
+  metrics?: MetricsConfig;
 }
 
 export interface SecurityConfig {
@@ -56,6 +65,7 @@ export interface GitConfig {
 
 export interface ServerConfig {
   port: number;
+  dashboardPort?: number;
   host: string;
   websocketEnabled: boolean;
   dashboardEnabled: boolean;
@@ -207,5 +217,12 @@ export const DEFAULT_CONFIG: NoxConfig = {
       maxSizeMB: 100,
       compress: true
     }
+  },
+  metrics: {
+    enabled: true,
+    retentionPeriodDays: 30,
+    aggregationInterval: 60,
+    storageType: 'memory',
+    maxDataPoints: 10000
   }
 };

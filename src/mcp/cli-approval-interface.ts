@@ -68,7 +68,7 @@ export class CLIApprovalInterface {
         this.pendingPrompts.set(request.id, {
           resolve,
           reject,
-          timeout: timeoutHandle
+          ...(timeoutHandle && { timeout: timeoutHandle })
         });
 
         // Prompt for user input
@@ -251,11 +251,15 @@ export class CLIApprovalInterface {
       console.log(`\n📊 Request ${i + 1}/${requests.length}:`);
       
       try {
-        const approved = await this.requestApproval(request, options);
-        results.set(request.id, approved);
+        if (request) {
+          const approved = await this.requestApproval(request, options);
+          results.set(request.id, approved);
+        }
       } catch (error) {
-        logger.error(`Error processing approval request ${request.id}:`, error);
-        results.set(request.id, false);
+        if (request) {
+          logger.error(`Error processing approval request ${request.id}:`, error);
+          results.set(request.id, false);
+        }
       }
     }
 
