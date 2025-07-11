@@ -34,5 +34,23 @@
     "capabilities": [],
     "relationships": [],
     "mcpServices": []
+  },
+  "v3-agent": {
+    "id": "v3-agent",
+    "name": "v3-agent",
+    "systemPrompt": "Version 3 agent",
+    "status": "inactive",
+    "createdAt": "2025-07-11T06:05:41.099Z",
+    "lastModified": "2025-07-11T06:05:41.099Z",
+    "resourceLimits": {
+      "maxMemoryMB": 2048,
+      "maxCPUPercent": 50,
+      "maxConcurrentTasks": 10,
+      "maxSpawnRate": 10,
+      "maxDepth": 5
+    },
+    "capabilities": [],
+    "relationships": [],
+    "mcpServices": []
   }
 }
