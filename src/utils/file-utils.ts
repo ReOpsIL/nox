@@ -46,6 +46,49 @@ export class FileUtils {
     }
   }
 
+  /**
+   * Recursively delete a directory and all its contents
+   */
+  static async deleteDirectory(dirPath: string): Promise<void> {
+    try {
+      const exists = await this.exists(dirPath);
+      if (!exists) {
+        return; // Directory doesn't exist, nothing to do
+      }
+
+      const stats = await fs.stat(dirPath);
+      if (!stats.isDirectory()) {
+        await this.deleteFile(dirPath);
+        return;
+      }
+
+      // Read directory contents
+      const files = await fs.readdir(dirPath);
+
+      // Delete all files and subdirectories
+      for (const file of files) {
+        const filePath = path.join(dirPath, file);
+        const fileStats = await fs.stat(filePath);
+
+        if (fileStats.isDirectory()) {
+          // Recursively delete subdirectory
+          await this.deleteDirectory(filePath);
+        } else {
+          // Delete file
+          await fs.unlink(filePath);
+        }
+      }
+
+      // Delete the empty directory
+      await fs.rmdir(dirPath);
+    } catch (error) {
+      // Ignore if directory doesn't exist
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+        throw error;
+      }
+    }
+  }
+
   static async listFiles(dirPath: string, extension?: string): Promise<string[]> {
     try {
       const files = await fs.readdir(dirPath);

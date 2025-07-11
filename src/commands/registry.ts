@@ -10,7 +10,7 @@ export class RegistryCommands {
   }
 
   static register(program: Command, nox: NoxSystem): void {
-    
+
     // Registry status command
     program
       .command('registry-status')
@@ -25,7 +25,7 @@ export class RegistryCommands {
           const currentBranch = await nox.git.getCurrentBranch();
 
           console.log(chalk.blue('📂 Registry Status\n'));
-          
+
           console.log(chalk.bold('Registry Statistics:'));
           console.log(`   Total Agents: ${chalk.cyan(stats.totalAgents)}`);
           console.log(`   Active: ${chalk.green(stats.activeAgents)}`);
@@ -33,7 +33,7 @@ export class RegistryCommands {
           console.log(`   Errors: ${chalk.red(stats.errorAgents)}`);
           console.log(`   Last Modified: ${chalk.gray(stats.lastModified.toISOString())}`);
           console.log(`   Registry Size: ${chalk.cyan(Math.round(stats.registrySize / 1024) + 'KB')}`);
-          
+
           console.log(chalk.bold('\nGit Status:'));
           console.log(`   Branch: ${chalk.cyan(currentBranch)}`);
           console.log(`   Commit: ${chalk.gray(currentCommit.slice(0, 8))}`);
@@ -89,7 +89,7 @@ export class RegistryCommands {
 
           console.log(chalk.blue('💾 Creating registry backup...'));
           const commitHash = await nox.git.commit(message);
-          
+
           console.log(chalk.green('✅ Backup created successfully!'));
           console.log(chalk.gray(`   Commit: ${commitHash.slice(0, 8)}`));
           console.log(chalk.gray(`   Message: ${message}`));
@@ -111,7 +111,7 @@ export class RegistryCommands {
 
           // Parse target (commit hash or "last" or "hours-ago:N")
           let commitHash: string;
-          
+
           if (target === 'last') {
             const history = await nox.git.getCommitHistory(2);
             if (history.length < 2) {
@@ -142,11 +142,33 @@ export class RegistryCommands {
 
           console.log(chalk.blue(`🔄 Rolling back to commit: ${commitHash.slice(0, 8)}`));
           await nox.git.rollback(commitHash);
-          
+
           // Reload the registry after rollback
           if (nox.isRunning) {
             console.log(chalk.blue('🔄 Reloading registry...'));
-            // In a full implementation, you'd reload the registry here
+
+            // Reload the registry
+            await nox.registry.loadRegistry();
+
+            // Get all agents
+            const agents = await nox.registry.listAgents();
+
+            // Stop all currently running agents
+            console.log(chalk.blue('🛑 Stopping current agents...'));
+            await nox.agents.shutdown();
+
+            // Start agents that should be active according to the rolled-back registry
+            const activeAgents = agents.filter(agent => agent.status === 'active');
+            console.log(chalk.blue(`🚀 Starting ${activeAgents.length} active agents...`));
+
+            for (const agent of activeAgents) {
+              try {
+                await nox.agents.spawnAgent(agent);
+                console.log(chalk.green(`✅ Started agent: ${agent.name} (${agent.id})`));
+              } catch (error) {
+                console.error(chalk.red(`❌ Failed to start agent ${agent.id}:`), error);
+              }
+            }
           }
 
           console.log(chalk.green('✅ Rollback completed successfully!'));
@@ -177,11 +199,11 @@ export class RegistryCommands {
           agents.forEach((agent, index) => {
             console.log(`${index + 1}. ${chalk.bold(agent.name)} (${agent.id})`);
             console.log(`   Status: ${agent.status === 'active' ? chalk.green(agent.status) : chalk.yellow(agent.status)}`);
-            
+
             if (agent.capabilities.length > 0) {
               console.log(`   Capabilities: ${chalk.cyan(agent.capabilities.join(', '))}`);
             }
-            
+
             // Show relevant part of system prompt
             const promptSnippet = agent.systemPrompt.slice(0, 100) + (agent.systemPrompt.length > 100 ? '...' : '');
             console.log(`   Prompt: ${chalk.gray('"' + promptSnippet + '"')}`);

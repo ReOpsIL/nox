@@ -73,12 +73,15 @@ export class RegistryManager extends EventEmitter {
     this.relationships.clear();
   }
 
-  private async loadRegistry(): Promise<void> {
+  /**
+   * Load registry data from disk
+   */
+  async loadRegistry(): Promise<void> {
     try {
       // Load agents
       const agentsData = await FileUtils.readJson<Record<string, AgentConfig>>(this.agentsFilePath);
       this.agents.clear();
-      
+
       for (const [id, agent] of Object.entries(agentsData)) {
         // Convert date strings back to Date objects
         agent.createdAt = new Date(agent.createdAt);
@@ -90,7 +93,7 @@ export class RegistryManager extends EventEmitter {
       if (await FileUtils.exists(this.relationshipsFilePath)) {
         const relationshipsData = await FileUtils.readJson<Record<string, AgentRelationship[]>>(this.relationshipsFilePath);
         this.relationships.clear();
-        
+
         for (const [agentId, rels] of Object.entries(relationshipsData)) {
           const relationships = rels.map(rel => ({
             ...rel,
@@ -99,6 +102,9 @@ export class RegistryManager extends EventEmitter {
           this.relationships.set(agentId, relationships);
         }
       }
+
+      logger.info('Registry loaded from disk');
+      this.emit('registry-loaded');
 
     } catch (error) {
       logger.error('Failed to load registry:', error);
@@ -258,16 +264,24 @@ export class RegistryManager extends EventEmitter {
     try {
       const agentDir = path.join(this.registryPath, 'agents', agentId);
       const taskFile = path.join(this.registryPath, 'tasks', `${agentId}.md`);
+      const conversationDir = path.join(this.registryPath, 'conversations', agentId);
 
       // Remove agent directory
       if (await FileUtils.exists(agentDir)) {
-        // Note: Using a simple file deletion approach since we don't have recursive delete
-        // In a full implementation, you'd want to recursively delete the directory
-        logger.debug(`Agent directory cleanup needed: ${agentDir}`);
+        logger.debug(`Removing agent directory: ${agentDir}`);
+        await FileUtils.deleteDirectory(agentDir);
+      }
+
+      // Remove conversation directory if it exists
+      if (await FileUtils.exists(conversationDir)) {
+        logger.debug(`Removing agent conversation directory: ${conversationDir}`);
+        await FileUtils.deleteDirectory(conversationDir);
       }
 
       // Remove task file
       await FileUtils.deleteFile(taskFile);
+
+      logger.info(`Cleaned up all files for agent ${agentId}`);
 
     } catch (error) {
       logger.warn(`Failed to cleanup files for agent ${agentId}:`, error);
@@ -304,7 +318,7 @@ export class RegistryManager extends EventEmitter {
 
     agent.status = status;
     agent.lastModified = new Date();
-    
+
     this.agents.set(agentId, agent);
     await this.saveRegistry();
 
@@ -329,7 +343,7 @@ export class RegistryManager extends EventEmitter {
 
     relationships.push(fullRelationship);
     this.relationships.set(fromAgentId, relationships);
-    
+
     await this.saveRegistry();
     logger.info(`Relationship added: ${fromAgentId} -> ${relationship.targetAgentId} (${relationship.relationshipType})`);
   }
