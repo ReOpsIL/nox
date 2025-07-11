@@ -34,5 +34,23 @@
     "capabilities": [],
     "relationships": [],
     "mcpServices": []
+  },
+  "data-engineer": {
+    "id": "data-engineer",
+    "name": "data-engineer",
+    "systemPrompt": "You are a data engineer handling large-scale data processing",
+    "status": "inactive",
+    "createdAt": "2025-07-11T06:05:31.149Z",
+    "lastModified": "2025-07-11T06:05:31.149Z",
+    "resourceLimits": {
+      "maxMemoryMB": 2048,
+      "maxCPUPercent": 50,
+      "maxConcurrentTasks": 10,
+      "maxSpawnRate": 10,
+      "maxDepth": 5
+    },
+    "capabilities": [],
+    "relationships": [],
+    "mcpServices": []
   }
 }
