@@ -2,7 +2,7 @@
 
 # Nox - Living Agent Ecosystem
 
-![Nox](nox.png)
+![Nox](nox_s.jpg)
 
 Nox is a revolutionary platform where AI agents form a **living, breathing community** that grows, adapts, and evolves autonomously. Agents can modify themselves, discover each other's capabilities, and dynamically reorganize to tackle any challenge thrown at them.
 
