@@ -4,6 +4,8 @@
 
 NOX is an autonomous AI agent ecosystem that enables you to create, manage, and coordinate multiple AI agents for various tasks. The system provides a complete platform with web dashboard, API endpoints, real-time communication, and integrated task management.
 
+> **Current Implementation Status**: This manual describes the full vision of NOX. The current implementation includes core agent registry, dashboard interface, and basic CLI commands. Advanced features like MCP integration, task automation, and inter-agent communication are planned for future releases.
+
 ## 📋 Table of Contents
 
 - [Quick Start](#quick-start)
@@ -124,42 +126,77 @@ npx ts-node src/nox.ts init          # Initialize system
 npx ts-node src/nox.ts start         # Start ecosystem
 npx ts-node src/nox.ts start --dev   # Start in development mode
 npx ts-node src/nox.ts status        # Check system status
-npx ts-node src/nox.ts shutdown      # Stop system gracefully
+npx ts-node src/nox.ts stop          # Stop system gracefully
+npx ts-node src/nox.ts health        # Check system health
 ```
 
 ### Agent Commands
 
 ```bash
 # List all agents
-npx ts-node src/nox.ts agent list
+npx ts-node src/nox.ts list-agents
+npx ts-node src/nox.ts ls  # Short alias
 
 # Create a new agent
-npx ts-node src/nox.ts agent create --name "agent-name" --description "Agent description"
+npx ts-node src/nox.ts add-agent "agent-name" "Agent system prompt and description"
 
-# Start an agent
-npx ts-node src/nox.ts agent start {agentId}
+# Show agent details
+npx ts-node src/nox.ts show-agent "agent-name"
 
-# Stop an agent
-npx ts-node src/nox.ts agent stop {agentId}
+# Update agent prompt
+npx ts-node src/nox.ts update-agent "agent-name" "New system prompt"
 
 # Delete an agent
-npx ts-node src/nox.ts agent delete {agentId}
+npx ts-node src/nox.ts delete-agent "agent-name"
+npx ts-node src/nox.ts delete-agent "agent-name" --force  # Skip confirmation
 
-# Get agent details
-npx ts-node src/nox.ts agent info {agentId}
+# Query agents by capability
+npx ts-node src/nox.ts query-registry "web-scraping"
 ```
 
 ### Task Commands
 
 ```bash
 # List all tasks
-npx ts-node src/nox.ts task list
+npx ts-node src/nox.ts list-tasks
 
-# Get task status
-npx ts-node src/nox.ts task status {taskId}
+# List tasks for specific agent
+npx ts-node src/nox.ts list-tasks {agentId}
 
-# Get task results
-npx ts-node src/nox.ts task results {taskId}
+# Create a task
+npx ts-node src/nox.ts create-task {agentId} "Task Title" "Task description"
+
+# Update task
+npx ts-node src/nox.ts update-task {taskId}
+
+# Task overview across all agents
+npx ts-node src/nox.ts task-overview
+```
+
+### Registry Management Commands
+
+```bash
+# Show registry status and statistics
+npx ts-node src/nox.ts registry-status
+
+# Show registry change history
+npx ts-node src/nox.ts registry-history
+npx ts-node src/nox.ts registry-history --limit 10
+
+# Create manual backup
+npx ts-node src/nox.ts registry-backup "Pre-experiment backup"
+
+# Rollback to previous state
+npx ts-node src/nox.ts registry-rollback HEAD~1
+npx ts-node src/nox.ts registry-rollback abc123f --confirm
+
+# Show configuration
+npx ts-node src/nox.ts config
+npx ts-node src/nox.ts config --path
+
+# Show logs
+npx ts-node src/nox.ts logs
+npx ts-node src/nox.ts logs --tail 50
 ```
 
 ## Agent Management
@@ -168,11 +205,7 @@ npx ts-node src/nox.ts task results {taskId}
 
 #### Via CLI
 ```bash
-npx ts-node src/nox.ts agent create \
-  --name "code-analyzer" \
-  --description "Analyzes code quality and suggests improvements" \
-  --capabilities "code-review,static-analysis" \
-  --max-memory "2GB"
+npx ts-node src/nox.ts add-agent "code-analyzer" "Analyzes code quality and suggests improvements. Specializes in code-review and static-analysis."
 ```
 
 #### Via API
@@ -181,23 +214,28 @@ curl -X POST http://localhost:3001/api/agents \
   -H "Content-Type: application/json" \
   -d '{
     "name": "code-analyzer",
-    "description": "Analyzes code quality",
-    "capabilities": ["code-review", "static-analysis"],
-    "config": {
-      "maxMemory": "2GB",
-      "timeout": 300
-    }
+    "description": "Analyzes code quality and suggests improvements",
+    "capabilities": ["code-review", "static-analysis"]
   }'
 ```
 
+#### Via Dashboard
+1. Open http://localhost:3001 in your browser
+2. Navigate to the Agents section
+3. Click "Create New Agent"
+4. Fill in the agent name, description, and capabilities
+5. Click "Create Agent"
+
 ### Agent Lifecycle
 
-1. **Creation**: Agent is defined with name, description, and capabilities
-2. **Initialization**: Agent establishes Claude CLI session and workspace
-3. **Active**: Agent can receive and execute tasks
-4. **Idle**: Agent is available but not currently processing tasks
-5. **Stopped**: Agent is paused and not accepting new tasks
-6. **Terminated**: Agent is permanently removed from the system
+1. **Creation**: Agent is defined with name, system prompt, and capabilities
+2. **Registration**: Agent is stored in the Nox registry (.nox-registry/agents.json)
+3. **Inactive**: Agent is registered but not currently running
+4. **Starting**: Agent Claude CLI session is being initialized
+5. **Active**: Agent is running and can receive tasks
+6. **Error**: Agent encountered an error and needs attention
+7. **Stopped**: Agent is gracefully shut down
+8. **Deleted**: Agent is permanently removed from the registry
 
 ### Agent Configuration
 
@@ -545,16 +583,17 @@ lsof -i :3001
 tail -50 logs/nox.log
 
 # Verify configuration
-npx ts-node src/nox.ts config validate
+npx ts-node src/nox.ts config
 ```
 
 #### Agents Not Responding
 ```bash
 # Check agent status
+npx ts-node src/nox.ts list-agents
 curl http://localhost:3001/api/agents
 
-# Restart specific agent
-npx ts-node src/nox.ts agent restart {agentId}
+# Check specific agent details
+npx ts-node src/nox.ts show-agent {agentName}
 
 # Check Claude CLI connection
 claude --version
@@ -614,16 +653,10 @@ Create specialized agents for specific domains:
 
 ```bash
 # Data analysis agent
-npx ts-node src/nox.ts agent create \
-  --name "data-scientist" \
-  --capabilities "data-analysis,visualization,statistics" \
-  --config '{"python_env": "data-science", "memory": "4GB"}'
+npx ts-node src/nox.ts add-agent "data-scientist" "You are a data scientist specializing in data-analysis, visualization, and statistics. You excel at Python data science workflows."
 
 # DevOps agent
-npx ts-node src/nox.ts agent create \
-  --name "devops-engineer" \
-  --capabilities "deployment,monitoring,automation" \
-  --config '{"docker_access": true, "cloud_credentials": "aws"}'
+npx ts-node src/nox.ts add-agent "devops-engineer" "You are a DevOps engineer specializing in deployment, monitoring, and automation. You have expertise in Docker, cloud platforms, and CI/CD."
 ```
 
 ### Task Automation
@@ -674,11 +707,9 @@ fetch(webhook, {
 #### GitHub Integration
 ```bash
 # Automated code review agent
-npx ts-node src/nox.ts agent create \
-  --name "code-reviewer" \
-  --capabilities "code-review,security-scan,documentation"
+npx ts-node src/nox.ts add-agent "code-reviewer" "You are a code review specialist focusing on code-review, security-scan, and documentation. You provide thorough analysis of pull requests."
 
-# Set up webhook for PR reviews
+# Set up webhook for PR reviews (API endpoint would need to be implemented)
 curl -X POST http://localhost:3001/api/webhooks/github \
   -H "Content-Type: application/json" \
   -d '{"event": "pull_request", "action": "opened"}'

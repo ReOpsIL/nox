@@ -278,6 +278,53 @@ export function setupAgentRoutes(router: Router, agentManager: AgentManager, reg
   });
 
   /**
+   * DELETE /api/agents/:agentId
+   * Delete an agent
+   */
+  agentRouter.delete('/:agentId', async (req: Request, res: Response) => {
+    try {
+      const agentId = req.params.agentId as string;
+      
+      // Check if agent exists in registry
+      const agents = await registryManager.listAgents();
+      const agent = agents.find(a => a.id === agentId);
+      
+      if (!agent) {
+        return res.status(404).json({
+          success: false,
+          error: 'Agent not found',
+          message: `Agent ${agentId} not found`
+        });
+      }
+
+      // Stop the agent if it's running
+      try {
+        await agentManager.killAgent(agentId);
+        logger.info(`Stopped running agent: ${agentId}`);
+      } catch (error) {
+        // Agent might not be running, continue with deletion
+        logger.debug(`Agent ${agentId} was not running: ${error}`);
+      }
+
+      // Remove agent from registry
+      await registryManager.deleteAgent(agentId);
+      logger.info(`Deleted agent from registry: ${agentId}`);
+
+      return res.json({
+        success: true,
+        message: `Agent ${agentId} deleted successfully`
+      });
+    } catch (error: any) {
+      logger.error(`Error deleting agent ${req.params.agentId}:`, error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to delete agent',
+        message: error.message
+      });
+    }
+  });
+
+  /**
    * GET /api/agents/:agentId/conversation
    * Get agent conversation history
    */

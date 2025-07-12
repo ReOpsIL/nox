@@ -331,33 +331,85 @@ export class TaskManager extends EventEmitter {
    * Process tasks in the queue
    */
   private async processTasks(): Promise<void> {
-    if (this.isProcessing || this.taskQueue.isEmpty()) {
+    if (this.isProcessing) {
       return;
     }
 
     this.isProcessing = true;
 
     try {
-      // Check for tasks with dependencies that are now satisfied
+      // Get all tasks that are ready to be executed
       const todoTasks = await this.getTasksByStatus('todo');
+      
       for (const task of todoTasks) {
+        // Check if task dependencies are met (or no dependencies)
+        let canStart = true;
+        
         if (task.dependencies.length > 0) {
-          const allDependenciesMet = task.dependencies.every(depId => {
+          canStart = task.dependencies.every(depId => {
             const depTask = this.tasks.get(depId);
             return depTask && depTask.status === 'done';
           });
+        }
 
-          if (allDependenciesMet) {
-            // Dependencies are met, task can be started
-            this.emit('task-dependencies-met', task);
-            logger.info(`Dependencies met for task ${task.id}`);
-          }
+        if (canStart) {
+          // Start the task by changing its status to inprogress
+          await this.startTask(task.id);
+          
+          // Execute the task immediately after starting
+          await this.executeTask(task.id);
+          logger.info(`Started and executed task ${task.id}: ${task.title}`);
         }
       }
     } catch (error) {
       logger.error('Error processing tasks:', error);
     } finally {
       this.isProcessing = false;
+    }
+  }
+
+  /**
+   * Start executing a task (change status from todo to inprogress)
+   */
+  async startTask(taskId: string): Promise<Task> {
+    const task = await this.updateTask(taskId, {
+      status: 'inprogress',
+      startedAt: new Date()
+    });
+
+    // Emit event for task execution
+    this.emit('task-started', task);
+    logger.info(`Task started: ${task.id} - ${task.title} (Agent: ${task.agentId})`);
+
+    return task;
+  }
+
+  /**
+   * Execute a task by sending it to an agent
+   */
+  async executeTask(taskId: string): Promise<void> {
+    const task = this.tasks.get(taskId);
+    if (!task) {
+      throw new Error(`Task ${taskId} not found`);
+    }
+
+    if (task.status !== 'inprogress') {
+      logger.warn(`Cannot execute task ${taskId} - status is ${task.status}, expected 'inprogress'`);
+      return;
+    }
+
+    try {
+      // Emit task execution event - this will be caught by the system to send to agent
+      this.emit('task-execute', task);
+      logger.info(`Executing task ${taskId} for agent ${task.agentId}`);
+
+    } catch (error) {
+      logger.error(`Failed to execute task ${taskId}:`, error);
+      
+      // Mark task as failed
+      await this.updateTask(taskId, {
+        status: 'cancelled'
+      });
     }
   }
 

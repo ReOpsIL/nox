@@ -93,6 +93,16 @@ export class NoxSystem extends EventEmitter {
       this.emit('task-updated', task);
     });
 
+    this.taskManager.on('task-started', (task) => {
+      logger.info(`Task started: ${task.id} for agent ${task.agentId}`);
+      this.emit('task-started', task);
+    });
+
+    this.taskManager.on('task-execute', async (task) => {
+      logger.info(`Executing task: ${task.id} for agent ${task.agentId}`);
+      await this.executeTaskOnAgent(task);
+    });
+
     // Registry events
     this.registryManager.on('registry-updated', () => {
       logger.info('Registry updated');
@@ -340,4 +350,99 @@ export class NoxSystem extends EventEmitter {
   // System state checks
   get isInitialized(): boolean { return this.initialized; }
   get isRunning(): boolean { return this.running; }
+
+  /**
+   * Execute a task on the specified agent using Claude CLI
+   */
+  private async executeTaskOnAgent(task: any): Promise<void> {
+    try {
+      // Get the agent from registry to validate it exists
+      const agents = await this.registryManager.listAgents();
+      const agent = agents.find(a => a.id === task.agentId);
+      
+      if (!agent) {
+        logger.error(`Agent ${task.agentId} not found in registry for task ${task.id}`);
+        await this.taskManager.updateTask(task.id, {
+          status: 'cancelled'
+        });
+        return;
+      }
+
+      logger.info(`Starting agent ${agent.name} (${agent.id}) for task: ${task.title}`);
+      
+      // Spawn the agent if not already running
+      try {
+        await this.agentManager.spawnAgent(agent);
+        logger.info(`Agent ${agent.id} spawned successfully`);
+      } catch (spawnError) {
+        logger.error(`Failed to spawn agent ${agent.id}:`, spawnError);
+        // Agent might already be running, continue anyway
+      }
+
+      // Get Claude interface for the agent
+      const claudeInterface = this.agentManager.getClaudeInterface(task.agentId);
+      if (!claudeInterface) {
+        logger.error(`No Claude interface available for agent ${task.agentId}`);
+        await this.taskManager.updateTask(task.id, {
+          status: 'cancelled'
+        });
+        return;
+      }
+
+      // Create task message for Claude
+      const taskMessage = this.formatTaskForClaude(task, agent);
+      
+      logger.info(`Sending task to Claude CLI for agent ${agent.name}: ${task.title}`);
+      
+      // Send task to Claude
+      await claudeInterface.sendMessage(taskMessage);
+      
+      logger.info(`Task ${task.id} sent to agent ${agent.name} successfully`);
+
+      // The task completion will be handled by Claude CLI responses
+      // For now, we just mark it as in progress
+      
+    } catch (error) {
+      logger.error(`Failed to execute task ${task.id} on agent ${task.agentId}:`, error);
+      
+      // Mark task as failed
+      await this.taskManager.updateTask(task.id, {
+        status: 'cancelled'
+      });
+    }
+  }
+
+  /**
+   * Format task for Claude CLI execution
+   */
+  private formatTaskForClaude(task: any, agent: any): string {
+    const taskPrompt = `
+🎯 NEW TASK ASSIGNED: ${task.title}
+
+📋 Task Details:
+- Task ID: ${task.id}
+- Priority: ${task.priority}
+- Created: ${task.createdAt}
+- Deadline: ${task.deadline}
+
+📝 Description:
+${task.description}
+
+🤖 Your Role as ${agent.name}:
+${agent.systemPrompt}
+
+🔧 Your Capabilities:
+${agent.capabilities.join(', ')}
+
+📊 Task Requirements:
+Please complete this task using your specialized capabilities. When finished:
+1. Provide a detailed summary of what you accomplished
+2. Include any findings, results, or deliverables
+3. Mention any challenges or limitations encountered
+4. State "TASK COMPLETED: ${task.id}" at the end of your response
+
+Begin working on this task now.`;
+
+    return taskPrompt;
+  }
 }

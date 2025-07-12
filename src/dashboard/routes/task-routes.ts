@@ -242,6 +242,53 @@ export function setupTaskRoutes(router: Router, taskManager: TaskManager): void 
   });
 
   /**
+   * POST /api/tasks/:taskId/start
+   * Start executing a task
+   */
+  taskRouter.post('/:taskId/start', async (req: Request, res: Response) => {
+    try {
+      const taskId = req.params.taskId as string;
+      const task = await taskManager.startTask(taskId);
+
+      res.json({
+        success: true,
+        task,
+        message: `Task ${taskId} started successfully`
+      });
+    } catch (error: any) {
+      logger.error(`Error starting task ${req.params.taskId}:`, error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to start task',
+        message: error.message
+      });
+    }
+  });
+
+  /**
+   * POST /api/tasks/:taskId/execute
+   * Execute a task (send to agent)
+   */
+  taskRouter.post('/:taskId/execute', async (req: Request, res: Response) => {
+    try {
+      const taskId = req.params.taskId as string;
+      await taskManager.executeTask(taskId);
+
+      res.json({
+        success: true,
+        message: `Task ${taskId} sent to agent for execution`
+      });
+    } catch (error: any) {
+      logger.error(`Error executing task ${req.params.taskId}:`, error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to execute task',
+        message: error.message
+      });
+    }
+  });
+
+  /**
    * POST /api/tasks/:taskId/complete
    * Mark a task as complete
    */

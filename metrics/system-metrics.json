@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2025-07-12T04:30:09.810Z",
+  "lastUpdated": "2025-07-12T05:24:48.240Z",
   "totalMessagesProcessed": 0,
   "metrics": [
     {
@@ -5117,6 +5117,1286 @@
       "tasks": {
         "total": 0,
         "todo": 0,
+        "inProgress": 0,
+        "done": 0,
+        "blocked": 0
+      }
+    },
+    {
+      "timestamp": "2025-07-12T04:45:48.202Z",
+      "system": {
+        "cpuUsage": 0.2804,
+        "memoryUsage": 96.63810729980469,
+        "memoryTotal": 34359738368,
+        "uptime": 486998,
+        "loadAverage": [
+          2.68701171875,
+          2.947265625,
+          3.1845703125
+        ]
+      },
+      "agents": {
+        "total": 0,
+        "active": 0,
+        "inactive": 0,
+        "error": 0
+      },
+      "messages": {
+        "queueSize": 0,
+        "processedPerMinute": 0,
+        "totalProcessed": 0
+      },
+      "tasks": {
+        "total": 0,
+        "todo": 0,
+        "inProgress": 0,
+        "done": 0,
+        "blocked": 0
+      }
+    },
+    {
+      "timestamp": "2025-07-12T04:46:48.200Z",
+      "system": {
+        "cpuUsage": 0.1276,
+        "memoryUsage": 98.01216125488281,
+        "memoryTotal": 34359738368,
+        "uptime": 487058,
+        "loadAverage": [
+          4.68896484375,
+          3.63037109375,
+          3.431640625
+        ]
+      },
+      "agents": {
+        "total": 0,
+        "active": 0,
+        "inactive": 0,
+        "error": 0
+      },
+      "messages": {
+        "queueSize": 0,
+        "processedPerMinute": 0,
+        "totalProcessed": 0
+      },
+      "tasks": {
+        "total": 0,
+        "todo": 0,
+        "inProgress": 0,
+        "done": 0,
+        "blocked": 0
+      }
+    },
+    {
+      "timestamp": "2025-07-12T04:47:48.201Z",
+      "system": {
+        "cpuUsage": 0.3777,
+        "memoryUsage": 98.30493927001953,
+        "memoryTotal": 34359738368,
+        "uptime": 487118,
+        "loadAverage": [
+          3.30810546875,
+          3.45751953125,
+          3.38037109375
+        ]
+      },
+      "agents": {
+        "total": 0,
+        "active": 0,
+        "inactive": 0,
+        "error": 0
+      },
+      "messages": {
+        "queueSize": 0,
+        "processedPerMinute": 0,
+        "totalProcessed": 0
+      },
+      "tasks": {
+        "total": 0,
+        "todo": 0,
+        "inProgress": 0,
+        "done": 0,
+        "blocked": 0
+      }
+    },
+    {
+      "timestamp": "2025-07-12T04:48:48.203Z",
+      "system": {
+        "cpuUsage": 0.36810000000000004,
+        "memoryUsage": 97.37095832824707,
+        "memoryTotal": 34359738368,
+        "uptime": 487178,
+        "loadAverage": [
+          2.52685546875,
+          3.1923828125,
+          3.2841796875
+        ]
+      },
+      "agents": {
+        "total": 0,
+        "active": 0,
+        "inactive": 0,
+        "error": 0
+      },
+      "messages": {
+        "queueSize": 0,
+        "processedPerMinute": 0,
+        "totalProcessed": 0
+      },
+      "tasks": {
+        "total": 0,
+        "todo": 0,
+        "inProgress": 0,
+        "done": 0,
+        "blocked": 0
+      }
+    },
+    {
+      "timestamp": "2025-07-12T04:49:48.204Z",
+      "system": {
+        "cpuUsage": 0.1727,
+        "memoryUsage": 97.2494125366211,
+        "memoryTotal": 34359738368,
+        "uptime": 487238,
+        "loadAverage": [
+          1.611328125,
+          2.80615234375,
+          3.13134765625
+        ]
+      },
+      "agents": {
+        "total": 0,
+        "active": 0,
+        "inactive": 0,
+        "error": 0
+      },
+      "messages": {
+        "queueSize": 0,
+        "processedPerMinute": 0,
+        "totalProcessed": 0
+      },
+      "tasks": {
+        "total": 0,
+        "todo": 0,
+        "inProgress": 0,
+        "done": 0,
+        "blocked": 0
+      }
+    },
+    {
+      "timestamp": "2025-07-12T04:50:48.206Z",
+      "system": {
+        "cpuUsage": 0.2637,
+        "memoryUsage": 97.15461730957031,
+        "memoryTotal": 34359738368,
+        "uptime": 487298,
+        "loadAverage": [
+          2.06103515625,
+          2.6669921875,
+          3.05322265625
+        ]
+      },
+      "agents": {
+        "total": 0,
+        "active": 0,
+        "inactive": 0,
+        "error": 0
+      },
+      "messages": {
+        "queueSize": 0,
+        "processedPerMinute": 0,
+        "totalProcessed": 0
+      },
+      "tasks": {
+        "total": 0,
+        "todo": 0,
+        "inProgress": 0,
+        "done": 0,
+        "blocked": 0
+      }
+    },
+    {
+      "timestamp": "2025-07-12T04:51:48.206Z",
+      "system": {
+        "cpuUsage": 0.3401,
+        "memoryUsage": 97.3876953125,
+        "memoryTotal": 34359738368,
+        "uptime": 487358,
+        "loadAverage": [
+          1.2197265625,
+          2.31494140625,
+          2.8935546875
+        ]
+      },
+      "agents": {
+        "total": 0,
+        "active": 0,
+        "inactive": 0,
+        "error": 0
+      },
+      "messages": {
+        "queueSize": 0,
+        "processedPerMinute": 0,
+        "totalProcessed": 0
+      },
+      "tasks": {
+        "total": 0,
+        "todo": 0,
+        "inProgress": 0,
+        "done": 0,
+        "blocked": 0
+      }
+    },
+    {
+      "timestamp": "2025-07-12T04:52:48.206Z",
+      "system": {
+        "cpuUsage": 0.05020000000000001,
+        "memoryUsage": 97.19095230102539,
+        "memoryTotal": 34359738368,
+        "uptime": 487418,
+        "loadAverage": [
+          2.02197265625,
+          2.33349609375,
+          2.8583984375
+        ]
+      },
+      "agents": {
+        "total": 0,
+        "active": 0,
+        "inactive": 0,
+        "error": 0
+      },
+      "messages": {
+        "queueSize": 0,
+        "processedPerMinute": 0,
+        "totalProcessed": 0
+      },
+      "tasks": {
+        "total": 0,
+        "todo": 0,
+        "inProgress": 0,
+        "done": 0,
+        "blocked": 0
+      }
+    },
+    {
+      "timestamp": "2025-07-12T04:53:48.208Z",
+      "system": {
+        "cpuUsage": 0.3111,
+        "memoryUsage": 97.94902801513672,
+        "memoryTotal": 34359738368,
+        "uptime": 487478,
+        "loadAverage": [
+          2.00537109375,
+          2.33056640625,
+          2.8232421875
+        ]
+      },
+      "agents": {
+        "total": 0,
+        "active": 0,
+        "inactive": 0,
+        "error": 0
+      },
+      "messages": {
+        "queueSize": 0,
+        "processedPerMinute": 0,
+        "totalProcessed": 0
+      },
+      "tasks": {
+        "total": 0,
+        "todo": 0,
+        "inProgress": 0,
+        "done": 0,
+        "blocked": 0
+      }
+    },
+    {
+      "timestamp": "2025-07-12T04:54:48.209Z",
+      "system": {
+        "cpuUsage": 0.1482,
+        "memoryUsage": 98.08807373046875,
+        "memoryTotal": 34359738368,
+        "uptime": 487538,
+        "loadAverage": [
+          2.02587890625,
+          2.232421875,
+          2.7490234375
+        ]
+      },
+      "agents": {
+        "total": 0,
+        "active": 0,
+        "inactive": 0,
+        "error": 0
+      },
+      "messages": {
+        "queueSize": 0,
+        "processedPerMinute": 0,
+        "totalProcessed": 0
+      },
+      "tasks": {
+        "total": 0,
+        "todo": 0,
+        "inProgress": 0,
+        "done": 0,
+        "blocked": 0
+      }
+    },
+    {
+      "timestamp": "2025-07-12T04:55:48.211Z",
+      "system": {
+        "cpuUsage": 0.25670000000000004,
+        "memoryUsage": 99.79381561279297,
+        "memoryTotal": 34359738368,
+        "uptime": 487598,
+        "loadAverage": [
+          1.82568359375,
+          2.14111328125,
+          2.67822265625
+        ]
+      },
+      "agents": {
+        "total": 0,
+        "active": 0,
+        "inactive": 0,
+        "error": 0
+      },
+      "messages": {
+        "queueSize": 0,
+        "processedPerMinute": 0,
+        "totalProcessed": 0
+      },
+      "tasks": {
+        "total": 0,
+        "todo": 0,
+        "inProgress": 0,
+        "done": 0,
+        "blocked": 0
+      }
+    },
+    {
+      "timestamp": "2025-07-12T04:56:48.211Z",
+      "system": {
+        "cpuUsage": 0.38610000000000005,
+        "memoryUsage": 99.59664344787598,
+        "memoryTotal": 34359738368,
+        "uptime": 487658,
+        "loadAverage": [
+          2.029296875,
+          2.1669921875,
+          2.64990234375
+        ]
+      },
+      "agents": {
+        "total": 0,
+        "active": 0,
+        "inactive": 0,
+        "error": 0
+      },
+      "messages": {
+        "queueSize": 0,
+        "processedPerMinute": 0,
+        "totalProcessed": 0
+      },
+      "tasks": {
+        "total": 0,
+        "todo": 0,
+        "inProgress": 0,
+        "done": 0,
+        "blocked": 0
+      }
+    },
+    {
+      "timestamp": "2025-07-12T04:57:48.210Z",
+      "system": {
+        "cpuUsage": 0.1432,
+        "memoryUsage": 99.72186088562012,
+        "memoryTotal": 34359738368,
+        "uptime": 487718,
+        "loadAverage": [
+          2.92626953125,
+          2.40478515625,
+          2.7041015625
+        ]
+      },
+      "agents": {
+        "total": 0,
+        "active": 0,
+        "inactive": 0,
+        "error": 0
+      },
+      "messages": {
+        "queueSize": 0,
+        "processedPerMinute": 0,
+        "totalProcessed": 0
+      },
+      "tasks": {
+        "total": 0,
+        "todo": 0,
+        "inProgress": 0,
+        "done": 0,
+        "blocked": 0
+      }
+    },
+    {
+      "timestamp": "2025-07-12T04:58:48.214Z",
+      "system": {
+        "cpuUsage": 0.24140000000000003,
+        "memoryUsage": 99.11136627197266,
+        "memoryTotal": 34359738368,
+        "uptime": 487778,
+        "loadAverage": [
+          3.75390625,
+          2.71533203125,
+          2.7958984375
+        ]
+      },
+      "agents": {
+        "total": 0,
+        "active": 0,
+        "inactive": 0,
+        "error": 0
+      },
+      "messages": {
+        "queueSize": 0,
+        "processedPerMinute": 0,
+        "totalProcessed": 0
+      },
+      "tasks": {
+        "total": 0,
+        "todo": 0,
+        "inProgress": 0,
+        "done": 0,
+        "blocked": 0
+      }
+    },
+    {
+      "timestamp": "2025-07-12T04:59:48.214Z",
+      "system": {
+        "cpuUsage": 0.30720000000000003,
+        "memoryUsage": 94.06557083129883,
+        "memoryTotal": 34359738368,
+        "uptime": 487838,
+        "loadAverage": [
+          2.974609375,
+          2.74609375,
+          2.8037109375
+        ]
+      },
+      "agents": {
+        "total": 0,
+        "active": 0,
+        "inactive": 0,
+        "error": 0
+      },
+      "messages": {
+        "queueSize": 0,
+        "processedPerMinute": 0,
+        "totalProcessed": 0
+      },
+      "tasks": {
+        "total": 0,
+        "todo": 0,
+        "inProgress": 0,
+        "done": 0,
+        "blocked": 0
+      }
+    },
+    {
+      "timestamp": "2025-07-12T05:00:48.214Z",
+      "system": {
+        "cpuUsage": 0.27890000000000004,
+        "memoryUsage": 94.110107421875,
+        "memoryTotal": 34359738368,
+        "uptime": 487898,
+        "loadAverage": [
+          1.87744140625,
+          2.45947265625,
+          2.6904296875
+        ]
+      },
+      "agents": {
+        "total": 0,
+        "active": 0,
+        "inactive": 0,
+        "error": 0
+      },
+      "messages": {
+        "queueSize": 0,
+        "processedPerMinute": 0,
+        "totalProcessed": 0
+      },
+      "tasks": {
+        "total": 0,
+        "todo": 0,
+        "inProgress": 0,
+        "done": 0,
+        "blocked": 0
+      }
+    },
+    {
+      "timestamp": "2025-07-12T05:01:48.214Z",
+      "system": {
+        "cpuUsage": 0.3328,
+        "memoryUsage": 96.27289772033691,
+        "memoryTotal": 34359738368,
+        "uptime": 487958,
+        "loadAverage": [
+          1.5439453125,
+          2.2646484375,
+          2.6005859375
+        ]
+      },
+      "agents": {
+        "total": 0,
+        "active": 0,
+        "inactive": 0,
+        "error": 0
+      },
+      "messages": {
+        "queueSize": 0,
+        "processedPerMinute": 0,
+        "totalProcessed": 0
+      },
+      "tasks": {
+        "total": 0,
+        "todo": 0,
+        "inProgress": 0,
+        "done": 0,
+        "blocked": 0
+      }
+    },
+    {
+      "timestamp": "2025-07-12T05:02:48.217Z",
+      "system": {
+        "cpuUsage": 0.31600000000000006,
+        "memoryUsage": 96.77572250366211,
+        "memoryTotal": 34359738368,
+        "uptime": 488018,
+        "loadAverage": [
+          1.681640625,
+          2.1689453125,
+          2.5400390625
+        ]
+      },
+      "agents": {
+        "total": 0,
+        "active": 0,
+        "inactive": 0,
+        "error": 0
+      },
+      "messages": {
+        "queueSize": 0,
+        "processedPerMinute": 0,
+        "totalProcessed": 0
+      },
+      "tasks": {
+        "total": 0,
+        "todo": 0,
+        "inProgress": 0,
+        "done": 0,
+        "blocked": 0
+      }
+    },
+    {
+      "timestamp": "2025-07-12T05:03:48.218Z",
+      "system": {
+        "cpuUsage": 0.303,
+        "memoryUsage": 95.28107643127441,
+        "memoryTotal": 34359738368,
+        "uptime": 488078,
+        "loadAverage": [
+          1.44384765625,
+          2.00048828125,
+          2.44970703125
+        ]
+      },
+      "agents": {
+        "total": 0,
+        "active": 0,
+        "inactive": 0,
+        "error": 0
+      },
+      "messages": {
+        "queueSize": 0,
+        "processedPerMinute": 0,
+        "totalProcessed": 0
+      },
+      "tasks": {
+        "total": 0,
+        "todo": 0,
+        "inProgress": 0,
+        "done": 0,
+        "blocked": 0
+      }
+    },
+    {
+      "timestamp": "2025-07-12T05:04:48.218Z",
+      "system": {
+        "cpuUsage": 0.2899,
+        "memoryUsage": 95.10378837585449,
+        "memoryTotal": 34359738368,
+        "uptime": 488138,
+        "loadAverage": [
+          1.09619140625,
+          1.8115234375,
+          2.34716796875
+        ]
+      },
+      "agents": {
+        "total": 0,
+        "active": 0,
+        "inactive": 0,
+        "error": 0
+      },
+      "messages": {
+        "queueSize": 0,
+        "processedPerMinute": 0,
+        "totalProcessed": 0
+      },
+      "tasks": {
+        "total": 0,
+        "todo": 0,
+        "inProgress": 0,
+        "done": 0,
+        "blocked": 0
+      }
+    },
+    {
+      "timestamp": "2025-07-12T05:05:48.219Z",
+      "system": {
+        "cpuUsage": 0.10789999999999998,
+        "memoryUsage": 95.27750015258789,
+        "memoryTotal": 34359738368,
+        "uptime": 488198,
+        "loadAverage": [
+          1.8369140625,
+          1.9140625,
+          2.3486328125
+        ]
+      },
+      "agents": {
+        "total": 0,
+        "active": 0,
+        "inactive": 0,
+        "error": 0
+      },
+      "messages": {
+        "queueSize": 0,
+        "processedPerMinute": 0,
+        "totalProcessed": 0
+      },
+      "tasks": {
+        "total": 0,
+        "todo": 0,
+        "inProgress": 0,
+        "done": 0,
+        "blocked": 0
+      }
+    },
+    {
+      "timestamp": "2025-07-12T05:06:48.220Z",
+      "system": {
+        "cpuUsage": 0.0927,
+        "memoryUsage": 95.3366756439209,
+        "memoryTotal": 34359738368,
+        "uptime": 488258,
+        "loadAverage": [
+          2.03759765625,
+          1.9443359375,
+          2.330078125
+        ]
+      },
+      "agents": {
+        "total": 0,
+        "active": 0,
+        "inactive": 0,
+        "error": 0
+      },
+      "messages": {
+        "queueSize": 0,
+        "processedPerMinute": 0,
+        "totalProcessed": 0
+      },
+      "tasks": {
+        "total": 0,
+        "todo": 0,
+        "inProgress": 0,
+        "done": 0,
+        "blocked": 0
+      }
+    },
+    {
+      "timestamp": "2025-07-12T05:07:48.222Z",
+      "system": {
+        "cpuUsage": 0.28309999999999996,
+        "memoryUsage": 95.56374549865723,
+        "memoryTotal": 34359738368,
+        "uptime": 488318,
+        "loadAverage": [
+          1.53955078125,
+          1.8154296875,
+          2.25390625
+        ]
+      },
+      "agents": {
+        "total": 0,
+        "active": 0,
+        "inactive": 0,
+        "error": 0
+      },
+      "messages": {
+        "queueSize": 0,
+        "processedPerMinute": 0,
+        "totalProcessed": 0
+      },
+      "tasks": {
+        "total": 0,
+        "todo": 0,
+        "inProgress": 0,
+        "done": 0,
+        "blocked": 0
+      }
+    },
+    {
+      "timestamp": "2025-07-12T05:08:48.222Z",
+      "system": {
+        "cpuUsage": 0.2713,
+        "memoryUsage": 94.9854850769043,
+        "memoryTotal": 34359738368,
+        "uptime": 488378,
+        "loadAverage": [
+          1.41064453125,
+          1.70068359375,
+          2.17724609375
+        ]
+      },
+      "agents": {
+        "total": 0,
+        "active": 0,
+        "inactive": 0,
+        "error": 0
+      },
+      "messages": {
+        "queueSize": 0,
+        "processedPerMinute": 0,
+        "totalProcessed": 0
+      },
+      "tasks": {
+        "total": 11,
+        "todo": 11,
+        "inProgress": 0,
+        "done": 0,
+        "blocked": 0
+      }
+    },
+    {
+      "timestamp": "2025-07-12T05:09:48.222Z",
+      "system": {
+        "cpuUsage": 0.303,
+        "memoryUsage": 96.06518745422363,
+        "memoryTotal": 34359738368,
+        "uptime": 488438,
+        "loadAverage": [
+          2.76806640625,
+          2.07470703125,
+          2.28564453125
+        ]
+      },
+      "agents": {
+        "total": 0,
+        "active": 0,
+        "inactive": 0,
+        "error": 0
+      },
+      "messages": {
+        "queueSize": 0,
+        "processedPerMinute": 0,
+        "totalProcessed": 0
+      },
+      "tasks": {
+        "total": 18,
+        "todo": 18,
+        "inProgress": 0,
+        "done": 0,
+        "blocked": 0
+      }
+    },
+    {
+      "timestamp": "2025-07-12T05:10:48.224Z",
+      "system": {
+        "cpuUsage": 0.41340000000000005,
+        "memoryUsage": 95.9310531616211,
+        "memoryTotal": 34359738368,
+        "uptime": 488498,
+        "loadAverage": [
+          2.02490234375,
+          1.970703125,
+          2.23046875
+        ]
+      },
+      "agents": {
+        "total": 0,
+        "active": 0,
+        "inactive": 0,
+        "error": 0
+      },
+      "messages": {
+        "queueSize": 0,
+        "processedPerMinute": 0,
+        "totalProcessed": 0
+      },
+      "tasks": {
+        "total": 18,
+        "todo": 18,
+        "inProgress": 0,
+        "done": 0,
+        "blocked": 0
+      }
+    },
+    {
+      "timestamp": "2025-07-12T05:11:48.224Z",
+      "system": {
+        "cpuUsage": 0.19279999999999997,
+        "memoryUsage": 94.57826614379883,
+        "memoryTotal": 34359738368,
+        "uptime": 488558,
+        "loadAverage": [
+          1.68701171875,
+          1.89404296875,
+          2.18359375
+        ]
+      },
+      "agents": {
+        "total": 0,
+        "active": 0,
+        "inactive": 0,
+        "error": 0
+      },
+      "messages": {
+        "queueSize": 0,
+        "processedPerMinute": 0,
+        "totalProcessed": 0
+      },
+      "tasks": {
+        "total": 18,
+        "todo": 18,
+        "inProgress": 0,
+        "done": 0,
+        "blocked": 0
+      }
+    },
+    {
+      "timestamp": "2025-07-12T05:12:48.226Z",
+      "system": {
+        "cpuUsage": 0.1193,
+        "memoryUsage": 94.69308853149414,
+        "memoryTotal": 34359738368,
+        "uptime": 488618,
+        "loadAverage": [
+          1.63525390625,
+          1.8603515625,
+          2.14990234375
+        ]
+      },
+      "agents": {
+        "total": 0,
+        "active": 0,
+        "inactive": 0,
+        "error": 0
+      },
+      "messages": {
+        "queueSize": 0,
+        "processedPerMinute": 0,
+        "totalProcessed": 0
+      },
+      "tasks": {
+        "total": 18,
+        "todo": 18,
+        "inProgress": 0,
+        "done": 0,
+        "blocked": 0
+      }
+    },
+    {
+      "timestamp": "2025-07-12T05:13:48.226Z",
+      "system": {
+        "cpuUsage": 0.27959999999999996,
+        "memoryUsage": 95.41058540344238,
+        "memoryTotal": 34359738368,
+        "uptime": 488678,
+        "loadAverage": [
+          2.29296875,
+          2.04150390625,
+          2.1982421875
+        ]
+      },
+      "agents": {
+        "total": 0,
+        "active": 0,
+        "inactive": 0,
+        "error": 0
+      },
+      "messages": {
+        "queueSize": 0,
+        "processedPerMinute": 0,
+        "totalProcessed": 0
+      },
+      "tasks": {
+        "total": 18,
+        "todo": 18,
+        "inProgress": 0,
+        "done": 0,
+        "blocked": 0
+      }
+    },
+    {
+      "timestamp": "2025-07-12T05:14:48.226Z",
+      "system": {
+        "cpuUsage": 0.1237,
+        "memoryUsage": 95.93706130981445,
+        "memoryTotal": 34359738368,
+        "uptime": 488738,
+        "loadAverage": [
+          3.39599609375,
+          2.34912109375,
+          2.29638671875
+        ]
+      },
+      "agents": {
+        "total": 0,
+        "active": 0,
+        "inactive": 0,
+        "error": 0
+      },
+      "messages": {
+        "queueSize": 0,
+        "processedPerMinute": 0,
+        "totalProcessed": 0
+      },
+      "tasks": {
+        "total": 18,
+        "todo": 18,
+        "inProgress": 0,
+        "done": 0,
+        "blocked": 0
+      }
+    },
+    {
+      "timestamp": "2025-07-12T05:15:48.227Z",
+      "system": {
+        "cpuUsage": 0.12739999999999999,
+        "memoryUsage": 97.91727066040039,
+        "memoryTotal": 34359738368,
+        "uptime": 488798,
+        "loadAverage": [
+          3.4482421875,
+          2.50732421875,
+          2.35400390625
+        ]
+      },
+      "agents": {
+        "total": 0,
+        "active": 0,
+        "inactive": 0,
+        "error": 0
+      },
+      "messages": {
+        "queueSize": 0,
+        "processedPerMinute": 0,
+        "totalProcessed": 0
+      },
+      "tasks": {
+        "total": 18,
+        "todo": 18,
+        "inProgress": 0,
+        "done": 0,
+        "blocked": 0
+      }
+    },
+    {
+      "timestamp": "2025-07-12T05:16:48.229Z",
+      "system": {
+        "cpuUsage": 0.3003,
+        "memoryUsage": 97.80130386352539,
+        "memoryTotal": 34359738368,
+        "uptime": 488858,
+        "loadAverage": [
+          5.1220703125,
+          3.140625,
+          2.5986328125
+        ]
+      },
+      "agents": {
+        "total": 0,
+        "active": 0,
+        "inactive": 0,
+        "error": 0
+      },
+      "messages": {
+        "queueSize": 0,
+        "processedPerMinute": 0,
+        "totalProcessed": 0
+      },
+      "tasks": {
+        "total": 18,
+        "todo": 18,
+        "inProgress": 0,
+        "done": 0,
+        "blocked": 0
+      }
+    },
+    {
+      "timestamp": "2025-07-12T05:17:48.230Z",
+      "system": {
+        "cpuUsage": 0.32570000000000005,
+        "memoryUsage": 97.99866676330566,
+        "memoryTotal": 34359738368,
+        "uptime": 488918,
+        "loadAverage": [
+          3.06396484375,
+          2.91259765625,
+          2.548828125
+        ]
+      },
+      "agents": {
+        "total": 0,
+        "active": 0,
+        "inactive": 0,
+        "error": 0
+      },
+      "messages": {
+        "queueSize": 0,
+        "processedPerMinute": 0,
+        "totalProcessed": 0
+      },
+      "tasks": {
+        "total": 18,
+        "todo": 18,
+        "inProgress": 0,
+        "done": 0,
+        "blocked": 0
+      }
+    },
+    {
+      "timestamp": "2025-07-12T05:18:48.231Z",
+      "system": {
+        "cpuUsage": 0.2645,
+        "memoryUsage": 97.77650833129883,
+        "memoryTotal": 34359738368,
+        "uptime": 488978,
+        "loadAverage": [
+          4.12841796875,
+          3.35595703125,
+          2.74365234375
+        ]
+      },
+      "agents": {
+        "total": 0,
+        "active": 0,
+        "inactive": 0,
+        "error": 0
+      },
+      "messages": {
+        "queueSize": 0,
+        "processedPerMinute": 0,
+        "totalProcessed": 0
+      },
+      "tasks": {
+        "total": 18,
+        "todo": 18,
+        "inProgress": 0,
+        "done": 0,
+        "blocked": 0
+      }
+    },
+    {
+      "timestamp": "2025-07-12T05:19:48.234Z",
+      "system": {
+        "cpuUsage": 0.2883,
+        "memoryUsage": 98.1482982635498,
+        "memoryTotal": 34359738368,
+        "uptime": 489038,
+        "loadAverage": [
+          4.34375,
+          3.4248046875,
+          2.80224609375
+        ]
+      },
+      "agents": {
+        "total": 0,
+        "active": 0,
+        "inactive": 0,
+        "error": 0
+      },
+      "messages": {
+        "queueSize": 0,
+        "processedPerMinute": 0,
+        "totalProcessed": 0
+      },
+      "tasks": {
+        "total": 18,
+        "todo": 18,
+        "inProgress": 0,
+        "done": 0,
+        "blocked": 0
+      }
+    },
+    {
+      "timestamp": "2025-07-12T05:20:48.234Z",
+      "system": {
+        "cpuUsage": 0.25849999999999995,
+        "memoryUsage": 98.82373809814453,
+        "memoryTotal": 34359738368,
+        "uptime": 489098,
+        "loadAverage": [
+          5.47021484375,
+          3.78662109375,
+          2.97021484375
+        ]
+      },
+      "agents": {
+        "total": 0,
+        "active": 0,
+        "inactive": 0,
+        "error": 0
+      },
+      "messages": {
+        "queueSize": 0,
+        "processedPerMinute": 0,
+        "totalProcessed": 0
+      },
+      "tasks": {
+        "total": 18,
+        "todo": 18,
+        "inProgress": 0,
+        "done": 0,
+        "blocked": 0
+      }
+    },
+    {
+      "timestamp": "2025-07-12T05:21:48.236Z",
+      "system": {
+        "cpuUsage": 0.37759999999999994,
+        "memoryUsage": 98.77371788024902,
+        "memoryTotal": 34359738368,
+        "uptime": 489158,
+        "loadAverage": [
+          4.59912109375,
+          3.81201171875,
+          3.03271484375
+        ]
+      },
+      "agents": {
+        "total": 0,
+        "active": 0,
+        "inactive": 0,
+        "error": 0
+      },
+      "messages": {
+        "queueSize": 0,
+        "processedPerMinute": 0,
+        "totalProcessed": 0
+      },
+      "tasks": {
+        "total": 18,
+        "todo": 18,
+        "inProgress": 0,
+        "done": 0,
+        "blocked": 0
+      }
+    },
+    {
+      "timestamp": "2025-07-12T05:22:48.236Z",
+      "system": {
+        "cpuUsage": 0.1515,
+        "memoryUsage": 97.41606712341309,
+        "memoryTotal": 34359738368,
+        "uptime": 489218,
+        "loadAverage": [
+          4.20947265625,
+          3.89111328125,
+          3.1162109375
+        ]
+      },
+      "agents": {
+        "total": 0,
+        "active": 0,
+        "inactive": 0,
+        "error": 0
+      },
+      "messages": {
+        "queueSize": 0,
+        "processedPerMinute": 0,
+        "totalProcessed": 0
+      },
+      "tasks": {
+        "total": 18,
+        "todo": 18,
+        "inProgress": 0,
+        "done": 0,
+        "blocked": 0
+      }
+    },
+    {
+      "timestamp": "2025-07-12T05:23:48.237Z",
+      "system": {
+        "cpuUsage": 0.23239999999999997,
+        "memoryUsage": 97.20039367675781,
+        "memoryTotal": 34359738368,
+        "uptime": 489278,
+        "loadAverage": [
+          3.2041015625,
+          3.71044921875,
+          3.1044921875
+        ]
+      },
+      "agents": {
+        "total": 0,
+        "active": 0,
+        "inactive": 0,
+        "error": 0
+      },
+      "messages": {
+        "queueSize": 0,
+        "processedPerMinute": 0,
+        "totalProcessed": 0
+      },
+      "tasks": {
+        "total": 18,
+        "todo": 18,
+        "inProgress": 0,
+        "done": 0,
+        "blocked": 0
+      }
+    },
+    {
+      "timestamp": "2025-07-12T05:24:48.240Z",
+      "system": {
+        "cpuUsage": 0.29590000000000005,
+        "memoryUsage": 97.07794189453125,
+        "memoryTotal": 34359738368,
+        "uptime": 489338,
+        "loadAverage": [
+          2.60205078125,
+          3.47900390625,
+          3.05859375
+        ]
+      },
+      "agents": {
+        "total": 0,
+        "active": 0,
+        "inactive": 0,
+        "error": 0
+      },
+      "messages": {
+        "queueSize": 0,
+        "processedPerMinute": 0,
+        "totalProcessed": 0
+      },
+      "tasks": {
+        "total": 18,
+        "todo": 18,
         "inProgress": 0,
         "done": 0,
         "blocked": 0

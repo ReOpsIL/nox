@@ -1,4 +1,8 @@
+
+
 # Nox - Living Agent Ecosystem
+
+![Nox](nox.png)
 
 Nox is a revolutionary platform where AI agents form a **living, breathing community** that grows, adapts, and evolves autonomously. Agents can modify themselves, discover each other's capabilities, and dynamically reorganize to tackle any challenge thrown at them.
 
@@ -410,25 +414,23 @@ System: [AUTO-UPDATE] tasks/data_scientist.md updated with new task
 ### Task Management Commands
 
 **Task Creation & Management:**
-- `/create-task [description]` - Create new task for current agent
-- `/request-task [target_agent] [description]` - Delegate task to another agent
-- `/update-task-status [task_id] [status]` - Update task progress (todo/inprogress/done)
-- `/set-task-priority [task_id] [priority]` - Adjust task priority (HIGH/MEDIUM/LOW)
-- `/complete-task [task_id]` - Mark task as completed
+- `npx ts-node src/nox.ts create-task <agentId> <title> <description>` - Create new task for an agent
+- `npx ts-node src/nox.ts list-tasks [agentId]` - List tasks for specific agent or all agents
+- `npx ts-node src/nox.ts update-task <taskId>` - Update task status or details
+- `npx ts-node src/nox.ts task-overview` - Show task overview across all agents
 
-**Community Task Coordination:**
-- `/broadcast-task [description]` - Request help from any available agent
-- `/who-can-help [task_description]` - Find agents capable of handling specific tasks
-- `/task-priority-request [agent] [task_id] [priority]` - Request priority change from task owner
-- `/view-all-tasks` - Display task status across all agents
-- `/agent-workload [agent]` - Check agent's current task load
+**Agent Management:**
+- `npx ts-node src/nox.ts add-agent <name> <systemPrompt>` - Create a new agent
+- `npx ts-node src/nox.ts list-agents` - Display all registered agents and their status
+- `npx ts-node src/nox.ts show-agent <name>` - Show detailed agent information
+- `npx ts-node src/nox.ts delete-agent <name>` - Remove an agent from the registry
 
-**Task Visibility & Monitoring:**
-- `/task-dashboard` - Real-time dashboard of all agent activities
-- `/task-timeline [agent]` - Show task completion history for specific agent
-- `/community-progress` - Overall progress across all active projects
-- `/bottleneck-analysis` - Identify task dependencies causing delays
-- `/task-notifications [on/off]` - Enable/disable real-time task update notifications
+**System Commands:**
+- `npx ts-node src/nox.ts init` - Initialize Nox ecosystem
+- `npx ts-node src/nox.ts start` - Start the Nox ecosystem
+- `npx ts-node src/nox.ts stop` - Stop the Nox ecosystem
+- `npx ts-node src/nox.ts status` - Show ecosystem status
+- `npx ts-node src/nox.ts health` - Check system health
 
 ### Task Status Tracking Examples
 

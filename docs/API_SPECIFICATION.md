@@ -107,29 +107,44 @@ List an agent's current capabilities and skills.
 
 ### Task Management Commands
 
-#### `/create-task [description]`
-Create a new task for the current agent.
+#### `list-tasks [agentId]`
+List tasks for a specific agent or all agents.
 
 **Parameters:**
-- `description` (string): Task description
-- `--priority` (optional): HIGH|MEDIUM|LOW|CRITICAL
-- `--deadline` (optional): ISO 8601 date string
+- `agentId` (optional): Agent ID to filter tasks
 
 **Example:**
 ```bash
-/create-task "Analyze quantum computing papers" --priority=HIGH --deadline="2024-01-16T18:00:00Z"
+npx ts-node src/nox.ts list-tasks
+npx ts-node src/nox.ts list-tasks agent-1752272015775
 ```
 
-#### `/request-task [target_agent] [description]`
-Delegate a task to another agent.
+#### `create-task <agentId> <title> <description>`
+Create a new task for an agent.
+
+**Parameters:**
+- `agentId` (required): Target agent ID
+- `title` (required): Task title
+- `description` (required): Task description
 
 **Example:**
 ```bash
-/request-task data_scientist "Create visualization for quantum data" --priority=HIGH
+npx ts-node src/nox.ts create-task agent-1752272015775 "Research Task" "Analyze quantum computing papers"
 ```
 
-#### `/view-all-tasks`
-Display task status across all agents.
+#### `update-task <taskId>`
+Update task status or details.
+
+**Parameters:**
+- `taskId` (required): Task ID to update
+
+**Example:**
+```bash
+npx ts-node src/nox.ts update-task task-123
+```
+
+#### `task-overview`
+Show task overview across all agents.
 
 **Response:**
 ```json
