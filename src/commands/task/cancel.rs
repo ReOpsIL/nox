@@ -1,0 +1,37 @@
+//! Implementation of the task cancel command
+
+use anyhow::{Result, anyhow};
+use log::info;
+use crate::core::task_manager;
+use crate::types::TaskStatus;
+
+/// Execute the task cancel command
+pub async fn execute(task_id: String) -> Result<()> {
+    info!("Cancelling task: {}", task_id);
+    
+    // Get the task from the registry
+    let mut task = task_manager::get_task(&task_id).await?
+        .ok_or_else(|| anyhow!("Task with ID '{}' not found", task_id))?;
+    
+    // Check if the task is already done or cancelled
+    match task.status {
+        TaskStatus::Done => {
+            return Err(anyhow!("Cannot cancel a completed task"));
+        },
+        TaskStatus::Cancelled => {
+            println!("Task '{}' is already cancelled", task_id);
+            return Ok(());
+        },
+        _ => {}
+    }
+    
+    // Update the task status
+    let old_status = task.status.clone();
+    task.status = TaskStatus::Cancelled;
+    
+    // Save the updated task
+    task_manager::update_task(task).await?;
+    
+    println!("Task '{}' cancelled successfully (was: {})", task_id, old_status);
+    Ok(())
+}
