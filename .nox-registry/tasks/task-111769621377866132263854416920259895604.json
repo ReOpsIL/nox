@@ -4,10 +4,10 @@
   "title": "Technology News Search",
   "description": "Search for the latest technology news from the past 24 hours. Focus on developments in AI, machine learning, and software engineering. Provide a summary of the top 3 most significant stories with their implications for the tech industry.",
   "priority": "Medium",
-  "status": "InProgress",
+  "status": "Done",
   "created_at": "2025-07-13T14:22:17.352754Z",
   "started_at": "2025-07-13T14:25:25.732618Z",
-  "completed_at": null,
-  "progress": 0,
+  "completed_at": "2025-07-13T14:26:31.214716Z",
+  "progress": 100,
   "metadata": {}
 }
