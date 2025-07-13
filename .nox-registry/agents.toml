@@ -8,3 +8,14 @@ created_at = "2025-07-13T13:33:32.475483Z"
 [agents.resource_limits]
 max_memory_mb = 512
 max_cpu_percent = 50
+
+[[agents]]
+id = "test-agent-000"
+name = "Test Agent 0"
+system_prompt = "You are Test Agent 0, a test agent."
+status = "Active"
+created_at = "2025-07-13T13:33:32.498280Z"
+
+[agents.resource_limits]
+max_memory_mb = 512
+max_cpu_percent = 50
