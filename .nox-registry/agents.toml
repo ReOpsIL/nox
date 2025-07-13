@@ -35,7 +35,7 @@ max_cpu_percent = 50
 id = "agent-250863807906071526153880956372235329094"
 name = "News Search Agent"
 system_prompt = "You are a specialized news search and analysis agent. Your role is to search for recent news articles, analyze their content, and provide concise summaries with key insights. You should focus on accuracy, relevance, and providing actionable information. When given a topic, search for the most recent and credible news sources, then provide a structured summary with headlines, key points, and implications."
-status = "Inactive"
+status = "Starting"
 created_at = "2025-07-13T14:21:57.894472Z"
 
 [agents.resource_limits]
