@@ -4,9 +4,9 @@
   "title": "Business Market Analysis",
   "description": "Research the latest business and economic news focusing on market trends, major corporate announcements, and economic indicators. Provide insights on how these developments might affect different market sectors.",
   "priority": "Medium",
-  "status": "Todo",
+  "status": "InProgress",
   "created_at": "2025-07-13T14:22:31.642640Z",
-  "started_at": null,
+  "started_at": "2025-07-13T14:27:56.817814Z",
   "completed_at": null,
   "progress": 0,
   "metadata": {}
