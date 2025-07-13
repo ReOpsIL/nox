@@ -383,9 +383,13 @@ export class NoxSystem extends EventEmitter {
       const claudeInterface = this.agentManager.getClaudeInterface(task.agentId);
       if (!claudeInterface) {
         logger.error(`No Claude interface available for agent ${task.agentId}`);
-        await this.taskManager.updateTask(task.id, {
-          status: 'cancelled'
-        });
+        try {
+          await this.taskManager.updateTask(task.id, {
+            status: 'cancelled'
+          });
+        } catch (updateError) {
+          logger.warn(`Failed to update task ${task.id} status to cancelled - task may have been deleted:`, updateError);
+        }
         return;
       }
 
@@ -402,28 +406,40 @@ export class NoxSystem extends EventEmitter {
       // Check if the response indicates task completion
       if (response.success && response.content?.includes(`TASK COMPLETED: ${task.id}`)) {
         logger.info(`Task ${task.id} completed by agent ${agent.name}`);
-        await this.taskManager.updateTask(task.id, {
-          status: 'done',
-          progress: 100,
-          completedAt: new Date()
-        });
+        try {
+          await this.taskManager.updateTask(task.id, {
+            status: 'done',
+            progress: 100,
+            completedAt: new Date()
+          });
+        } catch (updateError) {
+          logger.warn(`Failed to update task ${task.id} status to done - task may have been deleted:`, updateError);
+        }
       } else if (response.success) {
         logger.info(`Task ${task.id} in progress for agent ${agent.name}`);
         // Task is in progress, will be completed later
       } else {
         logger.error(`Task ${task.id} failed for agent ${agent.name}: ${response.error}`);
-        await this.taskManager.updateTask(task.id, {
-          status: 'cancelled'
-        });
+        try {
+          await this.taskManager.updateTask(task.id, {
+            status: 'cancelled'
+          });
+        } catch (updateError) {
+          logger.warn(`Failed to update task ${task.id} status to cancelled - task may have been deleted:`, updateError);
+        }
       }
       
     } catch (error) {
       logger.error(`Failed to execute task ${task.id} on agent ${task.agentId}:`, error);
       
       // Mark task as failed
-      await this.taskManager.updateTask(task.id, {
-        status: 'cancelled'
-      });
+      try {
+        await this.taskManager.updateTask(task.id, {
+          status: 'cancelled'
+        });
+      } catch (updateError) {
+        logger.warn(`Failed to update task ${task.id} status to cancelled - task may have been deleted:`, updateError);
+      }
     }
   }
 
