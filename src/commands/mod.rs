@@ -25,6 +25,8 @@ pub mod task {
     pub mod update;
     pub mod overview;
     pub mod cancel;
+    pub mod execute;
+    pub mod show;
 }
 
 pub mod git {
