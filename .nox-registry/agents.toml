@@ -3,7 +3,7 @@ id = "test-agent-001"
 name = "Test Agent"
 system_prompt = "You are a helpful test agent."
 status = "Inactive"
-created_at = "2025-07-13T13:34:14.668261Z"
+created_at = "2025-07-13T13:34:22.777571Z"
 
 [agents.resource_limits]
 max_memory_mb = 512
