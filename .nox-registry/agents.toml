@@ -25,7 +25,7 @@ id = "test-agent-002"
 name = "Test Agent 2"
 system_prompt = "You are Test Agent 2, a test agent."
 status = "Active"
-created_at = "2025-07-13T13:33:32.498284Z"
+created_at = "2025-07-13T13:33:58.029414Z"
 
 [agents.resource_limits]
 max_memory_mb = 512
