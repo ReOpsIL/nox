@@ -4,9 +4,9 @@
   "title": "Climate News Analysis",
   "description": "Find recent climate and environmental news from credible sources. Look for policy changes, scientific breakthroughs, and major environmental events. Summarize the most impactful stories and their potential long-term effects.",
   "priority": "Medium",
-  "status": "Done",
+  "status": "InProgress",
   "created_at": "2025-07-13T14:22:24.397224Z",
-  "started_at": "2025-07-13T15:35:02.211925Z",
+  "started_at": "2025-07-13T15:36:20.335365Z",
   "completed_at": "2025-07-13T15:36:17.392388Z",
   "progress": 100,
   "metadata": {
