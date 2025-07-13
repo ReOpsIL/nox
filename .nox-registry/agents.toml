@@ -1,9 +1,9 @@
 [[agents]]
 id = "test-agent-001"
-name = "Test Agent"
-system_prompt = "You are a helpful test agent."
+name = "Test Agent 1"
+system_prompt = "You are Test Agent 1, a test agent."
 status = "Inactive"
-created_at = "2025-07-13T14:15:36.055056Z"
+created_at = "2025-07-13T14:15:36.080252Z"
 
 [agents.resource_limits]
 max_memory_mb = 512
