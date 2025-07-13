@@ -1,0 +1,13 @@
+{
+  "id": "task-241418419741066415163156789322060817164",
+  "agent_id": "agent-250863807906071526153880956372235329094",
+  "title": "Climate News Analysis",
+  "description": "Find recent climate and environmental news from credible sources. Look for policy changes, scientific breakthroughs, and major environmental events. Summarize the most impactful stories and their potential long-term effects.",
+  "priority": "Medium",
+  "status": "Todo",
+  "created_at": "2025-07-13T14:22:24.397224Z",
+  "started_at": null,
+  "completed_at": null,
+  "progress": 0,
+  "metadata": {}
+}
