@@ -13,27 +13,26 @@ The Rust implementation provides significant advantages:
 *   **CLI-First Design**: The primary interface is a robust command-line tool, supplemented by a RESTful API for the web dashboard.
 *   **Modularity**: A clean separation of concerns between the core engine, the API layer, and the user-facing frontend.
 
-### 1.2.  Implementation in phases
+### 1.2.  Implementation Status by Phase
 
-**✅ Features phase 1:**
-*   **Core Infrastructure**: TOML/JSON-based agent registry with full CRUD operations.
-*   **CLI Interface**: A comprehensive set of commands for managing agents, tasks, and the system.
-*   **Task Management**: A system for creating, assigning, and tracking tasks for agents using local Markdown files.
-*   **Web API Server**: A robust Actix Web server providing RESTful endpoints for frontend integration.
-*   **WebSocket Integration**: Real-time event broadcasting for status updates between the backend and frontend.
-*   **Configuration System**: Centralized TOML-based configuration.
+**✅ Phase 1 (FULLY IMPLEMENTED):**
+*   **Core Infrastructure**: TOML/JSON-based agent registry with full CRUD operations
+*   **CLI Interface**: All documented commands implemented and tested
+*   **Task Management**: Complete with JSON storage, status tracking, and Claude CLI execution
+*   **Basic Git Integration**: Repository initialization and change tracking
 
-**✅ Features phase 2:**
-*   **Claude CLI Integration**: Basic agent process spawning and communication are functional, but some connection timeouts and error recovery limitations exist.
-*   **Git-based Versioning**: The system can commit changes to the registry, but rollback operations, branching, and conflict resolution are not yet implemented via the CLI.
-*   **WebSocket Stability**: The connection is functional but may show instability under high load.
+**⚠️ Phase 2 (PARTIALLY IMPLEMENTED):**
+*   **Claude CLI Integration**: ✅ Working but simplified (direct execution vs persistent processes)
+*   **Web API Server**: ⚠️ Structure complete, some endpoints incomplete  
+*   **WebSocket Integration**: ❌ Has stability issues (see WEBSOCKET_IMPROVEMENTS.md)
+*   **Git Versioning**: ⚠️ Basic functionality, advanced features incomplete
 
-**✅ Features phase 3:**
-*   **Advanced Inter-Agent Communication**: A full message broker system for complex agent collaboration and discovery.
-*   **MCP (Modular Capability Provider) Service Discovery**: A system for dynamically expanding agent capabilities by discovering and integrating with external Dockerized services.
-*   **Advanced Agent Features**: Capabilities such as agent self-modification, dynamic prompt evolution, and the ability for agents to spawn other agents.
-*   **Comprehensive Resource Management**: Strict enforcement of memory/CPU usage, resource pool allocation, and anti-runaway protection.
-*   **Full Security Framework**: User approval workflows, permission gates for sensitive agent actions, and process sandboxing.
+**🔮 Phase 3 (SKELETON IMPLEMENTATION - NOT PRODUCTION READY):**
+*   **Advanced Inter-Agent Communication**: Framework exists but limited functionality
+*   **MCP Service Discovery**: Comprehensive structure but not operational
+*   **Advanced Agent Features**: Self-modification/spawning frameworks only
+*   **Resource Management**: Monitoring structure exists but enforcement incomplete
+*   **Security Framework**: Permission/audit frameworks but not integrated
 
 ### 1.3. Key Dependencies
 
@@ -172,6 +171,8 @@ All commands follow the format: `cargo run -- <command> [subcommand] [options]`
 | `task update <task_id> --status <status>` | Updates the status of a task. |
 | `task overview` | Shows a summary of task statuses across all agents. |
 | `task cancel <task_id>` | Cancels a pending or in-progress task. |
+| `task execute <task_id>` | ✅ Executes a task using Claude CLI integration. |
+| `task show <task_id>` | ✅ Shows detailed task information and Claude responses. |
 
 ## 5. API Reference
 
@@ -179,15 +180,15 @@ The Nox backend exposes a RESTful API for integration and a WebSocket for real-t
 
 ### 5.1. Agent Endpoints
 
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `GET` | `/api/agents` | Lists all registered agents. |
-| `POST` | `/api/agents` | Creates a new agent. |
-| `GET` | `/api/agents/{agent_id}` | Retrieves detailed information for a single agent. |
-| `PUT` | `/api/agents/{agent_id}` | Updates an agent's configuration (e.g., system prompt). |
-| `DELETE` | `/api/agents/{agent_id}` | **[Implemented]** Deletes an agent from the registry. |
-| `POST` | `/api/agents/{agent_id}/start` | Starts an inactive agent process. |
-| `POST` | `/api/agents/{agent_id}/stop` | Stops a running agent process. |
+| Method | Endpoint | Description | Status |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/agents` | Lists all registered agents. | ⚠️ PARTIAL IMPLEMENTATION |
+| `POST` | `/api/agents` | Creates a new agent. | ⚠️ PARTIAL IMPLEMENTATION |
+| `GET` | `/api/agents/{agent_id}` | Retrieves detailed information for a single agent. | ❌ NOT IMPLEMENTED |
+| `PUT` | `/api/agents/{agent_id}` | Updates an agent's configuration. | ❌ NOT IMPLEMENTED |
+| `DELETE` | `/api/agents/{agent_id}` | Deletes an agent from the registry. | ⚠️ PARTIAL IMPLEMENTATION |
+| `POST` | `/api/agents/{agent_id}/start` | Starts an inactive agent process. | ❌ NOT IMPLEMENTED |
+| `POST` | `/api/agents/{agent_id}/stop` | Stops a running agent process. | ❌ NOT IMPLEMENTED |
 
 #### **GET /api/agents**
 Lists all registered agents.
@@ -469,14 +470,15 @@ POST /api/agents/agent-1752272015775/stop
 
 ### 5.2. Task Endpoints
 
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `GET` | `/api/tasks` | Lists all tasks. Supports filtering by `agent_id` and `status`. |
-| `POST` | `/api/tasks` | Creates a new task. |
-| `GET` | `/api/tasks/{task_id}` | Retrieves detailed information for a single task. |
-| `PUT` | `/api/tasks/{task_id}` | Updates a task's details (e.g., status, description). |
-| `DELETE` | `/api/tasks/{task_id}` | Deletes a task. |
-| `POST` | `/api/tasks/{task_id}/cancel` | Marks a task's status as 'Cancelled'. |
+| Method | Endpoint | Description | Status |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/tasks` | Lists all tasks. Supports filtering by `agent_id` and `status`. | ⚠️ PARTIAL IMPLEMENTATION |
+| `POST` | `/api/tasks` | Creates a new task. | ⚠️ PARTIAL IMPLEMENTATION |
+| `GET` | `/api/tasks/{task_id}` | Retrieves detailed information for a single task. | ❌ NOT IMPLEMENTED |
+| `PUT` | `/api/tasks/{task_id}` | Updates a task's details (e.g., status, description). | ❌ NOT IMPLEMENTED |
+| `DELETE` | `/api/tasks/{task_id}` | Deletes a task. | ❌ NOT IMPLEMENTED |
+| `POST` | `/api/tasks/{task_id}/cancel` | Marks a task's status as 'Cancelled'. | ❌ NOT IMPLEMENTED |
+| `POST` | `/api/tasks/{task_id}/execute` | Executes a task using Claude CLI. | ✅ FULLY IMPLEMENTED (CLI only) |
 
 #### **GET /api/tasks**
 Lists all tasks. Supports filtering by `agent_id` and `status`.
@@ -559,9 +561,9 @@ Content-Type: application/json
 
 ### 5.3. WebSocket API
 
-The WebSocket provides real-time updates for system events.
+⚠️ **IMPLEMENTATION STATUS**: WebSocket has known stability issues. See `WEBSOCKET_IMPROVEMENTS.md` for details.
 
-**Connection**: `ws://localhost:3000/ws`
+**Connection**: `ws://localhost:3000/ws` (❌ UNSTABLE - NOT RECOMMENDED FOR PRODUCTION)
 
 **Message Types**:
 
@@ -805,113 +807,94 @@ Tasks are also stored in JSON format for programmatic access:
 
 ### 7.1. Claude CLI Integration
 
-The Nox ecosystem integrates with the Claude CLI to power its AI agents. Here's how to implement this integration:
+✅ **IMPLEMENTATION STATUS**: Claude CLI integration is working and tested. Uses direct command execution approach.
 
-#### 7.1.1. Spawning Claude CLI Processes
+The Nox ecosystem integrates with the Claude CLI to power its AI agents using a simplified direct execution model:
+
+#### 7.1.1. Current Implementation - Direct Command Execution
 
 ```rust
-use tokio::process::{Command, Child};
-use std::process::Stdio;
+use tokio::process::Command;
 use anyhow::Result;
 
-/// Spawn a Claude CLI process for an agent
-async fn spawn_claude_process(agent: &Agent) -> Result<Child> {
-    // Prepare the system prompt
-    let system_prompt = &agent.system_prompt;
+/// Execute a Claude CLI command directly (actual implementation)
+async fn send_message(agent_id: &str, message: &str) -> Result<String> {
+    let full_message = format!("{}\n\n{}", agent.system_prompt, message);
+    
+    let output = Command::new("claude")
+        .arg("--print")
+        .arg("--model").arg("claude-sonnet-4-20250514")
+        .arg("--output-format").arg("text")
+        .arg(&full_message)
+        .output()
+        .await?;
 
-    // Spawn the Claude CLI process
-    let child = Command::new("claude")
-        .arg("chat")
-        .arg("--system")
-        .arg(system_prompt)
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()?;
-
-    Ok(child)
+    if output.status.success() {
+        Ok(String::from_utf8_lossy(&output.stdout).to_string())
+    } else {
+        Err(anyhow::anyhow!("Claude CLI error: {}", 
+            String::from_utf8_lossy(&output.stderr)))
+    }
 }
 ```
 
-#### 7.1.2. Communicating with Claude CLI
+#### 7.1.2. ❌ DOCUMENTED BUT NOT IMPLEMENTED - Persistent Process Management
+
+The following persistent process approach was documented but is NOT the current implementation:
 
 ```rust
+// ❌ NOT IMPLEMENTED - This documentation shows the original design
+// but is not the current implementation
+
 use tokio::io::{AsyncWriteExt, AsyncReadExt};
 use anyhow::Result;
 
-/// Send a message to a Claude CLI process and get the response
+/// ❌ NOT IMPLEMENTED - Send a message to a Claude CLI process and get the response
 async fn send_message_to_claude(
     child: &mut Child, 
     message: &str
 ) -> Result<String> {
-    let stdin = child.stdin.as_mut().unwrap();
-    let mut stdout = child.stdout.as_mut().unwrap();
-
-    // Write the message to stdin
-    stdin.write_all(message.as_bytes()).await?;
-    stdin.write_all(b"\n").await?;
-    stdin.flush().await?;
-
-    // Read the response from stdout
-    let mut buffer = Vec::new();
-    stdout.read_to_end(&mut buffer).await?;
-
-    // Convert the response to a string
-    let response = String::from_utf8(buffer)?;
-
-    Ok(response)
+    // This persistent process approach is not implemented
+    unimplemented!("Persistent process management not implemented")
 }
 ```
 
-#### 7.1.3. Managing Claude CLI Processes
+#### 7.1.3. ❌ NOT IMPLEMENTED - Managing Claude CLI Processes
 
 ```rust
+// ❌ NOT IMPLEMENTED - This shows the documented design but actual 
+// implementation uses direct command execution without persistent processes
+
 use std::collections::HashMap;
 use tokio::sync::Mutex;
 use std::sync::Arc;
 
-/// Claude process manager
+/// ❌ NOT IMPLEMENTED - Claude process manager
 struct ClaudeProcessManager {
     processes: HashMap<String, Child>,
 }
 
 impl ClaudeProcessManager {
-    /// Create a new Claude process manager
-    fn new() -> Self {
-        Self {
-            processes: HashMap::new(),
-        }
-    }
-
-    /// Start a Claude process for an agent
-    async fn start_process(&mut self, agent: &Agent) -> Result<()> {
-        let child = spawn_claude_process(agent).await?;
-        self.processes.insert(agent.id.clone(), child);
-        Ok(())
-    }
-
-    /// Stop a Claude process for an agent
-    async fn stop_process(&mut self, agent_id: &str) -> Result<()> {
-        if let Some(mut child) = self.processes.remove(agent_id) {
-            child.kill().await?;
-        }
-        Ok(())
-    }
-
-    /// Send a message to a Claude process
-    async fn send_message(&mut self, agent_id: &str, message: &str) -> Result<String> {
-        if let Some(child) = self.processes.get_mut(agent_id) {
-            send_message_to_claude(child, message).await
-        } else {
-            Err(anyhow::anyhow!("No process found for agent {}", agent_id))
-        }
-    }
+    // All methods below are NOT IMPLEMENTED in current codebase
+    // Current implementation uses direct command execution instead
 }
 ```
 
+#### 7.1.4. ✅ ACTUAL WORKING IMPLEMENTATION
+
+The current working implementation can be found in `src/core/claude_process_manager.rs` and uses:
+- Direct command execution with `claude --print --model claude-sonnet-4-20250514`
+- Automatic agent registration from registry when needed
+- Response storage in task metadata
+- Error handling and timeout management
+
+**Test Results**: See `CLAUDE_CLI_TEST_RESULTS.md` for successful integration tests.
+
 ### 7.2. WebSocket Implementation
 
-#### 7.2.1. WebSocket Server Setup
+❌ **IMPLEMENTATION STATUS**: WebSocket has known stability issues. See `WEBSOCKET_IMPROVEMENTS.md` for required fixes.
+
+#### 7.2.1. ❌ UNSTABLE - WebSocket Server Setup
 
 ```rust
 use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer, Error};

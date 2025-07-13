@@ -6,22 +6,28 @@
 This test plan outlines the testing approach for the Nox Autonomous Agent Ecosystem. It defines the testing strategy, resources, schedule, and deliverables to ensure the quality and reliability of the system.
 
 ### 1.2. Scope
-This test plan covers the testing of all components and features of the Nox Autonomous Agent Ecosystem as described in the system handbook, including:
+This test plan covers the testing of all components and features of the Nox Autonomous Agent Ecosystem based on current implementation status:
 
-- Core Infrastructure (Phase 1)
-- CLI Interface (Phase 1)
-- Task Management (Phase 1)
-- Web API Server (Phase 1)
-- WebSocket Integration (Phase 1)
-- Configuration System (Phase 1)
-- Claude CLI Integration (Phase 2)
-- Git-based Versioning (Phase 2)
-- WebSocket Stability (Phase 2)
-- Advanced Inter-Agent Communication (Phase 3)
-- MCP Service Discovery (Phase 3)
-- Advanced Agent Features (Phase 3)
-- Comprehensive Resource Management (Phase 3)
-- Full Security Framework (Phase 3)
+**✅ FULLY IMPLEMENTED (Priority 1 Testing):**
+- Core Infrastructure (Phase 1) - Registry, types, file management
+- CLI Interface (Phase 1) - All commands implemented and tested
+- Task Management (Phase 1) - Complete with Claude CLI execution
+- Basic Git Integration (Phase 1) - Repository and commit functionality
+
+**⚠️ PARTIALLY IMPLEMENTED (Priority 2 Testing):**
+- Claude CLI Integration (Phase 2) - ✅ Working but simplified implementation
+- Web API Server (Phase 1) - ⚠️ Structure exists, many endpoints incomplete
+- Git-based Versioning (Phase 2) - ⚠️ Basic functionality, advanced features incomplete
+
+**❌ KNOWN ISSUES (Fix Required Before Testing):**
+- WebSocket Integration - Has stability issues (see WEBSOCKET_IMPROVEMENTS.md)
+
+**🔮 SKELETON IMPLEMENTATION (Future Testing):**
+- Advanced Inter-Agent Communication (Phase 3) - Framework only
+- MCP Service Discovery (Phase 3) - Structure but not operational  
+- Advanced Agent Features (Phase 3) - Self-modification frameworks only
+- Comprehensive Resource Management (Phase 3) - Monitoring structure only
+- Full Security Framework (Phase 3) - Permission frameworks only
 
 ### 1.3. References
 - Nox Autonomous Agent Ecosystem: System Handbook (README.md)
@@ -145,56 +151,62 @@ This test plan covers the testing of all components and features of the Nox Auto
 | TC-CLI-013 | Agent Stop Command | Stop an agent | Agent stopped successfully |
 
 #### 4.2.3. Task Management Commands
-| ID | Test Case | Description | Expected Result |
-|----|-----------|-------------|----------------|
-| TC-CLI-014 | Task Create Command | Create a new task | Task created successfully |
-| TC-CLI-015 | Task List Command | List all tasks | Tasks listed correctly |
-| TC-CLI-016 | Task Update Command | Update a task status | Task updated successfully |
-| TC-CLI-017 | Task Overview Command | Show task overview | Overview displayed correctly |
-| TC-CLI-018 | Task Cancel Command | Cancel a task | Task cancelled successfully |
+| ID | Test Case | Description | Expected Result | Status |
+|----|-----------|-------------|-----------------|--------|
+| TC-CLI-014 | Task Create Command | Create a new task | Task created successfully | ✅ IMPLEMENTED |
+| TC-CLI-015 | Task List Command | List all tasks | Tasks listed correctly | ✅ IMPLEMENTED |
+| TC-CLI-016 | Task Update Command | Update a task status | Task updated successfully | ✅ IMPLEMENTED |
+| TC-CLI-017 | Task Overview Command | Show task overview | Overview displayed correctly | ✅ IMPLEMENTED |
+| TC-CLI-018 | Task Cancel Command | Cancel a task | Task cancelled successfully | ✅ IMPLEMENTED |
+| TC-CLI-019 | Task Execute Command | Execute a task using Claude CLI | Task executed and response stored | ✅ IMPLEMENTED |
+| TC-CLI-020 | Task Show Command | Show detailed task information | Task details and Claude response displayed | ✅ IMPLEMENTED |
 
 ### 4.3. Web API Server (Phase 1)
 
 #### 4.3.1. Agent Endpoints
-| ID | Test Case | Description | Expected Result |
-|----|-----------|-------------|----------------|
-| TC-API-001 | GET /api/agents | List all agents | 200 OK with agents list |
-| TC-API-002 | POST /api/agents | Create a new agent | 201 Created with agent details |
-| TC-API-003 | GET /api/agents/{agent_id} | Get agent details | 200 OK with agent details |
-| TC-API-004 | PUT /api/agents/{agent_id} | Update an agent | 200 OK with updated agent |
-| TC-API-005 | DELETE /api/agents/{agent_id} | Delete an agent | 200 OK with success message |
-| TC-API-006 | POST /api/agents/{agent_id}/start | Start an agent | 200 OK with success message |
-| TC-API-007 | POST /api/agents/{agent_id}/stop | Stop an agent | 200 OK with success message |
+| ID | Test Case | Description | Expected Result | Status |
+|----|-----------|-------------|-----------------|--------|
+| TC-API-001 | GET /api/agents | List all agents | 200 OK with agents list | ⚠️ PARTIAL IMPLEMENTATION |
+| TC-API-002 | POST /api/agents | Create a new agent | 201 Created with agent details | ⚠️ PARTIAL IMPLEMENTATION |
+| TC-API-003 | GET /api/agents/{agent_id} | Get agent details | 200 OK with agent details | ❌ NOT IMPLEMENTED |
+| TC-API-004 | PUT /api/agents/{agent_id} | Update an agent | 200 OK with updated agent | ❌ NOT IMPLEMENTED |
+| TC-API-005 | DELETE /api/agents/{agent_id} | Delete an agent | 200 OK with success message | ⚠️ PARTIAL IMPLEMENTATION |
+| TC-API-006 | POST /api/agents/{agent_id}/start | Start an agent | 200 OK with success message | ❌ NOT IMPLEMENTED |
+| TC-API-007 | POST /api/agents/{agent_id}/stop | Stop an agent | 200 OK with success message | ❌ NOT IMPLEMENTED |
 
-#### 4.3.2. Task Endpoints
-| ID | Test Case | Description | Expected Result |
-|----|-----------|-------------|----------------|
-| TC-API-008 | GET /api/tasks | List all tasks | 200 OK with tasks list |
-| TC-API-009 | POST /api/tasks | Create a new task | 201 Created with task details |
-| TC-API-010 | GET /api/tasks/{task_id} | Get task details | 200 OK with task details |
-| TC-API-011 | PUT /api/tasks/{task_id} | Update a task | 200 OK with updated task |
-| TC-API-012 | DELETE /api/tasks/{task_id} | Delete a task | 200 OK with success message |
-| TC-API-013 | POST /api/tasks/{task_id}/cancel | Cancel a task | 200 OK with success message |
+#### 4.3.2. Task Endpoints  
+| ID | Test Case | Description | Expected Result | Status |
+|----|-----------|-------------|-----------------|--------|
+| TC-API-008 | GET /api/tasks | List all tasks | 200 OK with tasks list | ⚠️ PARTIAL IMPLEMENTATION |
+| TC-API-009 | POST /api/tasks | Create a new task | 201 Created with task details | ⚠️ PARTIAL IMPLEMENTATION |
+| TC-API-010 | GET /api/tasks/{task_id} | Get task details | 200 OK with task details | ❌ NOT IMPLEMENTED |
+| TC-API-011 | PUT /api/tasks/{task_id} | Update a task | 200 OK with updated task | ❌ NOT IMPLEMENTED |
+| TC-API-012 | DELETE /api/tasks/{task_id} | Delete a task | 200 OK with success message | ❌ NOT IMPLEMENTED |
+| TC-API-013 | POST /api/tasks/{task_id}/cancel | Cancel a task | 200 OK with success message | ❌ NOT IMPLEMENTED |
 
 ### 4.4. WebSocket Integration (Phase 1)
 
-| ID | Test Case | Description | Expected Result |
-|----|-----------|-------------|----------------|
-| TC-WS-001 | WebSocket Connection | Connect to the WebSocket server | Connection established successfully |
-| TC-WS-002 | Agent Status Update | Receive agent status updates | Updates received correctly |
-| TC-WS-003 | Task Update | Receive task updates | Updates received correctly |
-| TC-WS-004 | System Event | Receive system events | Events received correctly |
-| TC-WS-005 | Connection Close | Close the WebSocket connection | Connection closed gracefully |
+❌ **IMPLEMENTATION STATUS**: WebSocket has known stability issues. Testing blocked until fixes implemented.
+
+| ID | Test Case | Description | Expected Result | Status |
+|----|-----------|-------------|-----------------|--------|
+| TC-WS-001 | WebSocket Connection | Connect to the WebSocket server | Connection established successfully | ❌ BLOCKED - API ISSUES |
+| TC-WS-002 | Agent Status Update | Receive agent status updates | Updates received correctly | ❌ BLOCKED - API ISSUES |
+| TC-WS-003 | Task Update | Receive task updates | Updates received correctly | ❌ BLOCKED - API ISSUES |
+| TC-WS-004 | System Event | Receive system events | Events received correctly | ❌ BLOCKED - API ISSUES |
+| TC-WS-005 | Connection Close | Close the WebSocket connection | Connection closed gracefully | ❌ BLOCKED - API ISSUES |
 
 ### 4.5. Claude CLI Integration (Phase 2)
 
-| ID | Test Case | Description | Expected Result |
-|----|-----------|-------------|----------------|
-| TC-CL-001 | Spawn Claude Process | Spawn a Claude CLI process | Process started successfully |
-| TC-CL-002 | Send Message to Claude | Send a message to Claude | Response received correctly |
-| TC-CL-003 | Stop Claude Process | Stop a Claude CLI process | Process stopped gracefully |
-| TC-CL-004 | Handle Connection Timeout | Test behavior when connection times out | System handles timeout gracefully |
-| TC-CL-005 | Handle Error Recovery | Test error recovery mechanisms | System recovers from errors |
+✅ **IMPLEMENTATION STATUS**: Claude CLI integration working and tested. Uses direct command execution.
+
+| ID | Test Case | Description | Expected Result | Status |
+|----|-----------|-------------|-----------------|--------|
+| TC-CL-001 | Direct Command Execution | Execute Claude CLI with message | Response received correctly | ✅ WORKING |
+| TC-CL-002 | Task Execution Integration | Execute task via CLI command | Task completed with stored response | ✅ WORKING |
+| TC-CL-003 | Agent Registration | Auto-register agents when needed | Agent found and used for execution | ✅ WORKING |
+| TC-CL-004 | Error Handling | Test behavior with invalid commands | System handles errors gracefully | ⚠️ BASIC IMPLEMENTATION |
+| TC-CL-005 | Response Storage | Store Claude responses in task metadata | Response stored and retrievable | ✅ WORKING |
 
 ### 4.6. Git-based Versioning (Phase 2)
 
@@ -208,15 +220,17 @@ This test plan covers the testing of all components and features of the Nox Auto
 
 ### 4.7. Advanced Features (Phase 3)
 
-| ID | Test Case | Description | Expected Result |
-|----|-----------|-------------|----------------|
-| TC-ADV-001 | Inter-Agent Communication | Test communication between agents | Messages exchanged successfully |
-| TC-ADV-002 | MCP Service Discovery | Discover and integrate with MCP services | Services discovered and integrated |
-| TC-ADV-003 | Agent Self-Modification | Test agent self-modification | Agent modified successfully |
-| TC-ADV-004 | Dynamic Prompt Evolution | Test dynamic prompt evolution | Prompt evolved correctly |
-| TC-ADV-005 | Agent Spawning | Test agent spawning other agents | New agent spawned successfully |
-| TC-ADV-006 | Resource Management | Test resource management | Resources managed correctly |
-| TC-ADV-007 | Security Framework | Test security framework | Security controls enforced correctly |
+🔮 **IMPLEMENTATION STATUS**: These features have framework structure but are NOT production-ready. Testing deferred until implementation complete.
+
+| ID | Test Case | Description | Expected Result | Status |
+|----|-----------|-------------|-----------------|--------|
+| TC-ADV-001 | Inter-Agent Communication | Test communication between agents | Messages exchanged successfully | 🔮 SKELETON IMPLEMENTATION |
+| TC-ADV-002 | MCP Service Discovery | Discover and integrate with MCP services | Services discovered and integrated | 🔮 SKELETON IMPLEMENTATION |
+| TC-ADV-003 | Agent Self-Modification | Test agent self-modification | Agent modified successfully | 🔮 SKELETON IMPLEMENTATION |
+| TC-ADV-004 | Dynamic Prompt Evolution | Test dynamic prompt evolution | Prompt evolved correctly | 🔮 SKELETON IMPLEMENTATION |
+| TC-ADV-005 | Agent Spawning | Test agent spawning other agents | New agent spawned successfully | 🔮 SKELETON IMPLEMENTATION |
+| TC-ADV-006 | Resource Management | Test resource management | Resources managed correctly | 🔮 SKELETON IMPLEMENTATION |
+| TC-ADV-007 | Security Framework | Test security framework | Security controls enforced correctly | 🔮 SKELETON IMPLEMENTATION |
 
 ## 5. Test Data Requirements
 

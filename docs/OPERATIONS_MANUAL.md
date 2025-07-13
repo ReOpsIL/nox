@@ -1,5 +1,27 @@
 # Nox Agent Ecosystem - Operations Manual
 
+## ⚠️ Implementation Status Notice
+
+**Current System Status (Updated July 2025):**
+
+**✅ FULLY OPERATIONAL:**
+- Core CLI commands (agent/task management) 
+- Claude CLI integration and task execution
+- Basic Git integration and registry management
+
+**⚠️ PARTIALLY IMPLEMENTED:**  
+- Web API endpoints (structure exists, many incomplete)
+- Git advanced features (rollback, branching)
+
+**❌ KNOWN ISSUES:**
+- WebSocket integration has stability issues (see WEBSOCKET_IMPROVEMENTS.md)
+
+**🔮 FUTURE FEATURES:**
+- Advanced agent features (self-modification, spawning)
+- MCP service discovery  
+- Resource management enforcement
+- Security framework integration
+
 ## Table of Contents
 1. [Overview](#overview)
 2. [Prerequisites](#prerequisites)
