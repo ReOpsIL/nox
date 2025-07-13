@@ -121,31 +121,97 @@ export function setupSystemRoutes(
   });
 
   /**
+   * GET /api/system/config
+   * Get system configuration
+   */
+  systemRouter.get('/config', async (_req: Request, res: Response) => {
+    try {
+      const config = {
+        server: {
+          dashboardPort: 3001,
+          websocketPort: 3000
+        },
+        agents: {
+          maxConcurrent: 10,
+          defaultResourceLimits: {
+            memory: '512MB',
+            cpu: '1 core'
+          }
+        },
+        tasks: {
+          maxRetries: 3,
+          defaultTimeout: 300000,
+          cleanupInterval: 60000
+        },
+        logging: {
+          level: 'info',
+          enableFileLogging: true
+        },
+        features: {
+          autoRefresh: true,
+          taskOutputDisplay: true,
+          cascadeDelete: true
+        }
+      };
+
+      res.json({
+        success: true,
+        config
+      });
+    } catch (error: any) {
+      logger.error('Error getting system config:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to get system config',
+        message: error.message
+      });
+    }
+  });
+
+  /**
    * POST /api/system/shutdown
    * Shutdown the system
    */
   systemRouter.post('/shutdown', async (_req: Request, res: Response) => {
     try {
-      // This is a placeholder - in a real system, you would implement
-      // a proper shutdown sequence with authentication and authorization
-
-      // For now, we'll just return a message
+      logger.info('System shutdown initiated via API');
+      
+      // Send response immediately before shutdown
       res.json({
         success: true,
-        message: 'System shutdown initiated',
-        warning: 'This is a placeholder - no actual shutdown is performed'
+        message: 'System shutdown initiated - all components will be stopped'
       });
 
-      // In a real implementation, you would do something like:
-      // await agentManager.shutdown();
-      // await messageBroker.shutdown();
-      // await taskManager.shutdown();
-      // process.exit(0);
+      // Perform graceful shutdown with proper cleanup sequence
+      setTimeout(async () => {
+        try {
+          logger.info('Starting graceful shutdown sequence...');
+          
+          // Stop all agents
+          await agentManager.shutdown();
+          logger.info('AgentManager shutdown complete');
+          
+          // Stop message broker
+          await messageBroker.shutdown();
+          logger.info('MessageBroker shutdown complete');
+          
+          // Stop task manager
+          await taskManager.shutdown();
+          logger.info('TaskManager shutdown complete');
+          
+          logger.info('Graceful shutdown complete');
+          process.exit(0);
+        } catch (shutdownError) {
+          logger.error('Error during shutdown:', shutdownError);
+          process.exit(1);
+        }
+      }, 1000); // Give response time to send
+      
     } catch (error: any) {
-      logger.error('Error shutting down system:', error);
+      logger.error('Error initiating system shutdown:', error);
       res.status(500).json({
         success: false,
-        error: 'Failed to shutdown system',
+        error: 'Failed to initiate system shutdown',
         message: error.message
       });
     }
@@ -157,32 +223,52 @@ export function setupSystemRoutes(
    */
   systemRouter.post('/restart', async (_req: Request, res: Response) => {
     try {
-      // This is a placeholder - in a real system, you would implement
-      // a proper restart sequence with authentication and authorization
-
-      // For now, we'll just return a message
+      logger.info('System restart initiated via API');
+      
+      // Send response immediately before restart
       res.json({
         success: true,
-        message: 'System restart initiated',
-        warning: 'This is a placeholder - no actual restart is performed'
+        message: 'System restart initiated - shutting down and restarting'
       });
 
-      // In a real implementation, you would do something like:
-      // await agentManager.shutdown();
-      // await messageBroker.shutdown();
-      // await taskManager.shutdown();
-      // process.on('exit', () => {
-      //   require('child_process').spawn(process.argv[0], process.argv.slice(1), {
-      //     detached: true,
-      //     stdio: ['ignore', 'ignore', 'ignore']
-      //   }).unref();
-      // });
-      // process.exit(0);
+      // Perform graceful restart with proper cleanup and respawn
+      setTimeout(async () => {
+        try {
+          logger.info('Starting graceful restart sequence...');
+          
+          // Set up process respawn before shutdown
+          const { spawn } = require('child_process');
+          process.on('exit', () => {
+            logger.info('Respawning process...');
+            spawn(process.argv[0], process.argv.slice(1), {
+              detached: true,
+              stdio: ['ignore', 'ignore', 'ignore']
+            }).unref();
+          });
+          
+          // Stop all components
+          await agentManager.shutdown();
+          logger.info('AgentManager shutdown complete');
+          
+          await messageBroker.shutdown();
+          logger.info('MessageBroker shutdown complete');
+          
+          await taskManager.shutdown();
+          logger.info('TaskManager shutdown complete');
+          
+          logger.info('Restart shutdown complete, process will respawn');
+          process.exit(0);
+        } catch (restartError) {
+          logger.error('Error during restart:', restartError);
+          process.exit(1);
+        }
+      }, 1000); // Give response time to send
+      
     } catch (error: any) {
-      logger.error('Error restarting system:', error);
+      logger.error('Error initiating system restart:', error);
       res.status(500).json({
         success: false,
-        error: 'Failed to restart system',
+        error: 'Failed to initiate system restart',
         message: error.message
       });
     }
@@ -192,26 +278,90 @@ export function setupSystemRoutes(
    * GET /api/system/logs
    * Get system logs
    */
-  systemRouter.get('/logs', async (_req: Request, res: Response) => {
+  systemRouter.get('/logs', async (req: Request, res: Response) => {
     try {
-      // This is a placeholder - in a real system, you would implement
-      // a proper log retrieval mechanism
-
-      // For now, we'll just return a message
+      const fs = require('fs').promises;
+      const path = require('path');
+      
+      // Parse query parameters
+      const level = req.query.level as string;
+      const startTime = req.query.startTime ? new Date(req.query.startTime as string) : undefined;
+      const endTime = req.query.endTime ? new Date(req.query.endTime as string) : undefined;
+      const limit = parseInt(req.query.limit as string) || 100;
+      
+      // Read log file
+      const logFilePath = '/tmp/nox.log';
+      let logContent = '';
+      
+      try {
+        logContent = await fs.readFile(logFilePath, 'utf-8');
+      } catch (readError) {
+        // If main log file doesn't exist, try alternative locations
+        const altPaths = [
+          path.join(process.cwd(), 'nox.log'),
+          path.join(process.cwd(), 'logs', 'nox.log'),
+          path.join(__dirname, '../../../nox.log')
+        ];
+        
+        for (const altPath of altPaths) {
+          try {
+            logContent = await fs.readFile(altPath, 'utf-8');
+            break;
+          } catch {
+            continue;
+          }
+        }
+      }
+      
+      // Parse log lines
+      const logLines = logContent.split('\n').filter(line => line.trim().length > 0);
+      const logs = [];
+      
+      for (const line of logLines) {
+        // Parse log entry (assuming format: [timestamp] LEVEL message)
+        const match = line.match(/^\[(.*?)\]\s+(\w+)\s+(.*)$/);
+        if (match) {
+          const [, timestamp, logLevel, message] = match;
+          if (timestamp && logLevel && message) {
+            const logTime = new Date(timestamp);
+            
+            // Filter by level if specified
+            if (level && logLevel.toLowerCase() !== level.toLowerCase()) {
+              continue;
+            }
+            
+            // Filter by time range if specified
+            if (startTime && logTime < startTime) continue;
+            if (endTime && logTime > endTime) continue;
+            
+            logs.push({
+              timestamp: logTime,
+              level: logLevel,
+              message: message.trim()
+            });
+          }
+        } else {
+          // Handle lines that don't match the expected format
+          logs.push({
+            timestamp: new Date(),
+            level: 'INFO',
+            message: line.trim()
+          });
+        }
+      }
+      
+      // Sort by timestamp (newest first) and limit
+      const sortedLogs = logs
+        .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+        .slice(0, limit);
+      
       res.json({
         success: true,
-        message: 'Log retrieval not implemented',
-        logs: []
+        logs: sortedLogs,
+        totalCount: logs.length,
+        displayedCount: sortedLogs.length
       });
-
-      // In a real implementation, you would do something like:
-      // const logs = await logManager.getLogs({
-      //   level: req.query.level,
-      //   startTime: req.query.startTime ? new Date(req.query.startTime) : undefined,
-      //   endTime: req.query.endTime ? new Date(req.query.endTime) : undefined,
-      //   limit: parseInt(req.query.limit) || 100
-      // });
-      // res.json({ success: true, logs });
+      
     } catch (error: any) {
       logger.error('Error getting system logs:', error);
       res.status(500).json({

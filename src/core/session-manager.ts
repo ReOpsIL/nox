@@ -2,8 +2,11 @@ import { EventEmitter } from 'events';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import { ClaudeInterface } from './claude-interface';
+import { MockClaudeInterface } from './mock-claude-interface';
+import { ClaudeInterfaceBase } from './claude-interface-base';
 import { AgentConfig } from '../types';
 import { logger } from '../utils/logger';
+import { spawn } from 'child_process';
 
 export interface SessionInfo {
   sessionId: string;
@@ -28,7 +31,7 @@ export interface SessionStats {
  * Handles session persistence, recovery, and lifecycle management
  */
 export class SessionManager extends EventEmitter {
-  private sessions = new Map<string, ClaudeInterface>();
+  private sessions = new Map<string, ClaudeInterfaceBase>();
   private sessionMetadata = new Map<string, SessionInfo>();
   private initialized = false;
   private workingDir: string;
@@ -68,9 +71,68 @@ export class SessionManager extends EventEmitter {
   }
 
   /**
+   * Check if we should use mock interface instead of real Claude CLI
+   */
+  private async shouldUseMockInterface(): Promise<boolean> {
+    try {
+      // Check if Claude CLI command is available and supports our required options
+      const claudeCommand = process.env.CLAUDE_CLI_PATH || 'claude';
+      
+      // Try to spawn claude with the exact arguments we need
+      return new Promise((resolve) => {
+        const testProcess = spawn(claudeCommand, ['--help'], {
+          stdio: 'pipe',
+          timeout: 3000
+        });
+
+        let output = '';
+        
+        testProcess.stdout?.on('data', (data) => {
+          output += data.toString();
+        });
+
+        testProcess.stderr?.on('data', (data) => {
+          output += data.toString();
+        });
+
+        testProcess.on('error', () => {
+          // Command not found or failed to spawn
+          logger.info('Claude CLI not found, using mock interface');
+          resolve(true); // Use mock interface
+        });
+
+        testProcess.on('exit', (code) => {
+          // Check if this is the actual Claude CLI by looking for key options
+          const hasPrintOption = output.includes('--print');
+          const hasModelOption = output.includes('--model');
+          const isClaudeCode = output.includes('Claude Code');
+          
+          if (code === 0 && hasPrintOption && hasModelOption && isClaudeCode) {
+            logger.info('Claude CLI detected and supports required options, using real Claude CLI');
+            resolve(false); // Use real Claude CLI
+          } else {
+            logger.info('Claude CLI missing required options or failed, using mock interface');
+            resolve(true); // Use mock interface
+          }
+        });
+
+        // Timeout fallback
+        setTimeout(() => {
+          testProcess.kill();
+          logger.info('Claude CLI test timeout, using mock interface');
+          resolve(true); // Use mock interface
+        }, 3000);
+      });
+    } catch (error) {
+      logger.warn('Failed to test Claude CLI availability, using mock interface:', error);
+      return true; // Use mock interface on any error
+    }
+  }
+
+  /**
    * Create a new session for an agent
    */
-  async createSession(agentConfig: AgentConfig): Promise<ClaudeInterface> {
+  async createSession(agentConfig: AgentConfig): Promise<ClaudeInterfaceBase> {
     if (!this.initialized) {
       throw new Error('SessionManager not initialized');
     }
@@ -80,8 +142,17 @@ export class SessionManager extends EventEmitter {
     }
 
     try {
-      // Create Claude interface
-      const claudeInterface = new ClaudeInterface(agentConfig, this.workingDir);
+      // Check if Claude CLI is available and configured
+      const useMockInterface = await this.shouldUseMockInterface();
+      
+      // Create appropriate interface
+      const claudeInterface = useMockInterface 
+        ? new MockClaudeInterface(agentConfig, this.workingDir)
+        : new ClaudeInterface(agentConfig, this.workingDir);
+        
+      if (useMockInterface) {
+        logger.info(`Using mock Claude interface for agent ${agentConfig.id} (Claude CLI not available)`);
+      }
 
       // Set up event listeners
       this.setupSessionEventListeners(claudeInterface, agentConfig.id);
@@ -123,7 +194,7 @@ export class SessionManager extends EventEmitter {
   /**
    * Get an existing session for an agent
    */
-  getSession(agentId: string): ClaudeInterface | null {
+  getSession(agentId: string): ClaudeInterfaceBase | null {
     return this.sessions.get(agentId) || null;
   }
 
@@ -137,7 +208,7 @@ export class SessionManager extends EventEmitter {
   /**
    * Get all active sessions
    */
-  getActiveSessions(): Map<string, ClaudeInterface> {
+  getActiveSessions(): Map<string, ClaudeInterfaceBase> {
     return new Map(this.sessions);
   }
 
@@ -181,7 +252,7 @@ export class SessionManager extends EventEmitter {
   /**
    * Restart a session for an agent
    */
-  async restartSession(agentId: string, agentConfig: AgentConfig): Promise<ClaudeInterface> {
+  async restartSession(agentId: string, agentConfig: AgentConfig): Promise<ClaudeInterfaceBase> {
     logger.info(`Restarting session for agent: ${agentId}`);
 
     // Stop existing session if it exists
@@ -237,7 +308,7 @@ export class SessionManager extends EventEmitter {
     for (const [agentId, session] of Array.from(this.sessions)) {
       try {
         const health = session.getHealthStatus();
-        healthStatus.set(agentId, health.healthy);
+        healthStatus.set(agentId, health.healthy || false);
         
         // Update metadata
         const metadata = this.sessionMetadata.get(agentId);
@@ -317,7 +388,7 @@ export class SessionManager extends EventEmitter {
   /**
    * Set up event listeners for a Claude interface
    */
-  private setupSessionEventListeners(claudeInterface: ClaudeInterface, agentId: string): void {
+  private setupSessionEventListeners(claudeInterface: ClaudeInterfaceBase, agentId: string): void {
     claudeInterface.on('response', (response) => {
       // Update session metadata
       const metadata = this.sessionMetadata.get(agentId);

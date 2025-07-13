@@ -12,7 +12,7 @@ import { TaskManager } from '../core/task-manager';
  */
 export class WebSocketServer extends EventEmitter {
   private server: WebSocket.Server | null = null;
-  private clients: Map<WebSocket, { id: string; lastPing: Date }> = new Map();
+  private clients: Map<WebSocket, { id: string; lastPing: Date; subscriptions?: Set<string> }> = new Map();
   private pingInterval: NodeJS.Timeout | null = null;
   private initialized = false;
   private port: number;
@@ -155,6 +155,16 @@ export class WebSocketServer extends EventEmitter {
   }
 
   /**
+   * Send a message directly to a WebSocket
+   */
+  private sendToWebSocket(ws: WebSocket, data: any): void {
+    if (ws.readyState === WebSocket.OPEN) {
+      const message = JSON.stringify({ ...data, timestamp: new Date().toISOString() });
+      ws.send(message);
+    }
+  }
+
+  /**
    * Handle a new WebSocket connection
    */
   private handleConnection(ws: WebSocket, _req: any): void {
@@ -222,9 +232,86 @@ export class WebSocketServer extends EventEmitter {
   /**
    * Handle client subscription requests
    */
-  private handleSubscription(_ws: WebSocket, _data: any): void {
-    // TODO: Implement subscription logic
-    // This would allow clients to subscribe to specific events or agents
+  private handleSubscription(ws: WebSocket, data: any): void {
+    try {
+      const clientInfo = this.clients.get(ws);
+      if (!clientInfo) {
+        logger.warn('Subscription request from unknown client');
+        return;
+      }
+
+      const { type, filters } = data;
+      
+      // Initialize subscriptions if not exists
+      if (!clientInfo.subscriptions) {
+        clientInfo.subscriptions = new Set();
+      }
+
+      // Handle different subscription types
+      switch (type) {
+        case 'agents':
+          // Subscribe to agent events (status changes, creation, deletion)
+          if (filters?.agentIds) {
+            filters.agentIds.forEach((agentId: string) => {
+              clientInfo.subscriptions?.add(`agent:${agentId}`);
+            });
+          } else {
+            clientInfo.subscriptions?.add('agents:all');
+          }
+          break;
+
+        case 'tasks':
+          // Subscribe to task events (creation, updates, completion)
+          if (filters?.agentIds) {
+            filters.agentIds.forEach((agentId: string) => {
+              clientInfo.subscriptions?.add(`tasks:agent:${agentId}`);
+            });
+          } else {
+            clientInfo.subscriptions?.add('tasks:all');
+          }
+          break;
+
+        case 'system':
+          // Subscribe to system events (health, status, metrics)
+          clientInfo.subscriptions?.add('system:all');
+          break;
+
+        case 'messages':
+          // Subscribe to inter-agent messages
+          if (filters?.agentIds) {
+            filters.agentIds.forEach((agentId: string) => {
+              clientInfo.subscriptions?.add(`messages:${agentId}`);
+            });
+          } else {
+            clientInfo.subscriptions?.add('messages:all');
+          }
+          break;
+
+        default:
+          logger.warn(`Unknown subscription type: ${type}`);
+          this.sendToWebSocket(ws, {
+            type: 'error',
+            message: `Unknown subscription type: ${type}`
+          });
+          return;
+      }
+
+      // Send confirmation
+      this.sendToWebSocket(ws, {
+        type: 'subscription_confirmed',
+        subscriptionType: type,
+        filters: filters || {}
+      });
+
+      logger.debug(`Client ${clientInfo.id} subscribed to ${type} events`);
+
+    } catch (error) {
+      logger.error('Error handling subscription:', error);
+      this.sendToWebSocket(ws, {
+        type: 'error',
+        message: 'Failed to process subscription request'
+      });
+    }
   }
 
   /**
@@ -370,6 +457,33 @@ export class WebSocketServer extends EventEmitter {
         status: task.status,
         priority: task.priority,
         progress: task.progress,
+        startedAt: task.startedAt?.toISOString(),
+        completedAt: task.completedAt?.toISOString(),
+        deadline: task.deadline?.toISOString(),
+        timestamp: new Date().toISOString()
+      });
+    });
+
+    this.taskManager.on('task-started', (task) => {
+      this.broadcast('task_started', {
+        taskId: task.id,
+        agentId: task.agentId,
+        title: task.title,
+        status: task.status,
+        priority: task.priority,
+        progress: task.progress,
+        startedAt: task.startedAt?.toISOString(),
+        timestamp: new Date().toISOString()
+      });
+    });
+
+    this.taskManager.on('task-execute', (task) => {
+      this.broadcast('task_execute', {
+        taskId: task.id,
+        agentId: task.agentId,
+        title: task.title,
+        status: task.status,
+        priority: task.priority,
         timestamp: new Date().toISOString()
       });
     });

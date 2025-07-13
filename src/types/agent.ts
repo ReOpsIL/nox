@@ -9,6 +9,7 @@ export interface AgentConfig {
   capabilities: string[];
   relationships: AgentRelationship[];
   mcpServices: string[];
+  model?: string;
 }
 
 export type AgentStatus = 'active' | 'inactive' | 'error' | 'crashed' | 'starting' | 'stopping';

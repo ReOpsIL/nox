@@ -6,11 +6,96 @@ import { Router, Request, Response } from 'express';
 import { TaskManager } from '../../core/task-manager';
 import { logger } from '../../utils/logger';
 import { Task, TaskStatus, TaskPriority } from '../../types';
+import * as fs from 'fs/promises';
+import * as path from 'path';
+import { WebSocketServer } from '../../server/websocket';
+
+/**
+ * Serialize a task object for JSON transmission
+ * Converts Date objects to ISO strings to prevent React serialization errors
+ */
+function serializeTask(task: Task): any {
+  return {
+    ...task,
+    startedAt: task.startedAt?.toISOString(),
+    completedAt: task.completedAt?.toISOString(),
+    deadline: task.deadline?.toISOString()
+  };
+}
+
+
+
+
+
+/**
+ * Get conversation outputs for a task
+ */
+async function getTaskOutput(agentId: string, taskId: string): Promise<{ results?: string; error?: string }> {
+  try {
+    const conversationPath = path.join(process.cwd(), 'conversations', `${agentId}.json`);
+    
+    try {
+      const conversationData = await fs.readFile(conversationPath, 'utf-8');
+      const conversation = JSON.parse(conversationData);
+      
+      if (conversation.messages && Array.isArray(conversation.messages)) {
+        // Find messages related to this task
+        const taskMessages = conversation.messages.filter((msg: any) => 
+          msg.content && (
+            msg.content.includes(taskId) || 
+            msg.content.includes('TASK COMPLETED') ||
+            (msg.role === 'assistant' && msg.content.length > 50) // Claude responses are usually longer
+          )
+        );
+        
+        // Get the last assistant response (most likely the task result)
+        const lastAssistantMessage = taskMessages
+          .filter((msg: any) => msg.role === 'assistant')
+          .pop();
+        
+        if (lastAssistantMessage) {
+          const content = lastAssistantMessage.content;
+          
+          // Check if it's an error response
+          if (content.toLowerCase().includes('error:') || 
+              content.toLowerCase().includes('failed:') ||
+              content.toLowerCase().includes('cannot complete') ||
+              content.toLowerCase().includes('task failed')) {
+            return { error: content };
+          } else {
+            return { results: content };
+          }
+        }
+      }
+    } catch (fileError) {
+      // Conversation file doesn't exist or can't be read
+      logger.debug(`No conversation file found for agent ${agentId}: ${fileError}`);
+    }
+    
+    return {};
+  } catch (error) {
+    logger.error(`Error getting task output for ${taskId}:`, error);
+    return {};
+  }
+}
+
+/**
+ * Enhanced task serialization with conversation outputs
+ */
+async function serializeTaskWithOutput(task: Task): Promise<any> {
+  const serializedTask = serializeTask(task);
+  const output = await getTaskOutput(task.agentId, task.id);
+  
+  return {
+    ...serializedTask,
+    ...output
+  };
+}
 
 /**
  * Set up task routes
  */
-export function setupTaskRoutes(router: Router, taskManager: TaskManager): void {
+export function setupTaskRoutes(router: Router, taskManager: TaskManager, websocketServer?: WebSocketServer): void {
   const taskRouter = Router();
   router.use('/tasks', taskRouter);
 
@@ -65,9 +150,12 @@ export function setupTaskRoutes(router: Router, taskManager: TaskManager): void 
         tasks = tasks.filter(task => task.priority === priority);
       }
 
+      // Enhance tasks with output for display
+      const enhancedTasks = await Promise.all(tasks.map(serializeTaskWithOutput));
+      
       res.json({
         success: true,
-        tasks
+        tasks: enhancedTasks
       });
       return;
     } catch (error: any) {
@@ -111,7 +199,7 @@ export function setupTaskRoutes(router: Router, taskManager: TaskManager): void 
       const blockedTasks = await taskManager.getBlockedTasks();
       res.json({
         success: true,
-        tasks: blockedTasks
+        tasks: blockedTasks.map(serializeTask)
       });
     } catch (error: any) {
       logger.error('Error getting blocked tasks:', error);
@@ -140,9 +228,12 @@ export function setupTaskRoutes(router: Router, taskManager: TaskManager): void 
         });
       }
 
+      // Enhance task with output for display
+      const enhancedTask = await serializeTaskWithOutput(task);
+      
       res.json({
         success: true,
-        task
+        task: enhancedTask
       });
       return;
     } catch (error: any) {
@@ -194,9 +285,14 @@ export function setupTaskRoutes(router: Router, taskManager: TaskManager): void 
         progress: 0
       });
 
+      // Broadcast task creation event to connected clients
+      if (websocketServer) {
+        websocketServer.broadcast('task_created', serializeTask(task));
+      }
+
       res.status(201).json({
         success: true,
-        task
+        task: serializeTask(task)
       });
       return;
     } catch (error: any) {
@@ -229,7 +325,7 @@ export function setupTaskRoutes(router: Router, taskManager: TaskManager): void 
 
       res.json({
         success: true,
-        task
+        task: serializeTask(task)
       });
     } catch (error: any) {
       logger.error(`Error updating task ${req.params.taskId}:`, error);
@@ -299,7 +395,7 @@ export function setupTaskRoutes(router: Router, taskManager: TaskManager): void 
 
       res.json({
         success: true,
-        task
+        task: serializeTask(task)
       });
     } catch (error: any) {
       logger.error(`Error completing task ${req.params.taskId}:`, error);
@@ -354,7 +450,7 @@ export function setupTaskRoutes(router: Router, taskManager: TaskManager): void 
 
       res.status(201).json({
         success: true,
-        task
+        task: serializeTask(task)
       });
       return;
     } catch (error: any) {

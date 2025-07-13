@@ -3,12 +3,12 @@ import { AgentConfig, AgentProcess, NoxConfig, AgentMessage } from '../types';
 import { logger } from '../utils/logger';
 import { SessionManager } from './session-manager';
 import { ProcessMonitor } from '../utils/process-monitor';
-import { ClaudeInterface } from './claude-interface';
+import { ClaudeInterfaceBase } from './claude-interface-base';
 import { protocolRegistry } from '../protocols/agent-protocols';
 
 export class AgentManager extends EventEmitter {
   private processes: Map<string, AgentProcess> = new Map();
-  private claudeInterfaces: Map<string, ClaudeInterface> = new Map();
+  private claudeInterfaces: Map<string, ClaudeInterfaceBase> = new Map();
   private initialized = false;
   private sessionManager: SessionManager;
   private processMonitor: ProcessMonitor;
@@ -175,7 +175,7 @@ export class AgentManager extends EventEmitter {
     }
 
     try {
-      const response = await claudeInterface.sendMessage(message, true);
+      const response = await claudeInterface.sendMessage(message);
       if (!response.success) {
         throw new Error(`Agent ${agentId} error: ${response.error}`);
       }
@@ -191,7 +191,7 @@ export class AgentManager extends EventEmitter {
   /**
    * Get Claude interface for an agent
    */
-  getClaudeInterface(agentId: string): ClaudeInterface | null {
+  getClaudeInterface(agentId: string): ClaudeInterfaceBase | null {
     return this.claudeInterfaces.get(agentId) || null;
   }
 
@@ -315,7 +315,7 @@ export class AgentManager extends EventEmitter {
   /**
    * Set up event listeners for a Claude interface
    */
-  private setupClaudeInterfaceListeners(agentId: string, claudeInterface: ClaudeInterface): void {
+  private setupClaudeInterfaceListeners(agentId: string, claudeInterface: ClaudeInterfaceBase): void {
     claudeInterface.on('response', (response) => {
       this.emit('agent-response', agentId, response);
     });

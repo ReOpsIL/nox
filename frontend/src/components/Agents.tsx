@@ -14,7 +14,13 @@ interface Agent {
   createdAt: string;
   lastActiveAt?: string;
   tasksCompleted: number;
-  currentTask?: string;
+  currentTask?: {
+    id: string;
+    title: string;
+    status: string;
+    progress: number;
+    startedAt: string;
+  } | string | null;
 }
 
 const Agents: React.FC<AgentsProps> = ({ wsClient }) => {
@@ -22,10 +28,18 @@ const Agents: React.FC<AgentsProps> = ({ wsClient }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showCreateTaskForm, setShowCreateTaskForm] = useState(false);
+  const [selectedAgentForTask, setSelectedAgentForTask] = useState<string | null>(null);
   const [newAgent, setNewAgent] = useState({
     name: '',
     description: '',
     capabilities: ''
+  });
+  const [newTask, setNewTask] = useState({
+    title: '',
+    description: '',
+    priority: 'MEDIUM',
+    deadline: ''
   });
 
   useEffect(() => {
@@ -102,6 +116,51 @@ const Agents: React.FC<AgentsProps> = ({ wsClient }) => {
     }
   };
 
+  const createTask = async () => {
+    if (!selectedAgentForTask) {
+      setError('No agent selected for task creation');
+      return;
+    }
+
+    try {
+      const taskData = {
+        agentId: selectedAgentForTask,
+        title: newTask.title,
+        description: newTask.description,
+        priority: newTask.priority,
+        deadline: newTask.deadline ? new Date(newTask.deadline).toISOString() : undefined,
+        requestedBy: 'user'
+      };
+
+      const response = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(taskData),
+      });
+
+      if (response.ok) {
+        setShowCreateTaskForm(false);
+        setSelectedAgentForTask(null);
+        setNewTask({ title: '', description: '', priority: 'MEDIUM', deadline: '' });
+        // Optionally refresh agents to show updated task count
+        fetchAgents();
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        setError(errorData.message || 'Failed to create task');
+      }
+    } catch (err) {
+      setError('Error creating task');
+      console.error('Error creating task:', err);
+    }
+  };
+
+  const openCreateTaskForm = (agentId: string) => {
+    setSelectedAgentForTask(agentId);
+    setShowCreateTaskForm(true);
+  };
+
   const controlAgent = async (agentId: string, action: 'start' | 'stop') => {
     try {
       const response = await fetch(`/api/agents/${agentId}/${action}`, {
@@ -138,6 +197,38 @@ const Agents: React.FC<AgentsProps> = ({ wsClient }) => {
     }
   };
 
+  const deleteAllAgents = async () => {
+    if (agents.length === 0) {
+      setError('No agents to delete');
+      return;
+    }
+
+    const confirmMessage = `Are you sure you want to delete ALL ${agents.length} agents and their tasks? This action cannot be undone.`;
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await fetch('/api/agents/delete-all', {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setAgents([]);
+        setError(null);
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        setError(errorData.message || 'Failed to delete all agents');
+      }
+    } catch (err) {
+      setError('Error deleting all agents');
+      console.error('Error deleting all agents:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'active': return '🟢';
@@ -166,12 +257,23 @@ const Agents: React.FC<AgentsProps> = ({ wsClient }) => {
     <div className="agents-page">
       <div className="page-header">
         <h1>👥 Agent Management</h1>
-        <button 
-          className="btn btn-primary"
-          onClick={() => setShowCreateForm(true)}
-        >
-          + Create Agent
-        </button>
+        <div className="header-actions">
+          <button 
+            className="btn btn-primary"
+            onClick={() => setShowCreateForm(true)}
+          >
+            + Create Agent
+          </button>
+          {agents.length > 0 && (
+            <button 
+              className="btn btn-danger"
+              onClick={deleteAllAgents}
+              title="Delete all agents and their tasks"
+            >
+              🗑️ Delete All ({agents.length})
+            </button>
+          )}
+        </div>
       </div>
 
       {error && (
@@ -228,6 +330,88 @@ const Agents: React.FC<AgentsProps> = ({ wsClient }) => {
         </div>
       )}
 
+      {showCreateTaskForm && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <div className="modal-header">
+              <h2>Create New Task</h2>
+              <button onClick={() => {
+                setShowCreateTaskForm(false);
+                setSelectedAgentForTask(null);
+              }}>×</button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label>Agent:</label>
+                <input
+                  type="text"
+                  value={agents.find(a => a.id === selectedAgentForTask)?.name || ''}
+                  disabled
+                  className="disabled"
+                />
+              </div>
+              <div className="form-group">
+                <label>Task Title:</label>
+                <input
+                  type="text"
+                  value={newTask.title}
+                  onChange={(e) => setNewTask(prev => ({ ...prev, title: e.target.value }))}
+                  placeholder="Task title"
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Description:</label>
+                <textarea
+                  value={newTask.description}
+                  onChange={(e) => setNewTask(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="Describe what the agent should do..."
+                  rows={3}
+                />
+              </div>
+              <div className="form-group">
+                <label>Priority:</label>
+                <select
+                  value={newTask.priority}
+                  onChange={(e) => setNewTask(prev => ({ ...prev, priority: e.target.value }))}
+                >
+                  <option value="LOW">Low</option>
+                  <option value="MEDIUM">Medium</option>
+                  <option value="HIGH">High</option>
+                  <option value="CRITICAL">Critical</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Deadline (optional):</label>
+                <input
+                  type="datetime-local"
+                  value={newTask.deadline}
+                  onChange={(e) => setNewTask(prev => ({ ...prev, deadline: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button 
+                className="btn btn-secondary" 
+                onClick={() => {
+                  setShowCreateTaskForm(false);
+                  setSelectedAgentForTask(null);
+                }}
+              >
+                Cancel
+              </button>
+              <button 
+                className="btn btn-primary" 
+                onClick={createTask}
+                disabled={!newTask.title.trim()}
+              >
+                Create Task
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="agents-grid">
         {agents.length === 0 ? (
           <div className="empty-state">
@@ -245,6 +429,13 @@ const Agents: React.FC<AgentsProps> = ({ wsClient }) => {
                   </span>
                 </div>
                 <div className="agent-actions">
+                  <button 
+                    className="btn btn-primary btn-sm"
+                    onClick={() => openCreateTaskForm(agent.id)}
+                    title="Create new task for this agent"
+                  >
+                    + Task
+                  </button>
                   {agent.status === 'stopped' ? (
                     <button 
                       className="btn btn-success btn-sm"
@@ -307,7 +498,11 @@ const Agents: React.FC<AgentsProps> = ({ wsClient }) => {
                 {agent.currentTask && (
                   <div className="current-task">
                     <strong>Current Task:</strong>
-                    <span>{agent.currentTask}</span>
+                    <span>
+                      {typeof agent.currentTask === 'object' && agent.currentTask !== null
+                        ? (agent.currentTask.title || 'Unknown Task')
+                        : String(agent.currentTask || 'No task')}
+                    </span>
                   </div>
                 )}
               </div>

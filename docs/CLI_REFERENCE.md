@@ -102,6 +102,23 @@ Show task overview across all agents
 npx ts-node src/nox.ts task-overview
 ```
 
+## API Endpoints for Task Control
+
+### Manual Task Execution
+```bash
+# Start a specific task
+curl -X POST http://localhost:3001/api/tasks/{taskId}/start
+
+# Execute a task on its assigned agent
+curl -X POST http://localhost:3001/api/tasks/{taskId}/execute
+```
+
+### Agent Deletion
+```bash
+# Delete an agent via API
+curl -X DELETE http://localhost:3001/api/agents/{agentId}
+```
+
 ## Registry Management
 
 ### `registry-status`

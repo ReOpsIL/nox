@@ -28,6 +28,8 @@ const Tasks: React.FC<TasksProps> = ({ wsClient }) => {
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<string>('all');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [refreshInterval, setRefreshInterval] = useState<NodeJS.Timeout | null>(null);
 
   const fetchTasks = async () => {
     try {
@@ -69,6 +71,10 @@ const Tasks: React.FC<TasksProps> = ({ wsClient }) => {
       wsClient.on('task_completed', handleTaskUpdate);
       wsClient.on('task_failed', handleTaskUpdate);
       wsClient.on('task_progress', handleTaskUpdate);
+      wsClient.on('agent_deleted', fetchTasks); // Refresh tasks when agent is deleted
+      wsClient.on('agents_deleted_all', fetchTasks); // Refresh tasks when all agents are deleted
+      wsClient.on('task_created', fetchTasks); // Refresh tasks when new task is created
+      wsClient.on('task_deleted', fetchTasks); // Refresh tasks when task is deleted
     }
 
     return () => {
@@ -77,9 +83,32 @@ const Tasks: React.FC<TasksProps> = ({ wsClient }) => {
         wsClient.off('task_completed', handleTaskUpdate);
         wsClient.off('task_failed', handleTaskUpdate);
         wsClient.off('task_progress', handleTaskUpdate);
+        wsClient.off('agent_deleted', fetchTasks);
+        wsClient.off('agents_deleted_all', fetchTasks);
+        wsClient.off('task_created', fetchTasks);
+        wsClient.off('task_deleted', fetchTasks);
       }
     };
   }, [wsClient, handleTaskUpdate]);
+
+  // Auto-refresh effect for task execution updates
+  useEffect(() => {
+    if (autoRefresh) {
+      const interval = setInterval(() => {
+        fetchTasks(); // Refresh task execution status
+      }, 3000); // Refresh every 3 seconds for more responsive task updates
+      setRefreshInterval(interval);
+      
+      return () => {
+        clearInterval(interval);
+      };
+    } else {
+      if (refreshInterval) {
+        clearInterval(refreshInterval);
+        setRefreshInterval(null);
+      }
+    }
+  }, [autoRefresh, refreshInterval]);
 
   const cancelTask = async (taskId: string) => {
     try {
@@ -155,6 +184,29 @@ const Tasks: React.FC<TasksProps> = ({ wsClient }) => {
     <div className="tasks-page">
       <div className="page-header">
         <h1>📋 Task Management</h1>
+        <div className="header-actions">
+          <div className="refresh-controls">
+            <label className="auto-refresh-label">
+              <input
+                type="checkbox"
+                checked={autoRefresh}
+                onChange={(e) => setAutoRefresh(e.target.checked)}
+              />
+              Auto-refresh (3s)
+            </label>
+            <button 
+              className="btn btn-secondary btn-sm"
+              onClick={fetchTasks}
+              title="Manually refresh tasks"
+              disabled={loading}
+            >
+              🔄 Refresh
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <div className="task-filters-section">
         <div className="task-filters">
           <button 
             className={`filter-btn ${filter === 'all' ? 'active' : ''}`}
@@ -274,6 +326,31 @@ const Tasks: React.FC<TasksProps> = ({ wsClient }) => {
                   {task.actualTime && (
                     <div className="task-duration">
                       Duration: {formatDuration(task.actualTime)}
+                    </div>
+                  )}
+
+                  {/* Show task output preview */}
+                  {task.results && (
+                    <div className="task-output-preview">
+                      <strong>Output:</strong>
+                      <div className="output-snippet">
+                        {task.results.length > 150 
+                          ? `${task.results.substring(0, 150)}...` 
+                          : task.results
+                        }
+                      </div>
+                    </div>
+                  )}
+
+                  {task.error && (
+                    <div className="task-error-preview">
+                      <strong>Error:</strong>
+                      <div className="error-snippet">
+                        {task.error.length > 150 
+                          ? `${task.error.substring(0, 150)}...` 
+                          : task.error
+                        }
+                      </div>
                     </div>
                   )}
                 </div>

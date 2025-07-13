@@ -1,40 +1,21 @@
 import { spawn, ChildProcess } from 'child_process';
-import { EventEmitter } from 'events';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import { logger } from '../utils/logger';
 import { AgentConfig } from '../types';
-
-export interface ClaudeSession {
-  id: string;
-  agentId: string;
-  startTime: Date;
-  lastActivity: Date;
-  conversationPath: string;
-  status: 'starting' | 'ready' | 'busy' | 'error' | 'stopped';
-}
-
-export interface ClaudeMessage {
-  id: string;
-  timestamp: Date;
-  role: 'user' | 'assistant';
-  content: string;
-  metadata?: Record<string, any>;
-}
-
-export interface ClaudeResponse {
-  success: boolean;
-  content?: string;
-  error?: string;
-  sessionId: string;
-  timestamp: Date;
-}
+import { 
+  ClaudeInterfaceBase, 
+  ClaudeSession, 
+  ClaudeMessage, 
+  ClaudeResponse, 
+  ClaudeHealthStatus 
+} from './claude-interface-base';
 
 /**
  * Claude CLI Interface - Manages interaction with Claude CLI processes
  * Handles process spawning, session management, and conversation persistence
  */
-export class ClaudeInterface extends EventEmitter {
+export class ClaudeInterface extends ClaudeInterfaceBase {
   private process: ChildProcess | null = null;
   private session: ClaudeSession | null = null;
   private conversationHistory: ClaudeMessage[] = [];
@@ -42,11 +23,8 @@ export class ClaudeInterface extends EventEmitter {
   private outputBuffer = '';
   private responseCallback: ((response: ClaudeResponse) => void) | null = null;
 
-  constructor(
-    private agentConfig: AgentConfig,
-    private workingDir: string
-  ) {
-    super();
+  constructor(agentConfig: AgentConfig, workingDir: string) {
+    super(agentConfig, workingDir);
   }
 
   /**
@@ -103,16 +81,12 @@ export class ClaudeInterface extends EventEmitter {
         // Check if claude command is available
         const claudeCommand = process.env.CLAUDE_CLI_PATH || 'claude';
         
-        // Prepare Claude CLI arguments
-        const args = [
-          '--interactive',
-          '--format', 'text',
-          '--session', this.session!.id
-        ];
+        // Prepare Claude CLI arguments - Use --print mode for non-interactive usage
+        const args: string[] = ['--print'];
 
-        // Add system prompt if specified
-        if (this.agentConfig.systemPrompt) {
-          args.push('--system', this.agentConfig.systemPrompt);
+        // Add model if specified in agent config
+        if (this.agentConfig.model) {
+          args.push('--model', this.agentConfig.model);
         }
 
         logger.info(`Spawning Claude CLI: ${claudeCommand} ${args.join(' ')}`);
@@ -122,8 +96,7 @@ export class ClaudeInterface extends EventEmitter {
           stdio: ['pipe', 'pipe', 'pipe'],
           env: {
             ...process.env,
-            ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
-            CLAUDE_SESSION_DIR: path.join(this.workingDir, 'claude-sessions')
+            ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY
           },
           cwd: this.workingDir
         });
@@ -149,12 +122,15 @@ export class ClaudeInterface extends EventEmitter {
 
         // Handle stdout data
         this.process.stdout?.on('data', (data: Buffer) => {
-          this.handleProcessOutput(data.toString());
+          const output = data.toString();
+          logger.info(`Claude CLI stdout for agent ${this.agentConfig.id}: ${JSON.stringify(output)}`);
+          this.handleProcessOutput(output);
         });
 
         // Handle stderr data
         this.process.stderr?.on('data', (data: Buffer) => {
-          logger.warn(`Claude CLI stderr for agent ${this.agentConfig.id}: ${data.toString()}`);
+          const error = data.toString();
+          logger.warn(`Claude CLI stderr for agent ${this.agentConfig.id}: ${JSON.stringify(error)}`);
         });
 
         // Set timeout for process spawn
@@ -174,15 +150,16 @@ export class ClaudeInterface extends EventEmitter {
    * Handle output from Claude CLI process
    */
   private handleProcessOutput(data: string): void {
-    this.outputBuffer += data;
+    // Clean terminal escape sequences
+    const cleanData = data.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '').replace(/\][0-9];[^\x07]*\x07/g, '');
+    this.outputBuffer += cleanData;
     
-    // Look for complete responses (assuming Claude CLI outputs responses with specific markers)
-    // This is a simplified implementation - real Claude CLI might have different output format
+    // Look for complete responses - Claude CLI typically outputs complete responses
     const lines = this.outputBuffer.split('\n');
     
     for (let i = 0; i < lines.length - 1; i++) {
       const line = lines[i]?.trim();
-      if (line) {
+      if (line && line.length > 0) {
         this.processResponseLine(line);
       }
     }
@@ -241,7 +218,7 @@ export class ClaudeInterface extends EventEmitter {
    * Send a message to Claude and optionally wait for response
    */
   async sendMessage(content: string, waitForResponse = true): Promise<ClaudeResponse> {
-    if (!this.isInitialized || !this.process || !this.session) {
+    if (!this.isInitialized || !this.session) {
       throw new Error(`Claude interface not initialized for agent: ${this.agentConfig.id}`);
     }
 
@@ -265,28 +242,6 @@ export class ClaudeInterface extends EventEmitter {
 
         this.conversationHistory.push(userMessage);
 
-        if (waitForResponse) {
-          // Set up response callback
-          this.responseCallback = (response: ClaudeResponse) => {
-            this.session!.status = 'ready';
-            resolve(response);
-          };
-
-          // Set timeout for response
-          setTimeout(() => {
-            if (this.responseCallback) {
-              this.responseCallback = null;
-              this.session!.status = 'ready';
-              reject(new Error(`Claude response timeout for agent: ${this.agentConfig.id}`));
-            }
-          }, 30000); // 30 second timeout
-        }
-
-        // Send message to Claude CLI
-        if (this.process && this.process.stdin) {
-          this.process.stdin.write(content + '\n');
-        }
-
         if (!waitForResponse) {
           this.session!.status = 'ready';
           resolve({
@@ -294,7 +249,88 @@ export class ClaudeInterface extends EventEmitter {
             sessionId: this.session!.id,
             timestamp: new Date()
           });
+          return;
         }
+
+        // Spawn Claude CLI with --print mode for this message
+        const claudeCommand = process.env.CLAUDE_CLI_PATH || 'claude';
+        const args = ['--print'];
+        
+        // Add model if specified
+        if (this.agentConfig.model) {
+          args.push('--model', this.agentConfig.model);
+        }
+
+        // Include system prompt context if this is the first message
+        let messageContent = content;
+        if (this.conversationHistory.length === 1 && this.agentConfig.systemPrompt) {
+          messageContent = `${this.agentConfig.systemPrompt}\n\nUser: ${content}`;
+        }
+
+        const { spawn } = require('child_process');
+        const claudeProcess = spawn(claudeCommand, args, {
+          stdio: ['pipe', 'pipe', 'pipe'],
+          env: {
+            ...process.env,
+            ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY
+          },
+          cwd: this.workingDir
+        });
+
+        let output = '';
+        let errorOutput = '';
+
+        claudeProcess.stdout.on('data', (data: Buffer) => {
+          output += data.toString();
+        });
+
+        claudeProcess.stderr.on('data', (data: Buffer) => {
+          errorOutput += data.toString();
+        });
+
+        claudeProcess.on('close', (code: number) => {
+          this.session!.status = 'ready';
+          
+          if (code === 0) {
+            // Clean output
+            const cleanOutput = output.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '').replace(/\][0-9];[^\x07]*\x07/g, '').trim();
+            
+            if (cleanOutput) {
+              // Create response message
+              const responseMessage: ClaudeMessage = {
+                id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                timestamp: new Date(),
+                role: 'assistant',
+                content: cleanOutput
+              };
+
+              this.conversationHistory.push(responseMessage);
+              
+              const response: ClaudeResponse = {
+                success: true,
+                content: cleanOutput,
+                sessionId: this.session!.id,
+                timestamp: new Date()
+              };
+
+              this.emit('response', response);
+              resolve(response);
+            } else {
+              reject(new Error(`Empty response from Claude CLI for agent: ${this.agentConfig.id}`));
+            }
+          } else {
+            reject(new Error(`Claude CLI error for agent ${this.agentConfig.id}: ${errorOutput || 'Unknown error'}`));
+          }
+        });
+
+        claudeProcess.on('error', (error: Error) => {
+          this.session!.status = 'ready';
+          reject(new Error(`Failed to spawn Claude CLI for agent ${this.agentConfig.id}: ${error.message}`));
+        });
+
+        // Send the message
+        claudeProcess.stdin.write(messageContent);
+        claudeProcess.stdin.end();
 
         // Save conversation
         this.saveConversationHistory().catch(error => {
@@ -365,16 +401,22 @@ export class ClaudeInterface extends EventEmitter {
   /**
    * Get health status
    */
-  getHealthStatus(): { healthy: boolean; status: string; lastActivity?: Date } {
+  getHealthStatus(): ClaudeHealthStatus {
     if (!this.session) {
-      return { healthy: false, status: 'not_initialized' };
+      return { 
+        healthy: false, 
+        status: 'not_initialized',
+        lastActivity: new Date(),
+        messageCount: 0
+      };
     }
 
     const isHealthy = this.session.status === 'ready' || this.session.status === 'busy';
     return {
       healthy: isHealthy,
       status: this.session.status,
-      lastActivity: this.session.lastActivity
+      lastActivity: this.session.lastActivity,
+      messageCount: this.conversationHistory.length
     };
   }
 

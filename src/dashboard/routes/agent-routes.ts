@@ -5,13 +5,15 @@
 import { Router, Request, Response } from 'express';
 import { AgentManager } from '../../core/agent-manager';
 import { RegistryManager } from '../../core/registry-manager';
+import { TaskManager } from '../../core/task-manager';
 import { DEFAULT_RESOURCE_LIMITS } from '../../types/agent';
 import { logger } from '../../utils/logger';
+import { WebSocketServer } from '../../server/websocket';
 
 /**
  * Set up agent routes
  */
-export function setupAgentRoutes(router: Router, agentManager: AgentManager, registryManager: RegistryManager): void {
+export function setupAgentRoutes(router: Router, agentManager: AgentManager, registryManager: RegistryManager, taskManager: TaskManager, websocketServer?: WebSocketServer): void {
   const agentRouter = Router();
   router.use('/agents', agentRouter);
 
@@ -31,7 +33,7 @@ export function setupAgentRoutes(router: Router, agentManager: AgentManager, reg
       const runningAgentsMap = new Map(runningAgents.map(agent => [agent.id, agent]));
       
       // Merge registered agent configs with runtime data
-      const mergedAgents = registeredAgents.map(config => {
+      const mergedAgents = await Promise.all(registeredAgents.map(async (config) => {
         const runtimeData = runningAgentsMap.get(config.id);
         
         return {
@@ -42,15 +44,15 @@ export function setupAgentRoutes(router: Router, agentManager: AgentManager, reg
           capabilities: config.capabilities || [],
           createdAt: config.createdAt.toISOString(),
           lastActiveAt: runtimeData ? runtimeData.lastHealthCheck.toISOString() : config.lastModified.toISOString(),
-          tasksCompleted: 0, // TODO: Get from task manager
-          currentTask: null, // TODO: Get current task from task manager
+          tasksCompleted: await getCompletedTasksCount(config.id),
+          currentTask: await getCurrentTask(config.id),
           startTime: runtimeData ? runtimeData.startTime.toISOString() : config.createdAt.toISOString(),
           restartCount: runtimeData ? runtimeData.restartCount : 0,
           memoryUsage: runtimeData ? runtimeData.memoryUsage : 0,
           cpuUsage: runtimeData ? runtimeData.cpuUsage : 0,
           lastHealthCheck: runtimeData ? runtimeData.lastHealthCheck.toISOString() : config.lastModified.toISOString()
         };
-      });
+      }));
       
       return res.json({
         success: true,
@@ -227,9 +229,11 @@ export function setupAgentRoutes(router: Router, agentManager: AgentManager, reg
    */
   agentRouter.post('/', async (req: Request, res: Response) => {
     try {
+      logger.info(`Creating agent with data:`, { body: req.body });
       const { name, description, capabilities } = req.body;
 
       if (!name) {
+        logger.warn(`Agent creation failed: missing name`, { body: req.body });
         return res.status(400).json({
           success: false,
           error: 'Bad Request',
@@ -253,7 +257,21 @@ export function setupAgentRoutes(router: Router, agentManager: AgentManager, reg
       };
 
       // Add agent to registry
+      logger.info(`Adding agent to registry:`, { agentConfig });
       const createdAgent = await registryManager.createAgent(agentConfig);
+      logger.info(`Agent created successfully:`, { agentId: createdAgent.id });
+
+      // Broadcast agent creation event to connected clients
+      if (websocketServer) {
+        websocketServer.broadcast('agent_created', {
+          id: createdAgent.id,
+          name: createdAgent.name,
+          description: createdAgent.systemPrompt,
+          status: createdAgent.status,
+          capabilities: createdAgent.capabilities,
+          createdAt: createdAgent.createdAt.toISOString()
+        });
+      }
 
       return res.json({
         success: true,
@@ -272,6 +290,94 @@ export function setupAgentRoutes(router: Router, agentManager: AgentManager, reg
       return res.status(500).json({
         success: false,
         error: 'Failed to create agent',
+        message: error.message
+      });
+    }
+  });
+
+  /**
+   * DELETE /api/agents/delete-all
+   * Delete all agents and their tasks
+   */
+  agentRouter.delete('/delete-all', async (_req: Request, res: Response) => {
+    try {
+      logger.info('Delete all agents request received');
+      
+      // Get all agents first
+      const agents = await registryManager.listAgents();
+      const agentCount = agents.length;
+      
+      if (agentCount === 0) {
+        return res.json({
+          success: true,
+          message: 'No agents to delete',
+          deletedAgents: 0,
+          deletedTasks: 0
+        });
+      }
+
+      let deletedAgents = 0;
+      let deletedTasks = 0;
+      const errors: string[] = [];
+
+      // Delete each agent and its tasks
+      for (const agent of agents) {
+        try {
+          // Delete all tasks for this agent
+          const agentDeletedTasks = await taskManager.deleteAllAgentTasks(agent.id);
+          deletedTasks += agentDeletedTasks;
+
+          // Stop the agent if it's running
+          try {
+            await agentManager.killAgent(agent.id);
+          } catch (stopError) {
+            // Agent might not be running, continue with deletion
+            logger.debug(`Agent ${agent.id} was not running:`, stopError);
+          }
+
+          // Delete the agent from registry
+          await registryManager.deleteAgent(agent.id);
+          deletedAgents++;
+          
+          logger.info(`Deleted agent ${agent.id} and ${agentDeletedTasks} associated tasks`);
+
+        } catch (agentError) {
+          const errorMsg = `Failed to delete agent ${agent.id}: ${agentError instanceof Error ? agentError.message : String(agentError)}`;
+          errors.push(errorMsg);
+          logger.error(errorMsg);
+        }
+      }
+
+      const response = {
+        success: deletedAgents > 0,
+        message: `Deleted ${deletedAgents} agents and ${deletedTasks} tasks`,
+        deletedAgents,
+        deletedTasks,
+        totalAgents: agentCount,
+        errors: errors.length > 0 ? errors : undefined
+      };
+
+      if (errors.length > 0) {
+        logger.warn(`Delete all agents completed with ${errors.length} errors:`, errors);
+      } else {
+        logger.info(`Successfully deleted all ${deletedAgents} agents and ${deletedTasks} tasks`);
+      }
+
+      // Broadcast delete all agents event to connected clients
+      if (websocketServer && deletedAgents > 0) {
+        websocketServer.broadcast('agents_deleted_all', { 
+          deletedAgents, 
+          deletedTasks 
+        });
+      }
+
+      return res.json(response);
+
+    } catch (error: any) {
+      logger.error('Error deleting all agents:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to delete all agents',
         message: error.message
       });
     }
@@ -297,6 +403,16 @@ export function setupAgentRoutes(router: Router, agentManager: AgentManager, reg
         });
       }
 
+      // Delete all tasks for this agent first
+      let deletedTasksCount = 0;
+      try {
+        deletedTasksCount = await taskManager.deleteAllAgentTasks(agentId);
+        logger.info(`Deleted ${deletedTasksCount} tasks for agent: ${agentId}`);
+      } catch (taskError) {
+        logger.warn(`Failed to delete some tasks for agent ${agentId}:`, taskError);
+        // Continue with agent deletion even if task deletion fails
+      }
+
       // Stop the agent if it's running
       try {
         await agentManager.killAgent(agentId);
@@ -310,9 +426,18 @@ export function setupAgentRoutes(router: Router, agentManager: AgentManager, reg
       await registryManager.deleteAgent(agentId);
       logger.info(`Deleted agent from registry: ${agentId}`);
 
+      // Broadcast agent deletion event to connected clients
+      if (websocketServer) {
+        websocketServer.broadcast('agent_deleted', { 
+          agentId, 
+          deletedTasks: deletedTasksCount 
+        });
+      }
+
       return res.json({
         success: true,
-        message: `Agent ${agentId} deleted successfully`
+        message: `Agent ${agentId} deleted successfully (${deletedTasksCount} tasks also deleted)`,
+        deletedTasks: deletedTasksCount
       });
     } catch (error: any) {
       logger.error(`Error deleting agent ${req.params.agentId}:`, error);
@@ -356,4 +481,40 @@ export function setupAgentRoutes(router: Router, agentManager: AgentManager, reg
       });
     }
   });
+
+  // Helper function to get completed tasks count for an agent
+  async function getCompletedTasksCount(agentId: string): Promise<number> {
+    try {
+      // Get all tasks for the agent and count completed ones
+      const tasks = await taskManager.getAgentTasks(agentId);
+      return tasks.filter((task: any) => task.status === 'done').length;
+    } catch (error) {
+      logger.warn(`Failed to get completed tasks count for agent ${agentId}:`, error);
+      return 0;
+    }
+  }
+
+  // Helper function to get current task for an agent
+  async function getCurrentTask(agentId: string): Promise<any> {
+    try {
+      // Get all tasks for the agent and find the first in-progress one
+      const tasks = await taskManager.getAgentTasks(agentId);
+      const currentTask = tasks.find((task: any) => task.status === 'inprogress');
+      
+      if (currentTask) {
+        return {
+          id: currentTask.id,
+          title: currentTask.title,
+          status: currentTask.status,
+          progress: currentTask.progress,
+          startedAt: currentTask.createdAt
+        };
+      }
+      
+      return null;
+    } catch (error) {
+      logger.warn(`Failed to get current task for agent ${agentId}:`, error);
+      return null;
+    }
+  }
 }

@@ -239,6 +239,76 @@ export class TaskManager extends EventEmitter {
   }
 
   /**
+   * Delete a task
+   */
+  async deleteTask(taskId: string): Promise<boolean> {
+    if (!this.initialized) {
+      throw new Error('TaskManager not initialized');
+    }
+
+    const task = this.tasks.get(taskId);
+    if (!task) {
+      logger.warn(`Task ${taskId} not found for deletion`);
+      return false;
+    }
+
+    try {
+      // Remove from in-memory store
+      this.tasks.delete(taskId);
+
+      // Remove from agent's task set
+      const agentTaskSet = this.tasksByAgent.get(task.agentId);
+      if (agentTaskSet) {
+        agentTaskSet.delete(taskId);
+        if (agentTaskSet.size === 0) {
+          this.tasksByAgent.delete(task.agentId);
+        }
+      }
+
+      // Remove from priority queue
+      this.taskQueue.remove(t => t.id === taskId);
+
+      // Update markdown file
+      await this.updateMarkdownFile(task.agentId);
+
+      this.emit('task-deleted', task);
+      logger.info(`Task deleted: ${taskId}`);
+
+      return true;
+    } catch (error) {
+      logger.error(`Failed to delete task ${taskId}:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Delete all tasks for a specific agent
+   */
+  async deleteAllAgentTasks(agentId: string): Promise<number> {
+    if (!this.initialized) {
+      throw new Error('TaskManager not initialized');
+    }
+
+    const agentTasks = await this.getAgentTasks(agentId);
+    let deletedCount = 0;
+
+    for (const task of agentTasks) {
+      const deleted = await this.deleteTask(task.id);
+      if (deleted) {
+        deletedCount++;
+      }
+    }
+
+    // Clean up markdown file if no tasks remain
+    if (deletedCount > 0) {
+      await this.updateMarkdownFile(agentId);
+    }
+
+    logger.info(`Deleted ${deletedCount} tasks for agent ${agentId}`);
+    return deletedCount;
+  }
+
+  /**
    * Get all tasks with a specific status
    */
   async getTasksByStatus(status: TaskStatus): Promise<Task[]> {

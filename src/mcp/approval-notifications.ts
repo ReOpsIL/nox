@@ -282,18 +282,66 @@ Reason: {{reason}}
   }
 
   /**
-   * Send email notification (placeholder)
+   * Send email notification using nodemailer
    */
   private async sendEmailNotification(
     channel: NotificationChannel,
     notification: any
   ): Promise<void> {
-    const { to, from: _from, smtp: _smtp } = channel.config;
+    const { to, from, smtp } = channel.config;
     
-    // This would integrate with email service
-    logger.info(`Email notification would be sent to: ${to}`);
-    logger.debug(`Subject: ${notification.subject}`);
-    logger.debug(`Body: ${notification.body}`);
+    try {
+      // Only try to send email if SMTP is properly configured
+      if (!smtp?.host || !smtp?.port) {
+        logger.warn(`Email notification skipped - SMTP not configured for ${channel.type} channel`);
+        logger.info(`Would send email to: ${to}`);
+        logger.debug(`Subject: ${notification.subject}`);
+        return;
+      }
+      
+      // Try to require nodemailer (optional dependency)
+      let nodemailer;
+      try {
+        nodemailer = require('nodemailer');
+      } catch (requireError) {
+        logger.warn('Nodemailer not installed - email notifications disabled');
+        logger.info(`Would send email to: ${to} via ${smtp.host}:${smtp.port}`);
+        logger.debug(`Subject: ${notification.subject}`);
+        return;
+      }
+      
+      // Create transporter
+      const transporter = nodemailer.createTransporter({
+        host: smtp.host,
+        port: smtp.port,
+        secure: smtp.secure || false,
+        auth: smtp.user && smtp.password ? {
+          user: smtp.user,
+          pass: smtp.password
+        } : undefined,
+        tls: {
+          rejectUnauthorized: smtp.rejectUnauthorized !== false
+        }
+      });
+      
+      // Verify connection
+      await transporter.verify();
+      
+      // Send email
+      const info = await transporter.sendMail({
+        from: from || smtp.user,
+        to: to,
+        subject: notification.subject,
+        text: notification.body,
+        html: notification.html || notification.body
+      });
+      
+      logger.info(`Email notification sent successfully to ${to} (Message ID: ${info.messageId})`);
+      
+    } catch (error) {
+      logger.error(`Failed to send email notification to ${to}:`, error);
+      // Don't throw - log the error but continue operation
+    }
   }
 
   /**

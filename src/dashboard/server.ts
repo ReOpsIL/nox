@@ -37,7 +37,7 @@ export class DashboardServer extends EventEmitter {
     private taskManager: TaskManager,
     private messageBroker: MessageBroker,
     private metricsManager: MetricsManager,
-    _websocketServer: WebSocketServer,
+    private websocketServer: WebSocketServer,
     private registryManager: RegistryManager,
     _workingDir: string
   ) {
@@ -186,8 +186,8 @@ export class DashboardServer extends EventEmitter {
     this.app.use('/api', apiRouter);
 
     // Set up route handlers
-    setupAgentRoutes(apiRouter, this.agentManager, this.registryManager);
-    setupTaskRoutes(apiRouter, this.taskManager);
+    setupAgentRoutes(apiRouter, this.agentManager, this.registryManager, this.taskManager, this.websocketServer);
+    setupTaskRoutes(apiRouter, this.taskManager, this.websocketServer);
     setupMetricsRoutes(apiRouter, this.metricsManager);
     setupSystemRoutes(apiRouter, this.agentManager, this.messageBroker, this.taskManager);
 
@@ -203,7 +203,7 @@ export class DashboardServer extends EventEmitter {
     // WebSocket info endpoint
     apiRouter.get('/websocket-info', (req: express.Request, res: express.Response) => {
       res.json({
-        url: `ws://${req.headers.host?.split(':')[0] || 'localhost'}:8080` // Using default WebSocket port
+        url: `ws://${req.headers.host?.split(':')[0] || 'localhost'}:3000` // WebSocket server port
       });
     });
   }

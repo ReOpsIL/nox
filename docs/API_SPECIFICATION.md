@@ -304,7 +304,32 @@ Get detailed information about a specific agent.
 Update agent configuration.
 
 #### `DELETE /api/agents/{agent_id}`
-Remove an agent.
+Remove an agent from the system.
+
+**Parameters:**
+- `agent_id` (path): The unique identifier of the agent to delete
+
+**Response (Success):**
+```json
+{
+  "success": true,
+  "message": "Agent {agent_id} deleted successfully"
+}
+```
+
+**Response (Not Found):**
+```json
+{
+  "success": false,
+  "error": "Agent not found",
+  "message": "Agent {agent_id} not found"
+}
+```
+
+**Notes:**
+- Automatically stops the agent process if it's currently running
+- Removes agent from the registry
+- This operation cannot be undone without registry rollback
 
 ### Task Management
 

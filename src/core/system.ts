@@ -394,13 +394,28 @@ export class NoxSystem extends EventEmitter {
       
       logger.info(`Sending task to Claude CLI for agent ${agent.name}: ${task.title}`);
       
-      // Send task to Claude
-      await claudeInterface.sendMessage(taskMessage);
+      // Send task to Claude and wait for response
+      const response = await claudeInterface.sendMessage(taskMessage);
       
       logger.info(`Task ${task.id} sent to agent ${agent.name} successfully`);
 
-      // The task completion will be handled by Claude CLI responses
-      // For now, we just mark it as in progress
+      // Check if the response indicates task completion
+      if (response.success && response.content?.includes(`TASK COMPLETED: ${task.id}`)) {
+        logger.info(`Task ${task.id} completed by agent ${agent.name}`);
+        await this.taskManager.updateTask(task.id, {
+          status: 'done',
+          progress: 100,
+          completedAt: new Date()
+        });
+      } else if (response.success) {
+        logger.info(`Task ${task.id} in progress for agent ${agent.name}`);
+        // Task is in progress, will be completed later
+      } else {
+        logger.error(`Task ${task.id} failed for agent ${agent.name}: ${response.error}`);
+        await this.taskManager.updateTask(task.id, {
+          status: 'cancelled'
+        });
+      }
       
     } catch (error) {
       logger.error(`Failed to execute task ${task.id} on agent ${task.agentId}:`, error);

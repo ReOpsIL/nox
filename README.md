@@ -643,6 +643,7 @@ $ npm start
 ✓ Git repository created
 ✓ Bootstrap agent created
 ✓ PM2 ecosystem started
+✓ Dashboard server listening on :3001
 ✓ WebSocket server listening on :3000
 
 💬 bootstrap_agent: "Hello! I'm your first agent. Let's create some specialized helpers. 
@@ -729,20 +730,40 @@ System: /add-agent devops_helper "You are a DevOps specialist..."
 4. **Initialize**: `npm run init` (creates JSON registry, bootstrap agent)
 5. **Start System**: `npm start` (launches PM2 ecosystem with WebSocket server)
 6. **Create Agents**: Use bootstrap agent to create specialized helpers
-7. **Monitor**: Access dashboard at http://localhost:3000 or use CLI commands
+7. **Monitor**: Access dashboard at http://localhost:3001 or use CLI commands
 
 ### Running the Application
 
 #### Development Mode
 ```bash
 # Run in development mode with hot reloading
-npm run run:dev
+./scripts/run-dev.sh
+# or
+npm run dev
 ```
 
 #### Production Mode
 ```bash
 # Run in production mode with PM2 process management
+./scripts/run-prod.sh
+# or
 npm run run:prod
+```
+
+#### Port Configuration
+- **Dashboard**: http://localhost:3001
+- **WebSocket Server**: ws://localhost:3000
+- **API Endpoints**: http://localhost:3001/api/*
+
+#### Troubleshooting
+If you encounter "port already in use" errors:
+```bash
+# Stop production instance
+pm2 stop nox && pm2 delete nox
+
+# Kill any processes on ports 3000/3001
+lsof -ti:3000 | xargs kill -9 2>/dev/null || true
+lsof -ti:3001 | xargs kill -9 2>/dev/null || true
 ```
 
 ### Deployment Options

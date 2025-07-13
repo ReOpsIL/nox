@@ -144,6 +144,7 @@
 .header-actions {
   display: flex;
   align-items: center;
+  gap: 12px;
 }
 
 .settings-button {
@@ -165,6 +166,28 @@
   color: #2563eb;
 }
 
+/* Refresh Controls */
+.refresh-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 12px;
+}
+
+.auto-refresh-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  color: #64748b;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.auto-refresh-label input[type="checkbox"] {
+  margin: 0;
+  cursor: pointer;
+}
 
 /* Additional Component Styles */
 
@@ -366,6 +389,39 @@
   font-size: 12px;
   color: #64748b;
   margin-top: 8px;
+}
+
+/* Task output previews */
+.task-output-preview,
+.task-error-preview {
+  margin-top: 12px;
+  padding: 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.task-output-preview {
+  background: #f0fdf4;
+  border-left: 3px solid #22c55e;
+}
+
+.task-error-preview {
+  background: #fef2f2;
+  border-left: 3px solid #ef4444;
+}
+
+.output-snippet,
+.error-snippet {
+  margin-top: 4px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: #374151;
+  line-height: 1.4;
+}
+
+.task-error-preview .error-snippet {
+  color: #dc2626;
 }
 
 .task-filters {

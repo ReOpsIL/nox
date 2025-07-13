@@ -295,13 +295,87 @@ export class ProcessMonitor extends EventEmitter {
         };
       }
 
-      // For other processes, we'd need to use external tools or libraries
-      // This is a placeholder implementation
-      return {
-        cpuUsage: Math.random() * 100, // Mock data
-        memoryUsage: Math.random() * 1024 * 1024 * 100, // Mock data: 0-100MB
-        uptime: Date.now() / 1000 // Mock data
-      };
+      // For other processes, use system tools to get real metrics
+      const { spawn } = require('child_process');
+      
+      try {
+        // Use ps command to get process information
+        const psResult = await new Promise<string>((resolve, reject) => {
+          const ps = spawn('ps', ['-p', pid.toString(), '-o', 'pid,pcpu,rss,etime'], {
+            stdio: ['ignore', 'pipe', 'pipe']
+          });
+          
+          let output = '';
+          ps.stdout.on('data', (data: any) => {
+            output += data.toString();
+          });
+          
+          ps.on('close', (code: any) => {
+            if (code === 0) {
+              resolve(output);
+            } else {
+              reject(new Error(`ps command failed with code ${code}`));
+            }
+          });
+          
+          ps.on('error', reject);
+        });
+        
+        // Parse ps output
+        const lines = psResult.trim().split('\n');
+        if (lines.length < 2) {
+          throw new Error('Process not found');
+        }
+        
+        const processLine = lines[1]?.trim().split(/\s+/);
+        if (!processLine || processLine.length < 4) {
+          throw new Error('Invalid ps output format');
+        }
+        
+        const cpuUsage = parseFloat(processLine[1] || '0') || 0;
+        const memoryUsageKB = parseInt(processLine[2] || '0') || 0;
+        const etimeStr = processLine[3];
+        
+        // Parse etime (format can be: MM:SS, HH:MM:SS, or DD-HH:MM:SS)
+        let uptimeSeconds = 0;
+        if (etimeStr && etimeStr.includes('-')) {
+          // DD-HH:MM:SS format
+          const [days, time] = etimeStr.split('-');
+          if (days && time) {
+            const [hours, minutes, seconds] = time.split(':').map(Number);
+            uptimeSeconds = parseInt(days || '0') * 86400 + (hours || 0) * 3600 + (minutes || 0) * 60 + (seconds || 0);
+          }
+        } else if (etimeStr) {
+          // HH:MM:SS or MM:SS format
+          const timeParts = etimeStr.split(':').map(Number);
+          if (timeParts.length === 3) {
+            uptimeSeconds = (timeParts[0] || 0) * 3600 + (timeParts[1] || 0) * 60 + (timeParts[2] || 0);
+          } else if (timeParts.length === 2) {
+            uptimeSeconds = (timeParts[0] || 0) * 60 + (timeParts[1] || 0);
+          }
+        }
+        
+        return {
+          cpuUsage,
+          memoryUsage: memoryUsageKB * 1024, // Convert KB to bytes
+          uptime: uptimeSeconds
+        };
+        
+      } catch (psError) {
+        // Fallback: try to at least check if process exists
+        try {
+          process.kill(pid, 0); // Signal 0 just checks if process exists
+          // Process exists but we can't get metrics - return minimal data
+          return {
+            cpuUsage: 0,
+            memoryUsage: 0,
+            uptime: 0
+          };
+        } catch (killError) {
+          // Process doesn't exist
+          return null;
+        }
+      }
 
     } catch (error: unknown) {
       logger.debug(`Error getting process metrics for PID ${pid}: ${error instanceof Error ? error.message : String(error)}`);
