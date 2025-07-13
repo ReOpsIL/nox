@@ -1,9 +1,9 @@
 //! Implementation of the agent start command
 
-use anyhow::{Result, anyhow};
-use log::info;
 use crate::core::agent_manager;
 use crate::types::AgentStatus;
+use anyhow::{anyhow, Result};
+use log::info;
 
 /// Execute the agent start command
 pub async fn execute(name: String) -> Result<()> {

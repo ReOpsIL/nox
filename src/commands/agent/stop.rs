@@ -1,9 +1,9 @@
 //! Implementation of the agent stop command
 
-use anyhow::{Result, anyhow};
-use log::info;
 use crate::core::agent_manager;
 use crate::types::AgentStatus;
+use anyhow::{anyhow, Result};
+use log::info;
 
 /// Execute the agent stop command
 pub async fn execute(name: String) -> Result<()> {

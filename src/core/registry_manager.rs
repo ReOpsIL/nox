@@ -2,18 +2,17 @@
 //! 
 //! This module handles the persistence of agents and tasks in the .nox-registry directory.
 
-use anyhow::{Result, anyhow};
-use log::{info, error};
-use std::path::{Path, PathBuf};
-use std::fs::{self, File, create_dir_all};
-use std::io::{Read, Write};
-use tokio::sync::Mutex;
-use std::sync::Arc;
-use toml;
-use serde::{Serialize, Deserialize};
-use crate::types::{Agent, Task};
 use crate::core::git_manager;
-use crate::core::config_manager;
+use crate::types::{Agent, Task};
+use anyhow::{anyhow, Result};
+use log::{error, info};
+use serde::{Deserialize, Serialize};
+use std::fs::{self, create_dir_all, File};
+use std::io::{Read, Write};
+use std::path::PathBuf;
+use std::sync::Arc;
+use tokio::sync::Mutex;
+use toml;
 
 // Singleton instance of the registry manager
 lazy_static::lazy_static! {
@@ -254,4 +253,24 @@ pub async fn get_task(task_id: &str) -> Result<Option<Task>> {
 pub async fn delete_task(task_id: &str) -> Result<()> {
     let manager = REGISTRY_MANAGER.lock().await;
     manager.delete_task(task_id).await
+}
+
+/// Atomically update a task during execution to avoid deadlocks
+pub async fn update_task_for_execution<F>(task_id: &str, updater: F) -> Result<Task>
+where
+    F: FnOnce(&mut Task) -> Result<()>,
+{
+    let manager = REGISTRY_MANAGER.lock().await;
+    
+    // Load the task
+    let mut task = manager.load_task(task_id)?
+        .ok_or_else(|| anyhow!("Task not found: {}", task_id))?;
+    
+    // Apply the update
+    updater(&mut task)?;
+    
+    // Save the updated task
+    manager.save_task(&task).await?;
+    
+    Ok(task)
 }

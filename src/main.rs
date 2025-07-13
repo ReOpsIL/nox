@@ -1,6 +1,6 @@
-use clap::{Parser, Subcommand};
 use anyhow::Result;
-use log::{info, error};
+use clap::{Parser, Subcommand};
+use log::info;
 
 mod api;
 mod core;
@@ -145,6 +145,18 @@ enum TaskCommands {
         /// ID of the task
         task_id: String,
     },
+
+    /// Execute a task using Claude CLI
+    Execute {
+        /// ID of the task
+        task_id: String,
+    },
+
+    /// Show detailed information about a task
+    Show {
+        /// ID of the task
+        task_id: String,
+    },
 }
 
 #[derive(Subcommand)]
@@ -267,6 +279,14 @@ async fn main() -> Result<()> {
                 TaskCommands::Cancel { task_id } => {
                     info!("Cancelling task: {}", task_id);
                     commands::task::cancel::execute(task_id).await
+                },
+                TaskCommands::Execute { task_id } => {
+                    info!("Executing task 3: {}", task_id);
+                    commands::task::execute::execute(task_id).await
+                },
+                TaskCommands::Show { task_id } => {
+                    info!("Showing task details: {}", task_id);
+                    commands::task::show::execute(task_id).await
                 },
             }
         },

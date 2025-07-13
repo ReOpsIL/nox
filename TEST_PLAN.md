@@ -286,23 +286,67 @@ This test plan covers the testing of all components and features of the Nox Auto
 - **P3**: Should be fixed if time permits
 - **P4**: Can be deferred to future releases
 
-## 8. Test Deliverables
+## 8. Automated Test Implementation
 
-### 8.1. Before Testing
+### 8.1. Test Structure
+```
+tests/
+├── unit/               # Unit tests for individual components
+│   ├── core/          # Core module tests
+│   ├── api/           # API module tests
+│   └── types/         # Type definition tests
+├── integration/        # Integration tests
+│   ├── api_tests.rs   # API endpoint tests
+│   ├── cli_tests.rs   # CLI command tests
+│   └── websocket_tests.rs # WebSocket tests
+├── system/            # End-to-end system tests
+│   ├── agent_lifecycle.rs # Agent creation to deletion
+│   └── task_workflow.rs   # Task management workflow
+└── common/            # Common test utilities
+    ├── fixtures.rs    # Test data fixtures
+    ├── helpers.rs     # Test helper functions
+    └── mock_services.rs # Mock external services
+```
+
+### 8.2. Test Commands
+- `cargo test` - Run all tests
+- `cargo test --lib` - Run unit tests only
+- `cargo test --test integration` - Run integration tests
+- `cargo test --test system` - Run system tests
+- `cargo test -- --nocapture` - Run tests with output
+
+### 8.3. Test Coverage Requirements
+- Minimum 80% code coverage for core modules
+- 100% coverage for critical security functions
+- All public API endpoints must have tests
+- All CLI commands must have tests
+
+### 8.4. Continuous Integration
+- All tests must pass before merging
+- Automated test execution on pull requests
+- Performance regression detection
+- Security vulnerability scanning
+
+## 9. Test Deliverables
+
+### 9.1. Before Testing
 - Test plan (this document)
 - Test cases
 - Test data
 - Test environment setup instructions
+- Automated test suite
 
-### 8.2. During Testing
+### 9.2. During Testing
 - Test execution logs
 - Defect reports
 - Status reports
+- Coverage reports
 
-### 8.3. After Testing
+### 9.3. After Testing
 - Test summary report
 - Performance test results
 - Security test results
+- Code coverage report
 - Recommendations for improvement
 
 ## 9. Risks and Contingencies

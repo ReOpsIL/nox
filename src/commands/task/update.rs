@@ -1,9 +1,9 @@
 //! Implementation of the task update command
 
-use anyhow::{Result, anyhow};
-use log::info;
 use crate::core::task_manager;
 use crate::types::TaskStatus;
+use anyhow::{anyhow, Result};
+use log::info;
 
 /// Execute the task update command
 pub async fn execute(task_id: String, status: String) -> Result<()> {

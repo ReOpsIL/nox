@@ -2,8 +2,8 @@
 //! 
 //! This module handles Git operations for version control of the registry.
 
-use anyhow::{Result, anyhow};
-use log::{info, warn, error};
+use anyhow::{anyhow, Result};
+use log::{error, info, warn};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use tokio::process::Command as TokioCommand;

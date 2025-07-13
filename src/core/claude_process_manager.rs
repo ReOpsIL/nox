@@ -2,17 +2,14 @@
 //! 
 //! This module handles the spawning and management of Claude CLI processes.
 
-use anyhow::{Result, anyhow};
-use log::{info, error, warn, debug};
+use crate::types::Agent;
+use anyhow::{anyhow, Result};
+use log::{debug, error, info, warn};
 use std::collections::HashMap;
-use tokio::process::{Command, Child};
-use tokio::io::{AsyncWriteExt, AsyncReadExt, AsyncBufReadExt, BufReader};
 use std::process::Stdio;
 use std::sync::Arc;
+use tokio::process::Command;
 use tokio::sync::Mutex;
-use tokio::time::{timeout, Duration};
-use std::io::ErrorKind;
-use crate::types::Agent;
 
 // Singleton instance of the Claude process manager
 lazy_static::lazy_static! {
@@ -21,206 +18,119 @@ lazy_static::lazy_static! {
 
 /// Claude process manager struct
 pub struct ClaudeProcessManager {
-    processes: HashMap<String, Child>,
+    active_agents: HashMap<String, Agent>,
 }
 
 impl ClaudeProcessManager {
     /// Create a new Claude process manager
     fn new() -> Self {
         Self {
-            processes: HashMap::new(),
+            active_agents: HashMap::new(),
         }
     }
 
-    /// Start a Claude process for an agent
+    /// Start tracking an agent (no persistent process needed with new CLI approach)
     async fn start_process(&mut self, agent: &Agent) -> Result<()> {
-        info!("Starting Claude process for agent: {}", agent.name);
-
-        // Check if a process already exists for this agent
-        if self.processes.contains_key(&agent.id) {
-            warn!("Process already exists for agent: {}", agent.id);
-            return Ok(());
-        }
-
-        // Spawn the Claude CLI process
-        let child = spawn_claude_process(agent).await?;
-
-        // Store the process
-        self.processes.insert(agent.id.clone(), child);
-
-        info!("Claude process started for agent: {}", agent.name);
+        info!("Registering agent for Claude CLI execution: {}", agent.name);
+        
+        // Store agent for future message execution
+        self.active_agents.insert(agent.id.clone(), agent.clone());
+        
+        info!("Agent registered successfully: {}", agent.name);
         Ok(())
     }
 
-    /// Stop a Claude process for an agent
+    /// Stop tracking an agent
     async fn stop_process(&mut self, agent_id: &str) -> Result<()> {
-        info!("Stopping Claude process for agent: {}", agent_id);
+        info!("Unregistering agent: {}", agent_id);
 
-        // Remove the process from the map and kill it
-        if let Some(mut child) = self.processes.remove(agent_id) {
-            // Try to kill the process gracefully
-            match child.kill().await {
-                Ok(_) => info!("Claude process killed for agent: {}", agent_id),
-                Err(e) => warn!("Failed to kill Claude process for agent {}: {}", agent_id, e),
-            }
+        if self.active_agents.remove(agent_id).is_some() {
+            info!("Agent unregistered successfully: {}", agent_id);
         } else {
-            warn!("No process found for agent: {}", agent_id);
+            warn!("No active agent found: {}", agent_id);
         }
 
         Ok(())
     }
 
-    /// Send a message to a Claude process and get the response
+    /// Send a message to Claude via CLI and get the response
     async fn send_message(&mut self, agent_id: &str, message: &str) -> Result<String> {
-        // Get the process for this agent
-        if let Some(child) = self.processes.get_mut(agent_id) {
-            send_message_to_claude(child, message).await
+        // If agent is not in our active list, try to load it from the registry
+        if !self.active_agents.contains_key(agent_id) {
+            // Try to load the agent from the registry
+            use crate::core::agent_manager;
+            match agent_manager::get_agent(agent_id).await {
+                Ok(Some(agent)) => {
+                    info!("Auto-registering agent for Claude CLI execution: {}", agent.name);
+                    self.active_agents.insert(agent_id.to_string(), agent);
+                },
+                Ok(None) => return Err(anyhow!("Agent not found in registry: {}", agent_id)),
+                Err(e) => return Err(anyhow!("Failed to load agent from registry: {}", e)),
+            }
+        }
+        
+        if let Some(agent) = self.active_agents.get(agent_id) {
+            execute_claude_command(agent, message).await
         } else {
-            Err(anyhow!("No process found for agent {}", agent_id))
+            Err(anyhow!("No active agent found: {}", agent_id))
         }
     }
 
-    /// Check if a process exists for an agent
+    /// Check if an agent is active
     async fn has_process(&self, agent_id: &str) -> bool {
-        self.processes.contains_key(agent_id)
+        self.active_agents.contains_key(agent_id)
     }
 
-    /// Get the number of running processes
+    /// Get the number of active agents
     async fn process_count(&self) -> usize {
-        self.processes.len()
+        self.active_agents.len()
     }
 }
 
-/// Spawn a Claude CLI process for an agent
-async fn spawn_claude_process(agent: &Agent) -> Result<Child> {
-    // Prepare the system prompt
+/// Execute a Claude CLI command for an agent
+async fn execute_claude_command(agent: &Agent, user_message: &str) -> Result<String> {
     let system_prompt = &agent.system_prompt;
+    
+    info!("Executing Claude command for agent: {}", agent.name);
+    debug!("User message: {}", 
+           if user_message.len() > 100 { &user_message[..100] } else { user_message });
 
-    info!("Spawning Claude process for agent: {}", agent.name);
-    debug!("System prompt: {}", 
-           if system_prompt.len() > 50 { &system_prompt[..50] } else { system_prompt });
+    // Combine system prompt with user message
+    let full_message = format!("{}\n\nUser: {}", system_prompt, user_message);
 
-    // Build the command with appropriate arguments
+    // Build the command with proper Claude CLI syntax
     let mut cmd = Command::new("claude");
-
-    // Add common arguments
-    cmd.arg("chat")
-       .arg("--system")
-       .arg(system_prompt)
-       .stdin(Stdio::piped())
+    
+    cmd.arg("--print")  // Non-interactive mode
+       .arg("--model").arg("claude-sonnet-4-20250514")  // Current model
+       .arg("--output-format").arg("text")  // Text output
+       .arg(&full_message)  // The prompt as argument
        .stdout(Stdio::piped())
        .stderr(Stdio::piped());
 
-    // Use default model (claude-3-opus-20240229)
-    // This could be enhanced in the future to support different models
-    // by adding a model field to the Agent struct
-    cmd.arg("--model").arg("claude-3-opus-20240229");
+    info!("Executing Claude CLI command for agent: {}", agent.name);
 
-    // Spawn the process
-    match cmd.spawn() {
-        Ok(child) => {
-            info!("Claude process spawned successfully for agent: {}", agent.name);
-
-            // Verify the process is running
-            match child.id() {
-                Some(pid) => debug!("Claude process ID: {}", pid),
-                None => warn!("Could not get process ID for Claude process"),
+    // Execute the command
+    match cmd.output().await {
+        Ok(output) => {
+            if output.status.success() {
+                let response = String::from_utf8_lossy(&output.stdout).to_string();
+                info!("Claude command completed successfully for agent: {}", agent.name);
+                debug!("Response length: {} characters", response.len());
+                Ok(response.trim().to_string())
+            } else {
+                let error_msg = String::from_utf8_lossy(&output.stderr);
+                error!("Claude command failed for agent {}: {}", agent.name, error_msg);
+                Err(anyhow!("Claude command failed: {}", error_msg))
             }
-
-            Ok(child)
         },
         Err(e) => {
-            error!("Failed to spawn Claude process: {}", e);
-            Err(anyhow!("Failed to spawn Claude process: {}", e))
+            error!("Failed to execute Claude command for agent {}: {}", agent.name, e);
+            Err(anyhow!("Failed to execute Claude command: {}", e))
         }
     }
 }
 
-// Constants for Claude process communication
-const MESSAGE_TIMEOUT: Duration = Duration::from_secs(60);
-const MAX_RETRIES: usize = 3;
-const RETRY_DELAY: Duration = Duration::from_secs(2);
-
-/// Send a message to a Claude CLI process and get the response
-async fn send_message_to_claude(child: &mut Child, message: &str) -> Result<String> {
-    let mut retries = 0;
-
-    while retries < MAX_RETRIES {
-        match send_message_with_timeout(child, message).await {
-            Ok(response) => return Ok(response),
-            Err(e) => {
-                retries += 1;
-                if retries >= MAX_RETRIES {
-                    return Err(anyhow!("Failed to communicate with Claude after {} retries: {}", MAX_RETRIES, e));
-                }
-
-                warn!("Error communicating with Claude (attempt {}/{}): {}. Retrying in {} seconds...", 
-                      retries, MAX_RETRIES, e, RETRY_DELAY.as_secs());
-
-                tokio::time::sleep(RETRY_DELAY).await;
-            }
-        }
-    }
-
-    // This should never be reached due to the return in the error case above
-    Err(anyhow!("Failed to communicate with Claude"))
-}
-
-/// Send a message to Claude with timeout
-async fn send_message_with_timeout(child: &mut Child, message: &str) -> Result<String> {
-    // Get stdin and stdout handles
-    let stdin = child.stdin.as_mut().ok_or_else(|| anyhow!("Failed to open stdin"))?;
-    let stdout = child.stdout.as_mut().ok_or_else(|| anyhow!("Failed to open stdout"))?;
-
-    // Create a buffered reader for stdout
-    let mut reader = BufReader::new(stdout);
-
-    // Write the message to stdin with timeout
-    match timeout(MESSAGE_TIMEOUT, async {
-        stdin.write_all(message.as_bytes()).await?;
-        stdin.write_all(b"\n").await?;
-        stdin.flush().await?;
-        Ok::<_, std::io::Error>(())
-    }).await {
-        Ok(result) => result?,
-        Err(_) => return Err(anyhow!("Timeout while sending message to Claude")),
-    }
-
-    // Read the response with timeout
-    let mut response = String::new();
-    let mut buffer = String::new();
-
-    // Use a timeout for the entire read operation
-    match timeout(MESSAGE_TIMEOUT, async {
-        // Read line by line until we get an empty line or EOF
-        loop {
-            match reader.read_line(&mut buffer).await {
-                Ok(0) => break, // EOF
-                Ok(_) => {
-                    response.push_str(&buffer);
-                    buffer.clear();
-
-                    // Check for response completion marker (this may need adjustment based on Claude's output format)
-                    if response.contains("\n\n") && response.trim().len() > 0 {
-                        break;
-                    }
-                },
-                Err(e) => {
-                    if e.kind() == ErrorKind::WouldBlock || e.kind() == ErrorKind::TimedOut {
-                        // Non-blocking I/O would block, wait a bit and try again
-                        tokio::time::sleep(Duration::from_millis(100)).await;
-                        continue;
-                    }
-                    return Err(e);
-                }
-            }
-        }
-        Ok::<_, std::io::Error>(response)
-    }).await {
-        Ok(result) => Ok(result?),
-        Err(_) => Err(anyhow!("Timeout while reading response from Claude")),
-    }
-}
 
 /// Start a Claude process for an agent
 pub async fn start_process(agent: &Agent) -> Result<()> {

@@ -1,8 +1,8 @@
 //! Implementation of the git rollback command
 
+use crate::core::git_manager;
 use anyhow::Result;
 use log::{info, warn};
-use crate::core::git_manager;
 use std::path::PathBuf;
 
 /// Execute the git rollback command

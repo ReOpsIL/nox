@@ -1,9 +1,9 @@
 //! Implementation of the task create command
 
-use anyhow::{Result, anyhow};
-use log::info;
 use crate::core::{agent_manager, task_manager};
 use crate::types::Task;
+use anyhow::{anyhow, Result};
+use log::info;
 
 /// Execute the task create command
 pub async fn execute(agent_id: String, title: String, desc: String) -> Result<()> {

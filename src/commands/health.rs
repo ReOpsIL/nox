@@ -1,8 +1,8 @@
 //! Implementation of the health command
 
+use crate::core;
 use anyhow::Result;
 use log::info;
-use crate::core;
 
 /// Execute the health command
 pub async fn execute() -> Result<()> {

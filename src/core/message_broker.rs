@@ -2,15 +2,15 @@
 //! 
 //! This module implements a message broker system for complex agent collaboration and discovery.
 
-use anyhow::{Result, anyhow};
-use log::{info, warn, error, debug};
+use crate::types::Agent;
+use anyhow::{anyhow, Result};
+use chrono::{DateTime, Utc};
+use log::{debug, error, info, warn};
+use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 use tokio::sync::{Mutex, RwLock};
-use serde::{Serialize, Deserialize};
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
-use crate::types::Agent;
 
 // Singleton instance of the message broker
 lazy_static::lazy_static! {

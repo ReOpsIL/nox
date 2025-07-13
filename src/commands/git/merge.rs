@@ -1,8 +1,8 @@
 //! Implementation of the git merge command
 
+use crate::core::git_manager;
 use anyhow::Result;
 use log::{info, warn};
-use crate::core::git_manager;
 use std::path::PathBuf;
 
 /// Execute the git merge command

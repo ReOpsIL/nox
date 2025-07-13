@@ -1,8 +1,8 @@
 //! Implementation of the agent show command
 
-use anyhow::{Result, anyhow};
-use log::info;
 use crate::core::agent_manager;
+use anyhow::{anyhow, Result};
+use log::info;
 
 /// Execute the agent show command
 pub async fn execute(name: String) -> Result<()> {

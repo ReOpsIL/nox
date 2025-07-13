@@ -1,8 +1,8 @@
 //! Implementation of the git history command
 
+use crate::core::git_manager;
 use anyhow::Result;
 use log::info;
-use crate::core::git_manager;
 use std::path::PathBuf;
 
 /// Execute the git history command

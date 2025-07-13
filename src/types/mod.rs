@@ -2,10 +2,10 @@
 //! 
 //! This module contains the Rust type definitions for Agent, Task, etc.
 
-use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
-use uuid::Uuid;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use uuid::Uuid;
 
 /// Agent status enum
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]

@@ -1,8 +1,8 @@
 //! Implementation of the task list command
 
+use crate::core::{agent_manager, task_manager};
 use anyhow::Result;
 use log::info;
-use crate::core::{agent_manager, task_manager};
 
 /// Execute the task list command
 pub async fn execute(agent_id: Option<String>) -> Result<()> {

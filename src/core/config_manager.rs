@@ -2,17 +2,17 @@
 //! 
 //! This module handles loading and managing configuration settings.
 
-use anyhow::{Result, anyhow};
-use log::{info, warn, debug};
-use std::path::{Path, PathBuf};
-use std::fs::{self, File};
-use std::io::Read;
-use std::env;
-use std::sync::Arc;
-use tokio::sync::RwLock;
-use serde::{Serialize, Deserialize};
+use anyhow::{anyhow, Result};
 use config::{Config, ConfigError, Environment, File as ConfigFile};
 use lazy_static::lazy_static;
+use log::{debug, info, warn};
+use serde::{Deserialize, Serialize};
+use std::env;
+use std::fs::{self, File};
+use std::io::Read;
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
+use tokio::sync::RwLock;
 
 // Singleton instance of the configuration manager
 lazy_static! {

@@ -1,8 +1,8 @@
 //! Implementation of the agent list command
 
+use crate::core::agent_manager;
 use anyhow::Result;
 use log::info;
-use crate::core::agent_manager;
 
 /// Execute the agent list command
 pub async fn execute() -> Result<()> {

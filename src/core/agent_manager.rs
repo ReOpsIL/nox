@@ -2,11 +2,11 @@
 //! 
 //! This module contains the core business logic for managing agents.
 
-use anyhow::Result;
-use log::{info, error};
-use crate::types::{Agent, AgentStatus};
-use crate::core::registry_manager;
 use crate::core::claude_process_manager;
+use crate::core::registry_manager;
+use crate::types::{Agent, AgentStatus};
+use anyhow::Result;
+use log::{error, info};
 
 // The agent manager handles agent lifecycle operations
 // Process management is delegated to the claude_process_manager module

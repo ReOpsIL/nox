@@ -2,13 +2,13 @@
 //! 
 //! This module contains the API route handlers.
 
-use actix_web::{web, HttpResponse, Responder};
-use log::{info, error};
-use serde::{Serialize, Deserialize};
-use serde_json::json;
-use crate::core::{agent_manager, task_manager, claude_process_manager};
-use crate::types::{Agent, Task, AgentStatus, TaskStatus};
 use crate::api::websocket;
+use crate::core::{agent_manager, task_manager};
+use crate::types::{Agent, AgentStatus, Task, TaskStatus};
+use actix_web::{web, HttpResponse, Responder};
+use log::error;
+use serde::{Deserialize, Serialize};
+use serde_json::json;
 
 /// API response wrapper
 #[derive(Serialize)]
@@ -75,7 +75,7 @@ async fn get_agents() -> impl Responder {
         Ok(agents) => success(agents, None),
         Err(e) => {
             error!("Failed to get agents: {}", e);
-            error(HttpResponse::InternalServerError().status(), &e.to_string())
+            error(actix_web::http::StatusCode::INTERNAL_SERVER_ERROR, &e.to_string())
         }
     }
 }
@@ -101,7 +101,7 @@ async fn create_agent(req: web::Json<CreateAgentRequest>) -> impl Responder {
         },
         Err(e) => {
             error!("Failed to create agent: {}", e);
-            error(HttpResponse::InternalServerError().status(), &e.to_string())
+            error(actix_web::http::StatusCode::INTERNAL_SERVER_ERROR, &e.to_string())
         }
     }
 }
@@ -112,10 +112,10 @@ async fn get_agent(path: web::Path<String>) -> impl Responder {
 
     match agent_manager::get_agent(&agent_id).await {
         Ok(Some(agent)) => success(agent, None),
-        Ok(None) => error(HttpResponse::NotFound().status(), &format!("Agent '{}' not found", agent_id)),
+        Ok(None) => error(actix_web::http::StatusCode::NOT_FOUND, &format!("Agent '{}' not found", agent_id)),
         Err(e) => {
             error!("Failed to get agent: {}", e);
-            error(HttpResponse::InternalServerError().status(), &e.to_string())
+            error(actix_web::http::StatusCode::INTERNAL_SERVER_ERROR, &e.to_string())
         }
     }
 }
@@ -144,18 +144,18 @@ async fn update_agent(path: web::Path<String>, req: web::Json<UpdateAgentRequest
                         })
                     ).await;
 
-                    success(agent, Some(format!("Agent '{}' updated successfully", agent.name)))
+                    success(agent.clone(), Some(format!("Agent '{}' updated successfully", agent.name)))
                 },
                 Err(e) => {
                     error!("Failed to update agent: {}", e);
-                    error(HttpResponse::InternalServerError().status(), &e.to_string())
+                    error(actix_web::http::StatusCode::INTERNAL_SERVER_ERROR, &e.to_string())
                 }
             }
         },
-        Ok(None) => error(HttpResponse::NotFound().status(), &format!("Agent '{}' not found", agent_id)),
+        Ok(None) => error(actix_web::http::StatusCode::NOT_FOUND, &format!("Agent '{}' not found", agent_id)),
         Err(e) => {
             error!("Failed to get agent: {}", e);
-            error(HttpResponse::InternalServerError().status(), &e.to_string())
+            error(actix_web::http::StatusCode::INTERNAL_SERVER_ERROR, &e.to_string())
         }
     }
 }
@@ -167,10 +167,10 @@ async fn delete_agent(path: web::Path<String>) -> impl Responder {
     // Get the agent name for the response message
     let agent_name = match agent_manager::get_agent(&agent_id).await {
         Ok(Some(agent)) => agent.name,
-        Ok(None) => return error(HttpResponse::NotFound().status(), &format!("Agent '{}' not found", agent_id)),
+        Ok(None) => return error(actix_web::http::StatusCode::NOT_FOUND, &format!("Agent '{}' not found", agent_id)),
         Err(e) => {
             error!("Failed to get agent: {}", e);
-            return error(HttpResponse::InternalServerError().status(), &e.to_string());
+            return error(actix_web::http::StatusCode::INTERNAL_SERVER_ERROR, &e.to_string());
         }
     };
 
@@ -190,7 +190,7 @@ async fn delete_agent(path: web::Path<String>) -> impl Responder {
         },
         Err(e) => {
             error!("Failed to delete agent: {}", e);
-            error(HttpResponse::InternalServerError().status(), &e.to_string())
+            error(actix_web::http::StatusCode::INTERNAL_SERVER_ERROR, &e.to_string())
         }
     }
 }
@@ -204,7 +204,7 @@ async fn start_agent(path: web::Path<String>) -> impl Responder {
         Ok(Some(agent)) => {
             // Check if the agent is already active
             if agent.status == AgentStatus::Active {
-                return error(HttpResponse::BadRequest().status(), "Agent is already active");
+                return error(actix_web::http::StatusCode::BAD_REQUEST, "Agent is already active");
             }
 
             // Start the agent
@@ -218,23 +218,23 @@ async fn start_agent(path: web::Path<String>) -> impl Responder {
                                 Some(format!("Agent '{}' started successfully", agent.name))
                             )
                         },
-                        Ok(None) => error(HttpResponse::NotFound().status(), "Agent not found after starting"),
+                        Ok(None) => error(actix_web::http::StatusCode::NOT_FOUND, "Agent not found after starting"),
                         Err(e) => {
                             error!("Failed to get agent after starting: {}", e);
-                            error(HttpResponse::InternalServerError().status(), &e.to_string())
+                            error(actix_web::http::StatusCode::INTERNAL_SERVER_ERROR, &e.to_string())
                         }
                     }
                 },
                 Err(e) => {
                     error!("Failed to start agent: {}", e);
-                    error(HttpResponse::InternalServerError().status(), &e.to_string())
+                    error(actix_web::http::StatusCode::INTERNAL_SERVER_ERROR, &e.to_string())
                 }
             }
         },
-        Ok(None) => error(HttpResponse::NotFound().status(), &format!("Agent '{}' not found", agent_id)),
+        Ok(None) => error(actix_web::http::StatusCode::NOT_FOUND, &format!("Agent '{}' not found", agent_id)),
         Err(e) => {
             error!("Failed to get agent: {}", e);
-            error(HttpResponse::InternalServerError().status(), &e.to_string())
+            error(actix_web::http::StatusCode::INTERNAL_SERVER_ERROR, &e.to_string())
         }
     }
 }
@@ -248,7 +248,7 @@ async fn stop_agent(path: web::Path<String>) -> impl Responder {
         Ok(Some(agent)) => {
             // Check if the agent is already inactive
             if agent.status == AgentStatus::Inactive {
-                return error(HttpResponse::BadRequest().status(), "Agent is already inactive");
+                return error(actix_web::http::StatusCode::BAD_REQUEST, "Agent is already inactive");
             }
 
             // Stop the agent
@@ -262,23 +262,23 @@ async fn stop_agent(path: web::Path<String>) -> impl Responder {
                                 Some(format!("Agent '{}' stopped successfully", agent.name))
                             )
                         },
-                        Ok(None) => error(HttpResponse::NotFound().status(), "Agent not found after stopping"),
+                        Ok(None) => error(actix_web::http::StatusCode::NOT_FOUND, "Agent not found after stopping"),
                         Err(e) => {
                             error!("Failed to get agent after stopping: {}", e);
-                            error(HttpResponse::InternalServerError().status(), &e.to_string())
+                            error(actix_web::http::StatusCode::INTERNAL_SERVER_ERROR, &e.to_string())
                         }
                     }
                 },
                 Err(e) => {
                     error!("Failed to stop agent: {}", e);
-                    error(HttpResponse::InternalServerError().status(), &e.to_string())
+                    error(actix_web::http::StatusCode::INTERNAL_SERVER_ERROR, &e.to_string())
                 }
             }
         },
-        Ok(None) => error(HttpResponse::NotFound().status(), &format!("Agent '{}' not found", agent_id)),
+        Ok(None) => error(actix_web::http::StatusCode::NOT_FOUND, &format!("Agent '{}' not found", agent_id)),
         Err(e) => {
             error!("Failed to get agent: {}", e);
-            error(HttpResponse::InternalServerError().status(), &e.to_string())
+            error(actix_web::http::StatusCode::INTERNAL_SERVER_ERROR, &e.to_string())
         }
     }
 }
@@ -296,5 +296,251 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
             .route("/{agent_id}/stop", web::post().to(stop_agent))
     );
 
-    // Task routes would be added here
+    // Task routes
+    cfg.service(
+        web::scope("/tasks")
+            .route("", web::get().to(get_tasks))
+            .route("", web::post().to(create_task))
+            .route("/{task_id}", web::get().to(get_task))
+            .route("/{task_id}", web::put().to(update_task))
+            .route("/{task_id}", web::delete().to(delete_task))
+            .route("/{task_id}/start", web::post().to(start_task))
+            .route("/{task_id}/complete", web::post().to(complete_task))
+    );
+}
+
+/// Get all tasks
+async fn get_tasks() -> impl Responder {
+    match task_manager::get_all_tasks().await {
+        Ok(tasks) => success(tasks, None),
+        Err(e) => {
+            error!("Failed to get tasks: {}", e);
+            error(actix_web::http::StatusCode::INTERNAL_SERVER_ERROR, &e.to_string())
+        }
+    }
+}
+
+/// Create a new task
+async fn create_task(req: web::Json<CreateTaskRequest>) -> impl Responder {
+    // Verify agent exists
+    match agent_manager::get_agent(&req.agent_id).await {
+        Ok(Some(_)) => {
+            // Create a new task
+            let task = Task::new(
+                req.agent_id.clone(),
+                req.title.clone(),
+                req.description.clone(),
+            );
+
+            // Add the task to the registry
+            match task_manager::add_task(task.clone()).await {
+                Ok(_) => {
+                    // Broadcast the task creation event
+                    let _ = websocket::broadcast_system_event(
+                        "TaskCreated",
+                        json!({
+                            "task_id": task.id,
+                            "agent_id": task.agent_id,
+                            "title": task.title
+                        })
+                    ).await;
+
+                    success(task, Some(format!("Task '{}' created successfully", req.title)))
+                },
+                Err(e) => {
+                    error!("Failed to create task: {}", e);
+                    error(actix_web::http::StatusCode::INTERNAL_SERVER_ERROR, &e.to_string())
+                }
+            }
+        },
+        Ok(None) => error(actix_web::http::StatusCode::BAD_REQUEST, &format!("Agent '{}' not found", req.agent_id)),
+        Err(e) => {
+            error!("Failed to verify agent: {}", e);
+            error(actix_web::http::StatusCode::INTERNAL_SERVER_ERROR, &e.to_string())
+        }
+    }
+}
+
+/// Get a task by ID
+async fn get_task(path: web::Path<String>) -> impl Responder {
+    let task_id = path.into_inner();
+
+    match task_manager::get_task(&task_id).await {
+        Ok(Some(task)) => success(task, None),
+        Ok(None) => error(actix_web::http::StatusCode::NOT_FOUND, &format!("Task '{}' not found", task_id)),
+        Err(e) => {
+            error!("Failed to get task: {}", e);
+            error(actix_web::http::StatusCode::INTERNAL_SERVER_ERROR, &e.to_string())
+        }
+    }
+}
+
+/// Update a task
+async fn update_task(path: web::Path<String>, req: web::Json<UpdateTaskRequest>) -> impl Responder {
+    let task_id = path.into_inner();
+
+    // Get the task from the registry
+    match task_manager::get_task(&task_id).await {
+        Ok(Some(mut task)) => {
+            // Update the task status if provided
+            if let Some(status_str) = &req.status {
+                match status_str.as_str() {
+                    "todo" => task.status = TaskStatus::Todo,
+                    "in_progress" => task.status = TaskStatus::InProgress,
+                    "done" => task.status = TaskStatus::Done,
+                    "cancelled" => task.status = TaskStatus::Cancelled,
+                    _ => return error(actix_web::http::StatusCode::BAD_REQUEST, "Invalid task status"),
+                }
+            }
+
+            // Save the updated task
+            match task_manager::update_task(task.clone()).await {
+                Ok(_) => {
+                    // Broadcast the task update event
+                    let _ = websocket::broadcast_system_event(
+                        "TaskUpdated",
+                        json!({
+                            "task_id": task.id,
+                            "agent_id": task.agent_id,
+                            "status": format!("{:?}", task.status)
+                        })
+                    ).await;
+
+                    success(task.clone(), Some(format!("Task '{}' updated successfully", task.title)))
+                },
+                Err(e) => {
+                    error!("Failed to update task: {}", e);
+                    error(actix_web::http::StatusCode::INTERNAL_SERVER_ERROR, &e.to_string())
+                }
+            }
+        },
+        Ok(None) => error(actix_web::http::StatusCode::NOT_FOUND, &format!("Task '{}' not found", task_id)),
+        Err(e) => {
+            error!("Failed to get task: {}", e);
+            error(actix_web::http::StatusCode::INTERNAL_SERVER_ERROR, &e.to_string())
+        }
+    }
+}
+
+/// Delete a task
+async fn delete_task(path: web::Path<String>) -> impl Responder {
+    let task_id = path.into_inner();
+
+    // Get the task title for the response message
+    let task_title = match task_manager::get_task(&task_id).await {
+        Ok(Some(task)) => task.title,
+        Ok(None) => return error(actix_web::http::StatusCode::NOT_FOUND, &format!("Task '{}' not found", task_id)),
+        Err(e) => {
+            error!("Failed to get task: {}", e);
+            return error(actix_web::http::StatusCode::INTERNAL_SERVER_ERROR, &e.to_string());
+        }
+    };
+
+    // Delete the task
+    match task_manager::delete_task(&task_id).await {
+        Ok(_) => {
+            // Broadcast the task deletion event
+            let _ = websocket::broadcast_system_event(
+                "TaskDeleted",
+                json!({
+                    "task_id": task_id,
+                    "title": task_title
+                })
+            ).await;
+
+            success(json!({"task_id": task_id}), Some(format!("Task '{}' deleted successfully", task_title)))
+        },
+        Err(e) => {
+            error!("Failed to delete task: {}", e);
+            error(actix_web::http::StatusCode::INTERNAL_SERVER_ERROR, &e.to_string())
+        }
+    }
+}
+
+/// Start a task
+async fn start_task(path: web::Path<String>) -> impl Responder {
+    let task_id = path.into_inner();
+
+    // Get the task to check if it exists and current status
+    match task_manager::get_task(&task_id).await {
+        Ok(Some(task)) => {
+            // Check if the task is already in progress
+            if task.status == TaskStatus::InProgress {
+                return error(actix_web::http::StatusCode::BAD_REQUEST, "Task is already in progress");
+            }
+
+            // Start the task
+            match task_manager::start_task(&task_id).await {
+                Ok(_) => {
+                    // Get the updated task
+                    match task_manager::get_task(&task_id).await {
+                        Ok(Some(updated_task)) => {
+                            success(
+                                updated_task,
+                                Some(format!("Task '{}' started successfully", task.title))
+                            )
+                        },
+                        Ok(None) => error(actix_web::http::StatusCode::NOT_FOUND, "Task not found after starting"),
+                        Err(e) => {
+                            error!("Failed to get task after starting: {}", e);
+                            error(actix_web::http::StatusCode::INTERNAL_SERVER_ERROR, &e.to_string())
+                        }
+                    }
+                },
+                Err(e) => {
+                    error!("Failed to start task: {}", e);
+                    error(actix_web::http::StatusCode::INTERNAL_SERVER_ERROR, &e.to_string())
+                }
+            }
+        },
+        Ok(None) => error(actix_web::http::StatusCode::NOT_FOUND, &format!("Task '{}' not found", task_id)),
+        Err(e) => {
+            error!("Failed to get task: {}", e);
+            error(actix_web::http::StatusCode::INTERNAL_SERVER_ERROR, &e.to_string())
+        }
+    }
+}
+
+/// Complete a task
+async fn complete_task(path: web::Path<String>) -> impl Responder {
+    let task_id = path.into_inner();
+
+    // Get the task to check if it exists and current status
+    match task_manager::get_task(&task_id).await {
+        Ok(Some(task)) => {
+            // Check if the task is already completed
+            if task.status == TaskStatus::Done {
+                return error(actix_web::http::StatusCode::BAD_REQUEST, "Task is already completed");
+            }
+
+            // Complete the task
+            match task_manager::complete_task(&task_id).await {
+                Ok(_) => {
+                    // Get the updated task
+                    match task_manager::get_task(&task_id).await {
+                        Ok(Some(updated_task)) => {
+                            success(
+                                updated_task,
+                                Some(format!("Task '{}' completed successfully", task.title))
+                            )
+                        },
+                        Ok(None) => error(actix_web::http::StatusCode::NOT_FOUND, "Task not found after completing"),
+                        Err(e) => {
+                            error!("Failed to get task after completing: {}", e);
+                            error(actix_web::http::StatusCode::INTERNAL_SERVER_ERROR, &e.to_string())
+                        }
+                    }
+                },
+                Err(e) => {
+                    error!("Failed to complete task: {}", e);
+                    error(actix_web::http::StatusCode::INTERNAL_SERVER_ERROR, &e.to_string())
+                }
+            }
+        },
+        Ok(None) => error(actix_web::http::StatusCode::NOT_FOUND, &format!("Task '{}' not found", task_id)),
+        Err(e) => {
+            error!("Failed to get task: {}", e);
+            error(actix_web::http::StatusCode::INTERNAL_SERVER_ERROR, &e.to_string())
+        }
+    }
 }

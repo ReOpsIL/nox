@@ -1,8 +1,8 @@
 //! Implementation of the start command
 
+use crate::core;
 use anyhow::Result;
 use log::info;
-use crate::core;
 
 /// Execute the start command
 pub async fn execute(dev: bool) -> Result<()> {

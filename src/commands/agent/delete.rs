@@ -1,10 +1,10 @@
 //! Implementation of the agent delete command
 
-use anyhow::{Result, anyhow};
-use log::info;
-use std::io::{self, Write};
 use crate::core::agent_manager;
 use crate::types::AgentStatus;
+use anyhow::{anyhow, Result};
+use log::info;
+use std::io::{self, Write};
 
 /// Execute the agent delete command
 pub async fn execute(name: String, force: bool) -> Result<()> {

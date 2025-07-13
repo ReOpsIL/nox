@@ -1,9 +1,9 @@
 //! Implementation of the agent add command
 
+use crate::core::agent_manager;
+use crate::types::Agent;
 use anyhow::Result;
 use log::info;
-use crate::types::Agent;
-use crate::core::agent_manager;
 
 /// Execute the agent add command
 pub async fn execute(name: String, prompt: String) -> Result<()> {

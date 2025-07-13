@@ -7,7 +7,7 @@ pub mod server;
 pub mod websocket;
 
 /// Start the API server with the given configuration
-pub async fn start_server(port: Option<u16>) -> anyhow::Result<()> {
+pub async fn start_server(_port: Option<u16>) -> anyhow::Result<()> {
     // This will be implemented later
     Ok(())
 }

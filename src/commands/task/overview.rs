@@ -1,10 +1,10 @@
 //! Implementation of the task overview command
 
+use crate::core::{agent_manager, task_manager};
+use crate::types::TaskStatus;
 use anyhow::Result;
 use log::info;
 use std::collections::HashMap;
-use crate::core::{agent_manager, task_manager};
-use crate::types::TaskStatus;
 
 /// Execute the task overview command
 pub async fn execute() -> Result<()> {

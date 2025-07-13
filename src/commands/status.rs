@@ -1,8 +1,8 @@
 //! Implementation of the status command
 
+use crate::core;
 use anyhow::Result;
 use log::info;
-use crate::core;
 
 /// Execute the status command
 pub async fn execute() -> Result<()> {

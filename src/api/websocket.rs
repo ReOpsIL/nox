@@ -2,17 +2,17 @@
 //! 
 //! This module handles WebSocket connections and message broadcasting.
 
+use crate::types::{Agent, AgentStatus, Task, TaskStatus};
 use actix_web::{web, Error, HttpRequest, HttpResponse};
 use actix_ws::{Message, MessageStream, Session};
 use futures::StreamExt;
-use log::{info, warn, error, debug};
-use serde::{Serialize, Deserialize};
+use log::{debug, error, info, warn};
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::{broadcast, Mutex};
 use tokio::time::sleep;
-use crate::types::{Agent, AgentStatus, Task, TaskStatus};
 
 // Constants for WebSocket stability
 const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(30);
@@ -127,103 +127,80 @@ async fn ws_client(
     let mut last_heartbeat = Instant::now();
     let mut heartbeat_interval = tokio::time::interval(HEARTBEAT_INTERVAL);
     
-    // Message queue for handling backpressure
-    let message_queue = Arc::new(Mutex::new(Vec::new()));
-    let queue_processor = message_queue.clone();
-    
-    // Create a task to process the message queue
-    let queue_task = tokio::spawn(async move {
-        let mut interval = tokio::time::interval(Duration::from_millis(100));
-        
-        loop {
-            interval.tick().await;
+    // Handle incoming WebSocket messages and broadcast messages concurrently
+    loop {
+        tokio::select! {
+            // Handle incoming messages
+            msg = msg_stream.next() => {
+                match msg {
+                    Some(Ok(msg)) => {
+                        match msg {
+                            Message::Text(text) => {
+                                debug!("Received message: {}", text);
+                                // Echo the message back for now
+                                if session.text(text).await.is_err() {
+                                    break;
+                                }
+                            }
+                            Message::Ping(bytes) => {
+                                last_heartbeat = Instant::now();
+                                if session.pong(&bytes).await.is_err() {
+                                    break;
+                                }
+                            }
+                            Message::Pong(_) => {
+                                last_heartbeat = Instant::now();
+                            }
+                            Message::Close(reason) => {
+                                if let Some(reason) = reason {
+                                    debug!("Connection closed with code {:?}: {:?}", reason.code, reason.description);
+                                } else {
+                                    debug!("Connection closed");
+                                }
+                                break;
+                            }
+                            _ => {}
+                        }
+                    }
+                    Some(Err(_)) | None => break,
+                }
+            }
             
-            let mut queue = queue_processor.lock().await;
-            if !queue.is_empty() {
-                let msg = queue.remove(0);
-                if session.send(Message::Text(msg.into())).await.is_err() {
+            // Handle broadcast messages
+            msg = rx.recv() => {
+                match msg {
+                    Ok(broadcast_msg) => {
+                        if session.text(broadcast_msg).await.is_err() {
+                            break;
+                        }
+                    }
+                    Err(_) => break,
+                }
+            }
+            
+            // Send heartbeat
+            _ = heartbeat_interval.tick() => {
+                // Check for client timeout
+                if Instant::now().duration_since(last_heartbeat) > CLIENT_TIMEOUT {
+                    warn!("Client timed out");
                     break;
                 }
-            }
-        }
-    });
-
-    // Create a task to forward broadcast messages to the WebSocket
-    let broadcast_task = tokio::spawn(async move {
-        while let Ok(msg) = rx.recv().await {
-            let mut queue = message_queue.lock().await;
-            
-            // Handle backpressure by limiting queue size
-            if queue.len() < MAX_QUEUE_SIZE {
-                queue.push(msg);
-            } else {
-                warn!("Message queue full, dropping message");
-            }
-        }
-    });
-
-    // Handle incoming WebSocket messages
-    while let Some(Ok(msg)) = msg_stream.next().await {
-        match msg {
-            Message::Text(text) => {
-                debug!("Received message: {}", text);
-                // Echo the message back for now
-                if session.send(Message::Text(text)).await.is_err() {
+                
+                debug!("Sending heartbeat");
+                let heartbeat_msg = json!({
+                    "message_type": "Heartbeat",
+                    "timestamp": chrono::Utc::now().to_rfc3339(),
+                    "payload": {
+                        "status": "ok"
+                    }
+                });
+                
+                if session.text(heartbeat_msg.to_string()).await.is_err() {
                     break;
                 }
-            }
-            Message::Ping(bytes) => {
-                last_heartbeat = Instant::now();
-                if session.send(Message::Pong(bytes)).await.is_err() {
-                    break;
-                }
-            }
-            Message::Pong(_) => {
-                last_heartbeat = Instant::now();
-            }
-            Message::Close(reason) => {
-                if let Some(reason) = reason {
-                    debug!("Connection closed with code {}: {}", reason.code, reason.description);
-                } else {
-                    debug!("Connection closed");
-                }
-                break;
-            }
-            _ => {}
-        }
-
-        // Check for client timeout
-        if Instant::now().duration_since(last_heartbeat) > CLIENT_TIMEOUT {
-            warn!("Client timed out");
-            break;
-        }
-
-        // Send heartbeat
-        if heartbeat_interval.tick().await.is_elapsed() {
-            debug!("Sending heartbeat");
-            let heartbeat_msg = json!({
-                "message_type": "Heartbeat",
-                "timestamp": chrono::Utc::now().to_rfc3339(),
-                "payload": {
-                    "status": "ok"
-                }
-            });
-            
-            if session.send(Message::Text(heartbeat_msg.to_string())).await.is_err() {
-                break;
-            }
-            
-            // Also check for client timeout
-            if Instant::now().duration_since(last_heartbeat) > CLIENT_TIMEOUT {
-                warn!("Client timed out");
-                break;
             }
         }
     }
-
-    // Cancel the broadcast task when the WebSocket connection is closed
-    broadcast_task.abort();
-    queue_task.abort();
     
     // Decrement the client count
     manager.decrement_clients().await;
@@ -245,7 +222,7 @@ pub async fn broadcast_agent_status(
         }
     });
 
-    WEBSOCKET_MANAGER.sender().send(message.to_string())
+    WEBSOCKET_MANAGER.sender().send(message.to_string()).map(|_| ())
 }
 
 /// Broadcast a task update
@@ -266,7 +243,7 @@ pub async fn broadcast_task_update(
         }
     });
 
-    WEBSOCKET_MANAGER.sender().send(message.to_string())
+    WEBSOCKET_MANAGER.sender().send(message.to_string()).map(|_| ())
 }
 
 /// Broadcast a system event
@@ -283,7 +260,7 @@ pub async fn broadcast_system_event(
         }
     });
 
-    WEBSOCKET_MANAGER.sender().send(message.to_string())
+    WEBSOCKET_MANAGER.sender().send(message.to_string()).map(|_| ())
 }
 
 /// Configure the WebSocket routes

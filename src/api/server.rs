@@ -2,13 +2,13 @@
 //! 
 //! This module contains the Actix Web server implementation.
 
-use actix_web::{web, App, HttpServer, middleware, HttpResponse};
-use actix_cors::Cors;
-use log::{info, error};
-use std::sync::Arc;
-use crate::api::websocket;
 use crate::api::routes;
+use crate::api::websocket;
 use crate::core::config_manager;
+use actix_cors::Cors;
+use actix_web::{middleware, web, App, HttpResponse, HttpServer};
+use log::{error, info};
+use std::sync::Arc;
 
 /// Start the API server
 pub async fn start_server(port: Option<u16>) -> anyhow::Result<()> {
@@ -21,13 +21,17 @@ pub async fn start_server(port: Option<u16>) -> anyhow::Result<()> {
     
     info!("Starting API server on {}:{}", host, port);
     
+    // Clone data needed in the closure
+    let cors_origins = server_config.cors_origins.clone();
+    
     // Create and start the HTTP server
     HttpServer::new(move || {
         // Configure CORS
+        let cors_origins = cors_origins.clone();
         let cors = Cors::default()
-            .allowed_origin_fn(|origin, _req_head| {
+            .allowed_origin_fn(move |origin, _req_head| {
                 // If no origins are specified, allow all
-                if server_config.cors_origins.is_empty() {
+                if cors_origins.is_empty() {
                     return true;
                 }
                 
@@ -37,7 +41,7 @@ pub async fn start_server(port: Option<u16>) -> anyhow::Result<()> {
                     Err(_) => return false,
                 };
                 
-                server_config.cors_origins.iter().any(|allowed| allowed == origin_str)
+                cors_origins.iter().any(|allowed| allowed == origin_str)
             })
             .allowed_methods(vec!["GET", "POST", "PUT", "DELETE"])
             .allowed_headers(vec!["Authorization", "Content-Type"])

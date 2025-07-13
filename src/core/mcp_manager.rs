@@ -3,16 +3,16 @@
 //! This module implements a service discovery system for dynamically expanding agent capabilities
 //! by discovering and integrating with external Dockerized services.
 
-use anyhow::{Result, anyhow};
-use log::{info, warn, error, debug};
-use std::collections::HashMap;
-use std::sync::Arc;
-use tokio::sync::{Mutex, RwLock};
-use serde::{Serialize, Deserialize};
-use uuid::Uuid;
+use anyhow::{anyhow, Result};
 use chrono::{DateTime, Utc};
-use tokio::process::Command;
+use log::{debug, error, info, warn};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::process::Stdio;
+use std::sync::Arc;
+use tokio::process::Command;
+use tokio::sync::{Mutex, RwLock};
+use uuid::Uuid;
 
 // Singleton instance of the MCP manager
 lazy_static::lazy_static! {

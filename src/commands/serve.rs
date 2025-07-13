@@ -1,8 +1,8 @@
 //! Implementation of the serve command
 
+use crate::api::server;
 use anyhow::Result;
 use log::info;
-use crate::api::server;
 
 /// Execute the serve command
 pub async fn execute(port: Option<u16>) -> Result<()> {
