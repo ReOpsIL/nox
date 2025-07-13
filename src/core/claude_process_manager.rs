@@ -3,13 +3,15 @@
 //! This module handles the spawning and management of Claude CLI processes.
 
 use anyhow::{Result, anyhow};
-use log::{info, error, warn};
+use log::{info, error, warn, debug};
 use std::collections::HashMap;
 use tokio::process::{Command, Child};
-use tokio::io::{AsyncWriteExt, AsyncReadExt};
+use tokio::io::{AsyncWriteExt, AsyncReadExt, AsyncBufReadExt, BufReader};
 use std::process::Stdio;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use tokio::time::{timeout, Duration};
+use std::io::ErrorKind;
 use crate::types::Agent;
 
 // Singleton instance of the Claude process manager
@@ -33,19 +35,19 @@ impl ClaudeProcessManager {
     /// Start a Claude process for an agent
     async fn start_process(&mut self, agent: &Agent) -> Result<()> {
         info!("Starting Claude process for agent: {}", agent.name);
-        
+
         // Check if a process already exists for this agent
         if self.processes.contains_key(&agent.id) {
             warn!("Process already exists for agent: {}", agent.id);
             return Ok(());
         }
-        
+
         // Spawn the Claude CLI process
         let child = spawn_claude_process(agent).await?;
-        
+
         // Store the process
         self.processes.insert(agent.id.clone(), child);
-        
+
         info!("Claude process started for agent: {}", agent.name);
         Ok(())
     }
@@ -53,7 +55,7 @@ impl ClaudeProcessManager {
     /// Stop a Claude process for an agent
     async fn stop_process(&mut self, agent_id: &str) -> Result<()> {
         info!("Stopping Claude process for agent: {}", agent_id);
-        
+
         // Remove the process from the map and kill it
         if let Some(mut child) = self.processes.remove(agent_id) {
             // Try to kill the process gracefully
@@ -64,7 +66,7 @@ impl ClaudeProcessManager {
         } else {
             warn!("No process found for agent: {}", agent_id);
         }
-        
+
         Ok(())
     }
 
@@ -94,37 +96,130 @@ async fn spawn_claude_process(agent: &Agent) -> Result<Child> {
     // Prepare the system prompt
     let system_prompt = &agent.system_prompt;
 
-    // Spawn the Claude CLI process
-    let child = Command::new("claude")
-        .arg("chat")
-        .arg("--system")
-        .arg(system_prompt)
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()?;
+    info!("Spawning Claude process for agent: {}", agent.name);
+    debug!("System prompt: {}", 
+           if system_prompt.len() > 50 { &system_prompt[..50] } else { system_prompt });
 
-    Ok(child)
+    // Build the command with appropriate arguments
+    let mut cmd = Command::new("claude");
+
+    // Add common arguments
+    cmd.arg("chat")
+       .arg("--system")
+       .arg(system_prompt)
+       .stdin(Stdio::piped())
+       .stdout(Stdio::piped())
+       .stderr(Stdio::piped());
+
+    // Use default model (claude-3-opus-20240229)
+    // This could be enhanced in the future to support different models
+    // by adding a model field to the Agent struct
+    cmd.arg("--model").arg("claude-3-opus-20240229");
+
+    // Spawn the process
+    match cmd.spawn() {
+        Ok(child) => {
+            info!("Claude process spawned successfully for agent: {}", agent.name);
+
+            // Verify the process is running
+            match child.id() {
+                Some(pid) => debug!("Claude process ID: {}", pid),
+                None => warn!("Could not get process ID for Claude process"),
+            }
+
+            Ok(child)
+        },
+        Err(e) => {
+            error!("Failed to spawn Claude process: {}", e);
+            Err(anyhow!("Failed to spawn Claude process: {}", e))
+        }
+    }
 }
+
+// Constants for Claude process communication
+const MESSAGE_TIMEOUT: Duration = Duration::from_secs(60);
+const MAX_RETRIES: usize = 3;
+const RETRY_DELAY: Duration = Duration::from_secs(2);
 
 /// Send a message to a Claude CLI process and get the response
 async fn send_message_to_claude(child: &mut Child, message: &str) -> Result<String> {
+    let mut retries = 0;
+
+    while retries < MAX_RETRIES {
+        match send_message_with_timeout(child, message).await {
+            Ok(response) => return Ok(response),
+            Err(e) => {
+                retries += 1;
+                if retries >= MAX_RETRIES {
+                    return Err(anyhow!("Failed to communicate with Claude after {} retries: {}", MAX_RETRIES, e));
+                }
+
+                warn!("Error communicating with Claude (attempt {}/{}): {}. Retrying in {} seconds...", 
+                      retries, MAX_RETRIES, e, RETRY_DELAY.as_secs());
+
+                tokio::time::sleep(RETRY_DELAY).await;
+            }
+        }
+    }
+
+    // This should never be reached due to the return in the error case above
+    Err(anyhow!("Failed to communicate with Claude"))
+}
+
+/// Send a message to Claude with timeout
+async fn send_message_with_timeout(child: &mut Child, message: &str) -> Result<String> {
+    // Get stdin and stdout handles
     let stdin = child.stdin.as_mut().ok_or_else(|| anyhow!("Failed to open stdin"))?;
-    let mut stdout = child.stdout.as_mut().ok_or_else(|| anyhow!("Failed to open stdout"))?;
+    let stdout = child.stdout.as_mut().ok_or_else(|| anyhow!("Failed to open stdout"))?;
 
-    // Write the message to stdin
-    stdin.write_all(message.as_bytes()).await?;
-    stdin.write_all(b"\n").await?;
-    stdin.flush().await?;
+    // Create a buffered reader for stdout
+    let mut reader = BufReader::new(stdout);
 
-    // Read the response from stdout
-    let mut buffer = Vec::new();
-    stdout.read_to_end(&mut buffer).await?;
+    // Write the message to stdin with timeout
+    match timeout(MESSAGE_TIMEOUT, async {
+        stdin.write_all(message.as_bytes()).await?;
+        stdin.write_all(b"\n").await?;
+        stdin.flush().await?;
+        Ok::<_, std::io::Error>(())
+    }).await {
+        Ok(result) => result?,
+        Err(_) => return Err(anyhow!("Timeout while sending message to Claude")),
+    }
 
-    // Convert the response to a string
-    let response = String::from_utf8(buffer)?;
+    // Read the response with timeout
+    let mut response = String::new();
+    let mut buffer = String::new();
 
-    Ok(response)
+    // Use a timeout for the entire read operation
+    match timeout(MESSAGE_TIMEOUT, async {
+        // Read line by line until we get an empty line or EOF
+        loop {
+            match reader.read_line(&mut buffer).await {
+                Ok(0) => break, // EOF
+                Ok(_) => {
+                    response.push_str(&buffer);
+                    buffer.clear();
+
+                    // Check for response completion marker (this may need adjustment based on Claude's output format)
+                    if response.contains("\n\n") && response.trim().len() > 0 {
+                        break;
+                    }
+                },
+                Err(e) => {
+                    if e.kind() == ErrorKind::WouldBlock || e.kind() == ErrorKind::TimedOut {
+                        // Non-blocking I/O would block, wait a bit and try again
+                        tokio::time::sleep(Duration::from_millis(100)).await;
+                        continue;
+                    }
+                    return Err(e);
+                }
+            }
+        }
+        Ok::<_, std::io::Error>(response)
+    }).await {
+        Ok(result) => Ok(result?),
+        Err(_) => Err(anyhow!("Timeout while reading response from Claude")),
+    }
 }
 
 /// Start a Claude process for an agent
