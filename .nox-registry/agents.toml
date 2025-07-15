@@ -57,7 +57,7 @@ max_cpu_percent = 50
 id = "agent-167829203252242190378540579551412397603"
 name = "TestAgent"
 system_prompt = "Test prompt"
-status = "Active"
+status = "Stopping"
 created_at = "2025-07-15T08:05:29.524927Z"
 
 [agents.resource_limits]
