@@ -2,7 +2,7 @@
 id = "agent-154378644885340484159577024655736531644"
 name = "TestAgent"
 system_prompt = "Test prompt"
-status = "Starting"
+status = "Active"
 created_at = "2025-07-15T08:05:54.531564Z"
 
 [agents.resource_limits]
