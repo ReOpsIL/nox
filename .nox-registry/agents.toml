@@ -1,64 +1,9 @@
 [[agents]]
-id = "agent-98070221782482625200258177633772424225"
+id = "agent-79771213406159496070093713912406203184"
 name = "TestAgent"
-system_prompt = "Test prompt"
+system_prompt = "You are a test agent"
 status = "Inactive"
-created_at = "2025-07-15T08:05:29.449291Z"
-
-[agents.resource_limits]
-max_memory_mb = 512
-max_cpu_percent = 50
-
-[[agents]]
-id = "agent-29490858714380798459263814202964899995"
-name = "TestAgent"
-system_prompt = "Updated prompt"
-status = "Inactive"
-created_at = "2025-07-15T08:05:29.476160Z"
-
-[agents.resource_limits]
-max_memory_mb = 512
-max_cpu_percent = 50
-
-[[agents]]
-id = "agent-335885458396585757256427974034792289991"
-name = "TestAgent"
-system_prompt = "Test prompt"
-status = "Inactive"
-created_at = "2025-07-15T08:05:29.488096Z"
-
-[agents.resource_limits]
-max_memory_mb = 512
-max_cpu_percent = 50
-
-[[agents]]
-id = "agent-8974712842310930008255533877719967942"
-name = "TestAgent"
-system_prompt = "Test prompt"
-status = "Inactive"
-created_at = "2025-07-15T08:05:29.500882Z"
-
-[agents.resource_limits]
-max_memory_mb = 512
-max_cpu_percent = 50
-
-[[agents]]
-id = "agent-151786975682612964450542514283333705307"
-name = "TestAgent"
-system_prompt = "Test prompt"
-status = "Active"
-created_at = "2025-07-15T08:05:29.512947Z"
-
-[agents.resource_limits]
-max_memory_mb = 512
-max_cpu_percent = 50
-
-[[agents]]
-id = "agent-167829203252242190378540579551412397603"
-name = "TestAgent"
-system_prompt = "Test prompt"
-status = "Inactive"
-created_at = "2025-07-15T08:05:29.524927Z"
+created_at = "2025-07-15T08:05:37.715512Z"
 
 [agents.resource_limits]
 max_memory_mb = 512
