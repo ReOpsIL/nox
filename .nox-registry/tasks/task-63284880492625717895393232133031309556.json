@@ -1,0 +1,13 @@
+{
+  "id": "task-63284880492625717895393232133031309556",
+  "agent_id": "agent-299074850098170111422576536203071633923",
+  "title": "Test Task",
+  "description": "This is a test task",
+  "priority": "Medium",
+  "status": "Todo",
+  "created_at": "2025-07-15T08:05:53.282185Z",
+  "started_at": null,
+  "completed_at": null,
+  "progress": 0,
+  "metadata": {}
+}
