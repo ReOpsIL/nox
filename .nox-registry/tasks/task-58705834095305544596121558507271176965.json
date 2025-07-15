@@ -4,9 +4,9 @@
   "title": "Test Task",
   "description": "Test description",
   "priority": "Medium",
-  "status": "Todo",
+  "status": "InProgress",
   "created_at": "2025-07-15T08:05:29.705212Z",
-  "started_at": null,
+  "started_at": "2025-07-15T08:05:30.217807Z",
   "completed_at": null,
   "progress": 0,
   "metadata": {}
