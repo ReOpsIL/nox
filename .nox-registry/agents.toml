@@ -30,3 +30,14 @@ created_at = "2025-07-15T08:05:29.111238Z"
 [agents.resource_limits]
 max_memory_mb = 512
 max_cpu_percent = 50
+
+[[agents]]
+id = "agent-129261831971348164833571958041837436371"
+name = "TestAgent"
+system_prompt = "Test prompt"
+status = "Inactive"
+created_at = "2025-07-15T08:05:29.123227Z"
+
+[agents.resource_limits]
+max_memory_mb = 512
+max_cpu_percent = 50
