@@ -1,9 +1,9 @@
 [[agents]]
-id = "agent-104018967066452336403130988569291204362"
+id = "agent-41991883288434275837665059082497119867"
 name = "TestAgent"
-system_prompt = "Updated prompt"
+system_prompt = "Test prompt"
 status = "Inactive"
-created_at = "2025-07-15T08:05:54.890078Z"
+created_at = "2025-07-15T08:05:55.039252Z"
 
 [agents.resource_limits]
 max_memory_mb = 512
