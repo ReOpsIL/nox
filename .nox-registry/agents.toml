@@ -1,7 +1,7 @@
 [[agents]]
 id = "agent-104018967066452336403130988569291204362"
 name = "TestAgent"
-system_prompt = "Original prompt"
+system_prompt = "Updated prompt"
 status = "Inactive"
 created_at = "2025-07-15T08:05:54.890078Z"
 
