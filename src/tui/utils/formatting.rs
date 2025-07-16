@@ -42,7 +42,7 @@ pub fn format_duration(seconds: u64) -> String {
     }
 }
 
-pub fn format_memory(mb: u32) -> String {
+pub fn format_memory(mb: usize) -> String {
     if mb >= 1024 {
         format!("{:.1}GB", mb as f32 / 1024.0)
     } else {

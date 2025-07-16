@@ -795,7 +795,7 @@ pub async fn initialize_agent_resources(agent_id: &str) -> Result<()> {
     allocate_resources(
         agent_id,
         cpu_percent,
-        memory_mb,
+        memory_mb as u32,
         1024, // 1 GB disk
         1024, // 1 MB/s network
         5,    // Medium priority

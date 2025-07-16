@@ -5,9 +5,9 @@ edition = "2021"
 authors = ["Nox Team"]
 description = "Autonomous AI Agent Ecosystem"
 
-[[bin]]
-name = "nox"
-path = "src/main.rs"
+#[[bin]]
+#name = "nox"
+#path = "src/main.rs"
 
 [[bin]]
 name = "nox-tui"
@@ -39,6 +39,8 @@ lazy_static = "1.4"
 rand = "0.8"
 ratatui = "0.24"
 crossterm = "0.27"
+regex = "1.11.1"
+sysinfo = "0.30"
 
 [dev-dependencies]
 tempfile = "3.5"

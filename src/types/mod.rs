@@ -38,7 +38,7 @@ impl std::fmt::Display for AgentStatus {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ResourceLimits {
     /// Maximum memory usage in MB
-    pub max_memory_mb: u32,
+    pub max_memory_mb: usize,
     /// Maximum CPU usage as a percentage
     pub max_cpu_percent: u8,
 }
@@ -182,7 +182,9 @@ pub struct SystemStatus {
     /// System uptime in seconds
     pub uptime_seconds: u64,
     /// Current memory usage in MB
-    pub memory_usage_mb: u32,
+    pub memory_usage_mb: usize,
     /// Current CPU usage as a percentage
     pub cpu_usage_percent: f32,
+    /// Number of agents with error status
+    pub error_agents: usize,
 }

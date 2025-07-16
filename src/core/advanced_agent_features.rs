@@ -450,7 +450,7 @@ impl AdvancedAgentFeatures {
 
                 // Update the agent's resource limits
                 agent.resource_limits.max_cpu_percent = cpu_percent as u8;
-                agent.resource_limits.max_memory_mb = memory_mb as u32;
+                agent.resource_limits.max_memory_mb = memory_mb as usize;
                 agent_manager::update_agent(agent).await?;
 
                 info!("Applied resource allocation modification for agent {}", request.agent_id);

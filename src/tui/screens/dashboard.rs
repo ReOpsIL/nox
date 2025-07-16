@@ -93,7 +93,7 @@ impl Dashboard {
             ]),
             Line::from(vec![
                 Span::styled("🔴 Error: ", text_secondary_style()),
-                Span::styled("0/5", muted_style()), // TODO: Track error count
+                Span::styled(format!("{}/{}", state.system_status.error_agents, total_agents), muted_style()),
             ]),
         ];
 
