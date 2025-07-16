@@ -18,6 +18,9 @@ use anyhow::Result;
 
 /// Initialize the Nox agent ecosystem
 pub async fn initialize() -> Result<()> {
+    // Initialize configuration first
+    config_manager::initialize().await?;
+
     // Initialize the registry
     registry_manager::initialize().await?;
 

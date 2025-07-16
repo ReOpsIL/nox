@@ -87,12 +87,12 @@ impl ConfigManager {
         let mut builder = Config::builder();
 
         // Add default configuration
-        builder = builder.set_default("server.port", 3000)?;
-        builder = builder.set_default("server.frontend_port", 3001)?;
+        builder = builder.set_default("server.port", 8080)?;
+        builder = builder.set_default("server.frontend_port", 5173)?;
         builder = builder.set_default("server.host", "localhost")?;
         builder = builder.set_default("server.websocket_enabled", true)?;
         builder = builder.set_default("server.api_enabled", true)?;
-        builder = builder.set_default("server.cors_origins", vec!["http://localhost:3001"])?;
+        builder = builder.set_default("server.cors_origins", vec!["http://localhost:5173"])?;
 
         builder = builder.set_default("storage.registry_path", ".nox-registry")?;
 
@@ -115,7 +115,7 @@ impl ConfigManager {
 
         // Build the configuration
         let config = builder.build()?;
-
+        println!("{:?}", config);
         // Deserialize the configuration
         let app_config: AppConfig = config.try_deserialize()?;
 
@@ -199,11 +199,34 @@ impl ConfigManager {
 /// Initialize the configuration manager
 pub async fn initialize() -> Result<()> {
     let mut manager = CONFIG_MANAGER.write().await;
+    
+    // If config file doesn't exist, create it first
+    if !manager.config_path.exists() {
+        drop(manager); // Release the lock temporarily
+        create_default_config().await?;
+        manager = CONFIG_MANAGER.write().await; // Re-acquire the lock
+    }
+    
     manager.load_config().await
+}
+
+/// Ensure configuration is initialized (safe to call multiple times)
+pub async fn ensure_initialized() -> Result<()> {
+    // Check if configuration is already loaded
+    {
+        let manager = CONFIG_MANAGER.read().await;
+        if manager.config.is_some() {
+            return Ok(());
+        }
+    }
+    
+    // Initialize if not already done
+    initialize().await
 }
 
 /// Get the current configuration
 pub async fn get_config() -> Result<AppConfig> {
+    ensure_initialized().await?;
     let manager = CONFIG_MANAGER.read().await;
     manager.get_config()
 }
@@ -222,24 +245,28 @@ pub async fn update_value<T: serde::Serialize + std::fmt::Debug + Into<config::V
 
 /// Get the registry path
 pub async fn get_registry_path() -> Result<PathBuf> {
+    ensure_initialized().await?;
     let config = get_config().await?;
     Ok(PathBuf::from(config.storage.registry_path))
 }
 
 /// Get the server configuration
 pub async fn get_server_config() -> Result<ServerConfig> {
+    ensure_initialized().await?;
     let config = get_config().await?;
     Ok(config.server)
 }
 
 /// Get the Claude CLI configuration
 pub async fn get_claude_cli_config() -> Result<ClaudeCliConfig> {
+    ensure_initialized().await?;
     let config = get_config().await?;
     Ok(config.claude_cli)
 }
 
 /// Get the logging configuration
 pub async fn get_logging_config() -> Result<LoggingConfig> {
+    ensure_initialized().await?;
     let config = get_config().await?;
     Ok(config.logging)
 }
@@ -264,12 +291,12 @@ pub async fn create_default_config() -> Result<()> {
     // Create default configuration
     let default_config = AppConfig {
         server: ServerConfig {
-            port: 3000,
-            frontend_port: 3001,
+            port: 8080,
+            frontend_port: 5173,
             host: "localhost".to_string(),
             websocket_enabled: true,
             api_enabled: true,
-            cors_origins: vec!["http://localhost:3001".to_string()],
+            cors_origins: vec!["*".to_string()],
         },
         storage: StorageConfig {
             registry_path: ".nox-registry".to_string(),

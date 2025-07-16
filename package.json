@@ -1,0 +1,27 @@
+{
+  "name": "nox",
+  "version": "1.0.0",
+  "description": "![Nox](nox_s.jpg)",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ReOpsIL/nox.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/ReOpsIL/nox/issues"
+  },
+  "homepage": "https://github.com/ReOpsIL/nox#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.54.1",
+    "@types/node": "^24.0.13"
+  }
+}

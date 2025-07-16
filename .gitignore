@@ -19,8 +19,8 @@ target/
 *.pdb
 
 # Nox-specific files
-.nox-registry/
-*.nox
+#.nox-registry/
+#*.nox
 
 # Environment variables
 .env
@@ -145,3 +145,9 @@ Thumbs.db
 *.rar
 *.tar
 *.zip
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

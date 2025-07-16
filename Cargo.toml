@@ -5,6 +5,14 @@ edition = "2021"
 authors = ["Nox Team"]
 description = "Autonomous AI Agent Ecosystem"
 
+[[bin]]
+name = "nox"
+path = "src/main.rs"
+
+[[bin]]
+name = "nox-tui"
+path = "src/bin/tui.rs"
+
 [dependencies]
 tokio = { version = "1.28", features = ["full"] }
 clap = { version = "4.3", features = ["derive"] }
@@ -23,11 +31,14 @@ actix-web = "4.3"
 actix-rt = "2.8"
 actix-cors = "0.6"
 actix-ws = "0.2"
+actix-files = "0.6"
 markdown = "0.3"
 futures = "0.3"
 async-trait = "0.1"
 lazy_static = "1.4"
 rand = "0.8"
+ratatui = "0.24"
+crossterm = "0.27"
 
 [dev-dependencies]
 tempfile = "3.5"

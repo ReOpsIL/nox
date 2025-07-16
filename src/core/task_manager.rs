@@ -72,6 +72,21 @@ pub async fn complete_task(task_id: &str) -> Result<()> {
     registry_manager::save_task(&task).await
 }
 
+/// Cancel a task (change status to Cancelled)
+pub async fn cancel_task(task_id: &str) -> Result<()> {
+    use crate::types::TaskStatus;
+    use chrono::Utc;
+    
+    let mut task = registry_manager::get_task(task_id).await?
+        .ok_or_else(|| anyhow::anyhow!("Task not found: {}", task_id))?;
+    
+    task.status = TaskStatus::Cancelled;
+    task.completed_at = Some(Utc::now());
+    
+    info!("Cancelling task: {}", task.title);
+    registry_manager::save_task(&task).await
+}
+
 /// Execute a task using Claude CLI
 pub async fn execute_task(task_id: &str) -> Result<String> {
     use crate::core::claude_process_manager;

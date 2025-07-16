@@ -36,11 +36,7 @@ enum Commands {
     Health,
 
     /// Start the API server for frontend integration
-    Serve {
-        /// Custom port for the API server
-        #[arg(long)]
-        port: Option<u16>,
-    },
+    Serve,
 
     /// Agent management commands
     Agent {
@@ -222,9 +218,9 @@ async fn main() -> Result<()> {
             info!("Checking system health");
             commands::health::execute().await
         },
-        Commands::Serve { port } => {
-            info!("Starting API server");
-            commands::serve::execute(port).await
+        Commands::Serve  => {
+            info!("Starting API server",);
+            commands::serve::execute().await
         },
         Commands::Agent { subcommand } => {
             match subcommand {

@@ -1,6 +1,8 @@
 
 # Nox Autonomous Agent Ecosystem: System Handbook
 
+![Nox](nox_s.jpg)
+
 ## 1. Overview
 
 Nox is an agent management platform that provides the infrastructure for creating, monitoring, and coordinating AI agents powered by the Claude CLI. The Rust backend offers a high-performance, memory-safe, and CLI-first design, with RESTful API routes to support a PrimeReact frontend for visualization and control.
@@ -13,7 +15,26 @@ The Rust implementation provides significant advantages:
 *   **CLI-First Design**: The primary interface is a robust command-line tool, supplemented by a RESTful API for the web dashboard.
 *   **Modularity**: A clean separation of concerns between the core engine, the API layer, and the user-facing frontend.
 
-### 1.2.  Implementation Status by Phase
+### 1.2. Quick Start Scripts
+
+The `scripts/` directory contains everything needed to run Nox:
+
+- **Development**: `./scripts/dev.sh` - Runs both frontend and backend in development mode
+- **Production Build**: `./scripts/build.sh` - Builds and packages for production
+- **Production Run**: `./scripts/run.sh` - Runs the production server
+- **Deployment**: `./scripts/deploy.sh` - Deploys to production server
+
+**Quick Start:**
+```bash
+# Development
+./scripts/dev.sh
+
+# Production
+./scripts/build.sh
+cd deploy && ./run.sh
+```
+
+### 1.3.  Implementation Status by Phase
 
 **✅ Phase 1 (FULLY IMPLEMENTED):**
 *   **Core Infrastructure**: TOML/JSON-based agent registry with full CRUD operations

@@ -6,17 +6,20 @@ use crate::api::routes;
 use crate::api::websocket;
 use crate::core::config_manager;
 use actix_cors::Cors;
-use actix_web::{middleware, web, App, HttpResponse, HttpServer};
-use log::{error, info};
+use actix_files::{Files, NamedFile};
+use actix_web::{middleware, web, App, HttpResponse, HttpServer, Result};
+use log::{error, info, warn};
+use std::path::PathBuf;
 use std::sync::Arc;
 
+
 /// Start the API server
-pub async fn start_server(port: Option<u16>) -> anyhow::Result<()> {
-    // Get server configuration
+pub async fn start_server() -> anyhow::Result<()> {
+    // Get server configuration (will auto-initialize if needed)
     let server_config = config_manager::get_server_config().await?;
     
     // Use provided port or default from config
-    let port = port.unwrap_or(server_config.port);
+    let port  = server_config.port;
     let host = &server_config.host;
     
     info!("Starting API server on {}:{}", host, port);
@@ -27,33 +30,38 @@ pub async fn start_server(port: Option<u16>) -> anyhow::Result<()> {
     // Create and start the HTTP server
     HttpServer::new(move || {
         // Configure CORS
-        let cors_origins = cors_origins.clone();
-        let cors = Cors::default()
-            .allowed_origin_fn(move |origin, _req_head| {
-                // If no origins are specified, allow all
-                if cors_origins.is_empty() {
-                    return true;
-                }
-                
-                // Check if the origin is in the allowed list
-                let origin_str = match origin.to_str() {
-                    Ok(s) => s,
-                    Err(_) => return false,
-                };
-                
-                cors_origins.iter().any(|allowed| allowed == origin_str)
-            })
-            .allowed_methods(vec!["GET", "POST", "PUT", "DELETE"])
-            .allowed_headers(vec!["Authorization", "Content-Type"])
-            .supports_credentials()
-            .max_age(3600);
+        // let cors_origins = cors_origins.clone();
+        // let cors = Cors::default()
+        //     .allowed_origin_fn(move |origin, _req_head| {
+        //         // If no origins are specified, allow all
+        //         if cors_origins.is_empty() {
+        //             return true;
+        //         }
+        //
+        //         // Check if the origin is in the allowed list
+        //         let origin_str = match origin.to_str() {
+        //             Ok(s) => s,
+        //             Err(_) => return false,
+        //         };
+        //
+        //         cors_origins.iter().any(|allowed| allowed == origin_str)
+        //     })
+        //     .allowed_methods(vec!["GET", "POST", "PUT", "DELETE"])
+        //     .allowed_headers(vec!["Authorization", "Content-Type"])
+        //     .supports_credentials()
+        //     .max_age(3600);
         
         // Create the application
         let mut app = App::new()
-            .wrap(middleware::Logger::default())
-            .wrap(cors);
+            .wrap(middleware::Logger::default());
+            //.wrap(cors);
         
-        // Add API routes if enabled
+        // Health check endpoint
+        app = app.route("/health", web::get().to(|| async {
+            HttpResponse::Ok().body("OK")
+        }));
+
+        // API routes
         if server_config.api_enabled {
             app = app.service(
                 web::scope("/api")
@@ -61,18 +69,21 @@ pub async fn start_server(port: Option<u16>) -> anyhow::Result<()> {
             );
         }
         
-        // Add WebSocket routes if enabled
+        // WebSocket routes
         if server_config.websocket_enabled {
             app = app.service(
-                web::scope("")
+                web::scope("/ws")
                     .configure(websocket::configure)
             );
         }
         
-        // Add a health check endpoint
-        app = app.route("/health", web::get().to(|| async {
-            HttpResponse::Ok().body("OK")
-        }));
+        // Serve the entire frontend directory as static files
+        app = app.service(
+            Files::new("/", "frontend/dist")
+                .index_file("index.html")
+                .prefer_utf8(true)
+                .use_last_modified(true)
+        );
         
         app
     })

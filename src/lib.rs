@@ -7,6 +7,7 @@ pub mod types;
 pub mod core;
 pub mod api;
 pub mod commands;
+pub mod tui;
 
 pub use core::{
     agent_manager,

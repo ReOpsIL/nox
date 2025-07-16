@@ -283,8 +283,23 @@ async fn stop_agent(path: web::Path<String>) -> impl Responder {
     }
 }
 
+/// System status endpoint
+async fn get_system_status() -> impl Responder {
+    success(json!({
+        "status": "running",
+        "version": "0.1.0",
+        "uptime": "unknown"
+    }), None)
+}
+
 /// Configure the API routes
 pub fn configure(cfg: &mut web::ServiceConfig) {
+    // System routes
+    cfg.service(
+        web::scope("/system")
+            .route("/status", web::get().to(get_system_status))
+    );
+
     cfg.service(
         web::scope("/agents")
             .route("", web::get().to(get_agents))
@@ -306,6 +321,7 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
             .route("/{task_id}", web::delete().to(delete_task))
             .route("/{task_id}/start", web::post().to(start_task))
             .route("/{task_id}/complete", web::post().to(complete_task))
+            .route("/{task_id}/cancel", web::post().to(cancel_task))
     );
 }
 
@@ -533,6 +549,50 @@ async fn complete_task(path: web::Path<String>) -> impl Responder {
                 },
                 Err(e) => {
                     error!("Failed to complete task: {}", e);
+                    error(actix_web::http::StatusCode::INTERNAL_SERVER_ERROR, &e.to_string())
+                }
+            }
+        },
+        Ok(None) => error(actix_web::http::StatusCode::NOT_FOUND, &format!("Task '{}' not found", task_id)),
+        Err(e) => {
+            error!("Failed to get task: {}", e);
+            error(actix_web::http::StatusCode::INTERNAL_SERVER_ERROR, &e.to_string())
+        }
+    }
+}
+
+/// Cancel a task
+async fn cancel_task(path: web::Path<String>) -> impl Responder {
+    let task_id = path.into_inner();
+
+    // Get the task to check if it exists and current status
+    match task_manager::get_task(&task_id).await {
+        Ok(Some(task)) => {
+            // Check if the task is already cancelled
+            if task.status == TaskStatus::Cancelled {
+                return error(actix_web::http::StatusCode::BAD_REQUEST, "Task is already cancelled");
+            }
+
+            // Cancel the task
+            match task_manager::cancel_task(&task_id).await {
+                Ok(_) => {
+                    // Get the updated task
+                    match task_manager::get_task(&task_id).await {
+                        Ok(Some(updated_task)) => {
+                            success(
+                                updated_task,
+                                Some(format!("Task '{}' cancelled successfully", task.title))
+                            )
+                        },
+                        Ok(None) => error(actix_web::http::StatusCode::NOT_FOUND, "Task not found after cancelling"),
+                        Err(e) => {
+                            error!("Failed to get task after cancelling: {}", e);
+                            error(actix_web::http::StatusCode::INTERNAL_SERVER_ERROR, &e.to_string())
+                        }
+                    }
+                },
+                Err(e) => {
+                    error!("Failed to cancel task: {}", e);
                     error(actix_web::http::StatusCode::INTERNAL_SERVER_ERROR, &e.to_string())
                 }
             }
