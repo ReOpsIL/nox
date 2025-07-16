@@ -77,7 +77,7 @@ fn render_main_content(frame: &mut Frame, area: Rect, state: &AppState) {
 
 fn render_footer(frame: &mut Frame, area: Rect, state: &AppState) {
     let navigation_text = match state.current_screen {
-        Screen::Dashboard => "📊 [1] Agents  [2] Tasks  [3] Execution  [4] Logs  [5] Logs2  [Tab] Next  [←/→] Navigate",
+        Screen::Dashboard => "📊 [1] Agents  [2] Tasks  [3] Execution  [4] Logs  [Tab] Next  [←/→] Navigate",
         Screen::Agents => "🤖 [↑/↓] Select  [Enter] Action  [Tab] Switch Panel  [F1] Help",
         Screen::Tasks => "📋 [↑/↓] Select  [Enter] Action  [Tab] Switch Panel  [F] Filter",
         Screen::Execution => "⚡ [↑/↓] Select  [Enter] View Details  [Space] Pause/Resume  [Del] Cancel",
