@@ -126,7 +126,9 @@ impl Default for AppState {
                 tasks_by_status: HashMap::new(),
                 uptime_seconds: 0,
                 memory_usage_mb: 0,
+                total_memory_mb: 0,
                 cpu_usage_percent: 0.0,
+                memory_usage_percent: 0.0,
                 error_agents: 0,
             },
             filters: FilterState::default(),
@@ -188,7 +190,9 @@ impl App {
             tasks_by_status,
             uptime_seconds: self.system_monitor.get_uptime_seconds(),
             memory_usage_mb: self.system_monitor.get_memory_usage_mb(),
+            total_memory_mb: self.system_monitor.get_total_memory_mb(),
             cpu_usage_percent: self.system_monitor.get_cpu_usage_percent(),
+            memory_usage_percent: self.system_monitor.get_memory_usage_percent(),
             error_agents,
         };
 

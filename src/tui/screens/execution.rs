@@ -188,8 +188,8 @@ impl ExecutionScreen {
     }
 
     fn render_system_resources(frame: &mut Frame, area: Rect, state: &AppState) {
-        let cpu_usage = state.system_status.cpu_usage_percent;
-        let memory_usage = (state.system_status.memory_usage_mb as f64 / 1024.0) / 8.0 * 100.0; // Assume 8GB total
+        let cpu_usage = state.system_status.cpu_usage_percent.clamp(0.0, 100.0);
+        let memory_usage = state.system_status.memory_usage_percent.clamp(0.0, 100.0);
 
         let chunks = Layout::default()
             .direction(Direction::Vertical)
@@ -209,7 +209,7 @@ impl ExecutionScreen {
                 else if cpu_usage > 60.0 { warning_style() }
                 else { success_style() }
             )
-            .ratio(cpu_usage as f64 / 100.0)
+            .ratio((cpu_usage as f64 / 100.0).clamp(0.0, 1.0))
             .label(format!("CPU: {:.0}%", cpu_usage));
 
         let memory_gauge = Gauge::default()
@@ -219,7 +219,7 @@ impl ExecutionScreen {
                 else if memory_usage > 60.0 { warning_style() }
                 else { success_style() }
             )
-            .ratio(memory_usage / 100.0)
+            .ratio((memory_usage as f64 / 100.0).clamp(0.0, 1.0))
             .label(format!("Memory: {:.0}%", memory_usage));
 
         let status_text = format!(

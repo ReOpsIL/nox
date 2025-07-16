@@ -183,8 +183,12 @@ pub struct SystemStatus {
     pub uptime_seconds: u64,
     /// Current memory usage in MB
     pub memory_usage_mb: usize,
+    /// Total memory in MB
+    pub total_memory_mb: u64,
     /// Current CPU usage as a percentage
     pub cpu_usage_percent: f32,
+    /// Current memory usage as a percentage
+    pub memory_usage_percent: f32,
     /// Number of agents with error status
     pub error_agents: usize,
 }
