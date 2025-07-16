@@ -2,7 +2,7 @@ use ratatui::style::{Color, Style, Modifier};
 
 // Primary color palette - vibrant and dark-background friendly
 pub const PRIMARY_COLOR: Color = Color::Rgb(0, 191, 255);        // Deep Sky Blue
-pub const SECONDARY_COLOR: Color = Color::Rgb(0, 0, 0);     // Black
+pub const SECONDARY_COLOR: Color = Color::Rgb(0, 255, 127);     // Blue Violet
 pub const ACCENT_COLOR: Color = Color::Rgb(255, 20, 147);       // Deep Pink
 
 // Status colors - bright and visible on dark backgrounds
@@ -20,7 +20,7 @@ pub const TEXT_HIGHLIGHT: Color = Color::Rgb(255, 215, 0);      // Gold
 // Background and UI colors
 pub const BACKGROUND_COLOR: Color = Color::Black;
 pub const BORDER_COLOR: Color = Color::Rgb(75, 0, 130);         // Indigo
-pub const BORDER_ACTIVE: Color = Color::Rgb(0, 0, 0);           // Black
+pub const BORDER_ACTIVE: Color = Color::Rgb(0, 255, 127);      // Blue Violet
 pub const SELECTION_BG: Color = Color::Rgb(25, 25, 112);        // Midnight Blue
 
 // Agent status colors
@@ -108,7 +108,7 @@ pub fn border_active_style() -> Style {
 pub fn title_style() -> Style {
     Style::default()
         .fg(PRIMARY_COLOR)
-        .add_modifier(Modifier::BOLD | Modifier::UNDERLINED)
+        .add_modifier(Modifier::BOLD)
 }
 
 // Agent status styles
