@@ -168,6 +168,14 @@ impl App {
         self.state.agents = agent_manager::get_all_agents().await?;
         self.state.tasks = task_manager::get_all_tasks().await?;
 
+        if  self.state.agents.len() > 0  && self.state.selected_agent == None {
+            self.state.selected_agent = Some(0);
+        }
+
+        if  self.state.tasks.len() > 0  && self.state.selected_task == None {
+            self.state.selected_task = Some(0);
+        }
+
         let active_agents = self.state.agents.iter()
             .filter(|a| matches!(a.status, crate::types::AgentStatus::Active))
             .count();
