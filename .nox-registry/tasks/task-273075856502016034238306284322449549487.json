@@ -4,9 +4,9 @@
   "title": "test",
   "description": "search for news about google\n",
   "priority": "Medium",
-  "status": "Done",
+  "status": "InProgress",
   "created_at": "2025-07-17T17:03:20.201683Z",
-  "started_at": "2025-07-17T17:04:11.017775Z",
+  "started_at": "2025-07-17T17:04:39.484987Z",
   "completed_at": "2025-07-17T17:04:39.305112Z",
   "progress": 100,
   "metadata": {
