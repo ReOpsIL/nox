@@ -35,10 +35,12 @@ impl CreateAgentForm {
                 .required(),
             max_memory_mb: TextInput::new("Max Memory (MB)")
                 .placeholder("512")
-                .max_length(10),
+                .max_length(10)
+                .required(),
             max_cpu_percent: TextInput::new("Max CPU (%)")
                 .placeholder("50")
-                .max_length(3),
+                .max_length(3)
+                .required(),
             current_field: 0,
             validation_errors: Vec::new(),
         }
@@ -64,30 +66,32 @@ impl CreateAgentForm {
             3 => self.max_cpu_percent.handle_input(key),
             _ => InputResult::Continue,
         };
+
+        FormResult::Continue
         
-        match input_result {
-            InputResult::Continue => FormResult::Continue,
-            InputResult::NextField => {
-                self.next_field();
-                self.update_focus();
-                FormResult::Continue
-            }
-            InputResult::PreviousField => {
-                self.previous_field();
-                self.update_focus();
-                FormResult::Continue
-            }
-            InputResult::Submit => {
-                if self.is_complete() && self.is_valid() {
-                    FormResult::Submit
-                } else {
-                    self.next_field();
-                    self.update_focus();
-                    FormResult::Continue
-                }
-            }
-            InputResult::Cancel => FormResult::Cancel,
-        }
+        // match input_result {
+        //     InputResult::Continue => FormResult::Continue,
+        //     InputResult::NextField => {
+        //         self.next_field();
+        //         self.update_focus();
+        //         FormResult::Continue
+        //     }
+        //     InputResult::PreviousField => {
+        //         self.previous_field();
+        //         self.update_focus();
+        //         FormResult::Continue
+        //     }
+        //     InputResult::Submit => {
+        //         if self.is_complete() && self.is_valid() {
+        //             FormResult::Submit
+        //         } else {
+        //             self.next_field();
+        //             self.update_focus();
+        //             FormResult::Continue
+        //         }
+        //     }
+        //     InputResult::Cancel => FormResult::Cancel,
+        // }
     }
     
     /// Validate resource limits
@@ -167,6 +171,7 @@ impl FormFieldNavigation for CreateAgentForm {
     }
     
     fn set_current_field(&mut self, index: usize) {
+        println!("{}",index);
         self.current_field = index.min(self.field_count().saturating_sub(1));
     }
     

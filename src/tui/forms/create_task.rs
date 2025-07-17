@@ -68,30 +68,32 @@ impl CreateTaskForm {
             3 => self.priority_selector.handle_input(key),
             _ => InputResult::Continue,
         };
-        
-        match input_result {
-            InputResult::Continue => FormResult::Continue,
-            InputResult::NextField => {
-                self.next_field();
-                self.update_focus();
-                FormResult::Continue
-            }
-            InputResult::PreviousField => {
-                self.previous_field();
-                self.update_focus();
-                FormResult::Continue
-            }
-            InputResult::Submit => {
-                if self.is_complete() && self.is_valid() {
-                    FormResult::Submit
-                } else {
-                    self.next_field();
-                    self.update_focus();
-                    FormResult::Continue
-                }
-            }
-            InputResult::Cancel => FormResult::Cancel,
-        }
+
+        FormResult::Continue
+
+        // match input_result {
+        //     InputResult::Continue => FormResult::Continue,
+        //     InputResult::NextField => {
+        //         self.next_field();
+        //         self.update_focus();
+        //         FormResult::Continue
+        //     }
+        //     InputResult::PreviousField => {
+        //         self.previous_field();
+        //         self.update_focus();
+        //         FormResult::Continue
+        //     }
+        //     InputResult::Submit => {
+        //         if self.is_complete() && self.is_valid() {
+        //             FormResult::Submit
+        //         } else {
+        //             self.next_field();
+        //             self.update_focus();
+        //             FormResult::Continue
+        //         }
+        //     }
+        //     InputResult::Cancel => FormResult::Cancel,
+        // }
     }
 }
 
@@ -422,7 +424,7 @@ mod tests {
         assert_eq!(task.description, "This is a test task description");
         assert_eq!(task.agent_id, "test_agent");
         assert_eq!(task.priority, TaskPriority::High);
-        assert_eq!(task.status, TaskStatus::Pending);
+        assert_eq!(task.status, TaskStatus::Todo);
     }
     
     #[test]

@@ -48,8 +48,10 @@ async fn main() -> Result<()> {
                         if nox::tui::events::AppEvent::is_quit_key(&key) {
                             break;
                         }
-                        if let Err(e) = app.handle_key_input(key.code).await {
-                            log::error!("Failed to handle key input: {}", e);
+                        if key.kind == crossterm::event::KeyEventKind::Press {
+                            if let Err(e) = app.handle_key_input(key.code).await {
+                                log::error!("Failed to handle key input: {}", e);
+                            }
                         }
                     }
                     nox::tui::events::AppEvent::Tick => {
