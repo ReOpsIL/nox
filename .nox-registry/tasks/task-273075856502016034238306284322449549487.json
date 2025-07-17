@@ -1,0 +1,13 @@
+{
+  "id": "task-273075856502016034238306284322449549487",
+  "agent_id": "agent-111543975492518392115556183191000095549",
+  "title": "test",
+  "description": "search for news about google\n",
+  "priority": "Medium",
+  "status": "Todo",
+  "created_at": "2025-07-17T17:03:20.201683Z",
+  "started_at": null,
+  "completed_at": null,
+  "progress": 0,
+  "metadata": {}
+}
