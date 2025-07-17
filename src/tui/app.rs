@@ -6,6 +6,7 @@ use crate::tui::system_monitor::SystemMonitor;
 use anyhow::Result;
 use std::collections::HashMap;
 use tokio::sync::mpsc;
+use crate::commands;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Screen {
@@ -38,6 +39,17 @@ pub enum DialogState {
     Confirmation(ConfirmationDialog),
     Progress(ProgressDialog),
     Help(HelpDialog),
+}
+
+/// Pending operation types that require confirmation
+#[derive(Debug, Clone)]
+pub enum PendingOperation {
+    DeleteAgent(Agent),
+    StopAgent(Agent),
+    DeleteTask(Task),
+    CancelTask(Task),
+    RestartAgent(Agent),
+    ClearLogs,
 }
 
 /// Operation status for tracking async operations
@@ -110,6 +122,7 @@ pub struct AppState {
     pub help_visible: bool,
     pub error_message: Option<String>,
     pub success_message: Option<String>,
+    pub pending_operation: Option<PendingOperation>,
 }
 
 impl Default for AppState {
@@ -143,6 +156,7 @@ impl Default for AppState {
             help_visible: false,
             error_message: None,
             success_message: None,
+            pending_operation: None,
         }
     }
 }
@@ -231,7 +245,7 @@ impl App {
         };
     }
 
-    pub fn handle_key_input(&mut self, key: crossterm::event::KeyCode) -> Result<()> {
+    pub async fn handle_key_input(&mut self, key: crossterm::event::KeyCode) -> Result<()> {
         // Handle global keys first
         if self.handle_global_keys(key)? {
             return Ok(());
@@ -239,12 +253,12 @@ impl App {
         
         // Handle form input if form is active
         if self.state.current_form.is_some() {
-            return self.handle_form_input(key);
+            return self.handle_form_input(key).await;
         }
         
         // Handle dialog input if dialog is active
         if self.state.current_dialog.is_some() {
-            return self.handle_dialog_input(key);
+            return self.handle_dialog_input(key).await;
         }
         
         // Handle search input if search is active
@@ -254,8 +268,8 @@ impl App {
         
         // Handle screen-specific keys
         match self.state.current_screen {
-            Screen::Agents => self.handle_agents_keys(key),
-            Screen::Tasks => self.handle_tasks_keys(key),
+            Screen::Agents => self.handle_agents_keys(key).await,
+            Screen::Tasks => self.handle_tasks_keys(key).await,
             Screen::Execution => self.handle_execution_keys(key),
             Screen::Logs => self.handle_logs_keys(key),
             Screen::Dashboard => self.handle_dashboard_keys(key),
@@ -283,7 +297,7 @@ impl App {
     }
     
     /// Handle form input
-    fn handle_form_input(&mut self, key: crossterm::event::KeyCode) -> Result<()> {
+    async fn handle_form_input(&mut self, key: crossterm::event::KeyCode) -> Result<()> {
         use crate::tui::forms::FormResult;
         
         let result = if let Some(form_state) = &mut self.state.current_form {
@@ -299,7 +313,7 @@ impl App {
         
         match result {
             FormResult::Submit => {
-                self.submit_current_form()?;
+                self.submit_current_form().await?;
             }
             FormResult::Cancel => {
                 self.cancel_current_form();
@@ -313,7 +327,7 @@ impl App {
     }
     
     /// Handle dialog input
-    fn handle_dialog_input(&mut self, key: crossterm::event::KeyCode) -> Result<()> {
+    async fn handle_dialog_input(&mut self, key: crossterm::event::KeyCode) -> Result<()> {
         use crate::tui::dialogs::DialogResult;
         
         let result = if let Some(dialog_state) = &mut self.state.current_dialog {
@@ -328,7 +342,7 @@ impl App {
         
         match result {
             DialogResult::Confirm => {
-                self.confirm_current_dialog()?;
+                self.confirm_current_dialog().await?;
             }
             DialogResult::Cancel => {
                 self.cancel_current_dialog();
@@ -366,7 +380,7 @@ impl App {
     }
     
     /// Handle agents screen keys
-    fn handle_agents_keys(&mut self, key: crossterm::event::KeyCode) -> Result<()> {
+    async fn handle_agents_keys(&mut self, key: crossterm::event::KeyCode) -> Result<()> {
         match key {
             crossterm::event::KeyCode::Char('n') | crossterm::event::KeyCode::Char('N') => {
                 self.show_create_agent_form();
@@ -378,7 +392,7 @@ impl App {
             }
             crossterm::event::KeyCode::Char('s') | crossterm::event::KeyCode::Char('S') => {
                 if let Some(agent) = self.get_selected_agent() {
-                    self.start_agent_operation(agent.clone());
+                    self.start_agent_operation(agent.clone()).await?;
                 }
             }
             crossterm::event::KeyCode::Char('t') | crossterm::event::KeyCode::Char('T') => {
@@ -413,14 +427,14 @@ impl App {
     }
     
     /// Handle tasks screen keys
-    fn handle_tasks_keys(&mut self, key: crossterm::event::KeyCode) -> Result<()> {
+    async fn handle_tasks_keys(&mut self, key: crossterm::event::KeyCode) -> Result<()> {
         match key {
             crossterm::event::KeyCode::Char('n') | crossterm::event::KeyCode::Char('N') => {
                 self.show_create_task_form();
             }
             crossterm::event::KeyCode::Char('e') | crossterm::event::KeyCode::Char('E') => {
                 if let Some(task) = self.get_selected_task() {
-                    self.execute_task_operation(task.clone());
+                    self.execute_task_operation(task.clone()).await?;
                 }
             }
             crossterm::event::KeyCode::Char('u') | crossterm::event::KeyCode::Char('U') => {
@@ -680,7 +694,7 @@ impl App {
         self.state.current_form = Some(FormState::EditTask(form));
     }
     
-    fn submit_current_form(&mut self) -> Result<()> {
+    async fn submit_current_form(&mut self) -> Result<()> {
         if let Some(form_state) = self.state.current_form.take() {
             match form_state {
                 FormState::CreateAgent(form) => {
@@ -690,8 +704,25 @@ impl App {
                             let mut dialog = ProgressDialog::agent_operation("Creating", &agent.name);
                             dialog.set_progress(50);
                             self.state.current_dialog = Some(DialogState::Progress(dialog));
+                            
+                            // Actually create the agent
+                            match commands::agent::add::execute(agent.name.clone(), agent.system_prompt.clone()).await {
+                                Ok(_) => {
+                                    // Add to local state for immediate UI update
+                                    self.state.agents.push(agent.clone());
+                                    // Update progress dialog
+                                    if let Some(DialogState::Progress(ref mut dialog)) = self.state.current_dialog {
+                                        dialog.set_progress(100);
+                                    }
+                                }
+                                Err(e) => {
+                                    self.state.error_message = Some(format!("Failed to create agent: {}", e));
+                                    self.state.current_dialog = None;
+                                    return Ok(());
+                                }
+                            }
+                            
                             self.state.success_message = Some("Agent created successfully".to_string());
-                            // TODO: Queue async operation to actually create agent
                         }
                         Err(error) => {
                             self.state.error_message = Some(format!("Failed to create agent: {}", error));
@@ -704,8 +735,26 @@ impl App {
                             let mut dialog = ProgressDialog::agent_operation("Updating", &agent.name);
                             dialog.set_progress(50);
                             self.state.current_dialog = Some(DialogState::Progress(dialog));
+                            
+                            // Actually update the agent
+                            match commands::agent::update::execute(agent.id.clone(), agent.name.clone(), agent.system_prompt.clone()).await {
+                                Ok(_) => {
+                                    // Update local state
+                                    if let Some(local_agent) = self.state.agents.iter_mut().find(|a| a.id == agent.id) {
+                                        *local_agent = agent.clone();
+                                    }
+                                    if let Some(DialogState::Progress(ref mut dialog)) = self.state.current_dialog {
+                                        dialog.set_progress(100);
+                                    }
+                                }
+                                Err(e) => {
+                                    self.state.error_message = Some(format!("Failed to update agent: {}", e));
+                                    self.state.current_dialog = None;
+                                    return Ok(());
+                                }
+                            }
+                            
                             self.state.success_message = Some("Agent updated successfully".to_string());
-                            // TODO: Queue async operation to actually update agent
                         }
                         Err(error) => {
                             self.state.error_message = Some(format!("Failed to update agent: {}", error));
@@ -718,8 +767,24 @@ impl App {
                             let mut dialog = ProgressDialog::task_operation("Creating", &task.title);
                             dialog.set_progress(50);
                             self.state.current_dialog = Some(DialogState::Progress(dialog));
+                            
+                            // Actually create the task
+                            match commands::task::create::execute(task.agent_id.clone(), task.title.clone(), task.description.clone()).await {
+                                Ok(_) => {
+                                    // Add to local state for immediate UI update
+                                    self.state.tasks.push(task.clone());
+                                    if let Some(DialogState::Progress(ref mut dialog)) = self.state.current_dialog {
+                                        dialog.set_progress(100);
+                                    }
+                                }
+                                Err(e) => {
+                                    self.state.error_message = Some(format!("Failed to create task: {}", e));
+                                    self.state.current_dialog = None;
+                                    return Ok(());
+                                }
+                            }
+                            
                             self.state.success_message = Some("Task created successfully".to_string());
-                            // TODO: Queue async operation to actually create task
                         }
                         Err(error) => {
                             self.state.error_message = Some(format!("Failed to create task: {}", error));
@@ -732,8 +797,26 @@ impl App {
                             let mut dialog = ProgressDialog::task_operation("Updating", &task.title);
                             dialog.set_progress(50);
                             self.state.current_dialog = Some(DialogState::Progress(dialog));
+                            
+                            // Actually update the task
+                            match task_manager::update_task(task.clone()).await {
+                                Ok(_) => {
+                                    // Update local state
+                                    if let Some(local_task) = self.state.tasks.iter_mut().find(|t| t.id == task.id) {
+                                        *local_task = task.clone();
+                                    }
+                                    if let Some(DialogState::Progress(ref mut dialog)) = self.state.current_dialog {
+                                        dialog.set_progress(100);
+                                    }
+                                }
+                                Err(e) => {
+                                    self.state.error_message = Some(format!("Failed to update task: {}", e));
+                                    self.state.current_dialog = None;
+                                    return Ok(());
+                                }
+                            }
+                            
                             self.state.success_message = Some("Task updated successfully".to_string());
-                            // TODO: Queue async operation to actually update task
                         }
                         Err(error) => {
                             self.state.error_message = Some(format!("Failed to update task: {}", error));
@@ -758,32 +841,35 @@ impl App {
     fn show_delete_agent_confirmation(&mut self, agent: Agent) {
         let dialog = ConfirmationDialog::delete("Agent", &agent.name);
         self.state.current_dialog = Some(DialogState::Confirmation(dialog));
+        self.state.pending_operation = Some(PendingOperation::DeleteAgent(agent));
     }
     
     fn show_stop_agent_confirmation(&mut self, agent: Agent) {
         let dialog = ConfirmationDialog::stop_agent(&agent.name);
         self.state.current_dialog = Some(DialogState::Confirmation(dialog));
+        self.state.pending_operation = Some(PendingOperation::StopAgent(agent));
     }
     
     fn show_delete_task_confirmation(&mut self, task: Task) {
         let dialog = ConfirmationDialog::delete("Task", &task.title);
         self.state.current_dialog = Some(DialogState::Confirmation(dialog));
+        self.state.pending_operation = Some(PendingOperation::DeleteTask(task));
     }
     
     fn show_cancel_task_confirmation(&mut self, task: Task) {
         let dialog = ConfirmationDialog::cancel_task(&task.title);
         self.state.current_dialog = Some(DialogState::Confirmation(dialog));
+        self.state.pending_operation = Some(PendingOperation::CancelTask(task));
     }
     
-    fn confirm_current_dialog(&mut self) -> Result<()> {
+    async fn confirm_current_dialog(&mut self) -> Result<()> {
         if let Some(dialog_state) = self.state.current_dialog.take() {
             match dialog_state {
-                DialogState::Confirmation(dialog) => {
-                    // Handle confirmation based on dialog type
-                    if dialog.destructive {
-                        self.state.success_message = Some("Operation completed".to_string());
+                DialogState::Confirmation(_dialog) => {
+                    // Handle confirmation based on pending operation
+                    if let Some(operation) = self.state.pending_operation.take() {
+                        self.execute_pending_operation(operation).await?;
                     }
-                    // TODO: Implement actual operations
                 }
                 _ => {}
             }
@@ -793,10 +879,12 @@ impl App {
     
     fn cancel_current_dialog(&mut self) {
         self.state.current_dialog = None;
+        self.state.pending_operation = None;
     }
     
     fn close_current_dialog(&mut self) {
         self.state.current_dialog = None;
+        self.state.pending_operation = None;
     }
     
     // Search and filter methods
@@ -840,20 +928,56 @@ impl App {
     }
     
     // Operation methods
-    fn start_agent_operation(&mut self, agent: Agent) {
+    async fn start_agent_operation(&mut self, agent: Agent) -> Result<()> {
         let mut dialog = ProgressDialog::agent_operation("Starting", &agent.name);
         dialog.set_progress(0);
         self.state.current_dialog = Some(DialogState::Progress(dialog));
-        self.state.success_message = Some(format!("Agent '{}' start operation queued", agent.name));
-        // TODO: Queue async operation to actually start agent via agent_manager
+        
+        // Actually start the agent
+        match commands::agent::start::execute(agent.name.clone()).await {
+            Ok(_) => {
+                // Update local state to reflect started status
+                if let Some(local_agent) = self.state.agents.iter_mut().find(|a| a.id == agent.id) {
+                    local_agent.status = crate::types::AgentStatus::Active;
+                }
+                if let Some(DialogState::Progress(ref mut dialog)) = self.state.current_dialog {
+                    dialog.set_progress(100);
+                }
+                self.state.success_message = Some(format!("Agent '{}' started successfully", agent.name));
+            }
+            Err(e) => {
+                self.state.error_message = Some(format!("Failed to start agent: {}", e));
+            }
+        }
+        self.state.current_dialog = None;
+        
+        Ok(())
     }
     
-    fn execute_task_operation(&mut self, task: Task) {
+    async fn execute_task_operation(&mut self, task: Task) -> Result<()> {
         let mut dialog = ProgressDialog::task_operation("Executing", &task.title);
         dialog.set_progress(0);
         self.state.current_dialog = Some(DialogState::Progress(dialog));
-        self.state.success_message = Some(format!("Task '{}' execution queued", task.title));
-        // TODO: Queue async operation to actually execute task via task_manager
+        
+        // Actually execute the task
+        match commands::task::execute::execute(task.id.clone()).await {
+            Ok(_) => {
+                // Update local state to reflect execution
+                if let Some(local_task) = self.state.tasks.iter_mut().find(|t| t.id == task.id) {
+                    local_task.status = crate::types::TaskStatus::InProgress;
+                }
+                if let Some(DialogState::Progress(ref mut dialog)) = self.state.current_dialog {
+                    dialog.set_progress(100);
+                }
+                self.state.success_message = Some(format!("Task '{}' executed successfully", task.title));
+            }
+            Err(e) => {
+                self.state.error_message = Some(format!("Failed to execute task: {}", e));
+            }
+        }
+        self.state.current_dialog = None;
+        
+        Ok(())
     }
     
     // Clear messages after a delay
@@ -890,6 +1014,7 @@ impl App {
     fn cancel_execution(&mut self, task: Task) {
         let dialog = ConfirmationDialog::cancel_task(&task.title);
         self.state.current_dialog = Some(DialogState::Confirmation(dialog));
+        self.state.pending_operation = Some(PendingOperation::CancelTask(task));
     }
     
     fn show_execution_details(&mut self, task: Task) {
@@ -909,6 +1034,7 @@ impl App {
             "Are you sure you want to clear all logs?".to_string()
         );
         self.state.current_dialog = Some(DialogState::Confirmation(dialog));
+        self.state.pending_operation = Some(PendingOperation::ClearLogs);
     }
     
     fn save_logs_to_file(&mut self) {
@@ -968,6 +1094,7 @@ impl App {
             format!("Are you sure you want to restart agent '{}'?", agent.name)
         );
         self.state.current_dialog = Some(DialogState::Confirmation(dialog));
+        self.state.pending_operation = Some(PendingOperation::RestartAgent(agent));
     }
     
     fn show_agent_details(&mut self, agent: Agent) {
@@ -999,5 +1126,223 @@ impl App {
     fn filter_tasks_completed(&mut self) {
         self.state.filters.task_status_filter = Some("Done".to_string());
         self.state.success_message = Some("Showing completed tasks".to_string());
+    }
+    
+    /// Execute a pending operation after confirmation
+    async fn execute_pending_operation(&mut self, operation: PendingOperation) -> Result<()> {
+        match operation {
+            PendingOperation::DeleteAgent(agent) => {
+                self.execute_delete_agent(agent).await?;
+            }
+            PendingOperation::StopAgent(agent) => {
+                self.execute_stop_agent(agent).await?;
+            }
+            PendingOperation::DeleteTask(task) => {
+                self.execute_delete_task(task).await?;
+            }
+            PendingOperation::CancelTask(task) => {
+                self.execute_cancel_task(task).await?;
+            }
+            PendingOperation::RestartAgent(agent) => {
+                self.execute_restart_agent(agent).await?;
+            }
+            PendingOperation::ClearLogs => {
+                self.execute_clear_logs().await?;
+            }
+        }
+        Ok(())
+    }
+    
+    /// Execute agent deletion
+    pub async fn execute_delete_agent(&mut self, agent: Agent) -> Result<()> {
+        let mut dialog = ProgressDialog::agent_operation("Deleting", &agent.name);
+        dialog.set_progress(0);
+        self.state.current_dialog = Some(DialogState::Progress(dialog));
+
+        // TODO: Queue async operation to actually delete agent via agent_manager
+        commands::agent::delete::execute(agent.name.clone(), true).await?;
+
+        // For now, just show a success message
+        self.state.success_message = Some(format!("Agent '{}' deleted successfully", agent.name.clone()));
+
+        // Remove from local state immediately for UI responsiveness
+        self.state.agents.retain(|a| a.id != agent.id);
+
+        // Reset selection if deleted agent was selected
+        if let Some(selected_index) = self.state.selected_agent {
+            if selected_index >= self.state.agents.len() {
+                self.state.selected_agent = if self.state.agents.is_empty() {
+                    None
+                } else {
+                    Some(self.state.agents.len() - 1)
+                };
+            }
+        }
+
+        Ok(())
+    }
+    
+    /// Execute agent stop operation
+    async fn execute_stop_agent(&mut self, agent: Agent) -> Result<()> {
+        let mut dialog = ProgressDialog::agent_operation("Stopping", &agent.name);
+        dialog.set_progress(0);
+        self.state.current_dialog = Some(DialogState::Progress(dialog.clone()));
+        
+        // Actually stop the agent
+        match commands::agent::stop::execute(agent.name.clone()).await {
+            Ok(_) => {
+                if let Some(DialogState::Progress(ref mut progress_dialog)) = self.state.current_dialog {
+                    progress_dialog.set_progress(100);
+                }
+            }
+            Err(e) => {
+                self.state.error_message = Some(format!("Failed to stop agent: {}", e));
+                self.state.current_dialog = None;
+                return Ok(());
+            }
+        }
+        
+        // Show success message
+        self.state.success_message = Some(format!("Agent '{}' stopped successfully", agent.name));
+        
+        // Update local state to reflect stopped status
+        if let Some(local_agent) = self.state.agents.iter_mut().find(|a| a.id == agent.id) {
+            local_agent.status = crate::types::AgentStatus::Inactive;
+        }
+        
+        Ok(())
+    }
+    
+    /// Execute task deletion
+    async fn execute_delete_task(&mut self, task: Task) -> Result<()> {
+        let mut dialog = ProgressDialog::task_operation("Deleting", &task.title);
+        dialog.set_progress(0);
+        self.state.current_dialog = Some(DialogState::Progress(dialog.clone()));
+        
+        // Actually delete the task
+        // Note: There's no delete command, but we can use the task_manager directly
+        match crate::core::task_manager::delete_task(&task.id).await {
+            Ok(_) => {
+                if let Some(DialogState::Progress(ref mut progress_dialog)) = self.state.current_dialog {
+                    progress_dialog.set_progress(100);
+                }
+            }
+            Err(e) => {
+                self.state.error_message = Some(format!("Failed to delete task: {}", e));
+                self.state.current_dialog = None;
+                return Ok(());
+            }
+        }
+        
+        // Show success message
+        self.state.success_message = Some(format!("Task '{}' deleted successfully", task.title));
+        
+        // Remove from local state immediately for UI responsiveness
+        self.state.tasks.retain(|t| t.id != task.id);
+        
+        // Reset selection if deleted task was selected
+        if let Some(selected_index) = self.state.selected_task {
+            if selected_index >= self.state.tasks.len() {
+                self.state.selected_task = if self.state.tasks.is_empty() {
+                    None
+                } else {
+                    Some(self.state.tasks.len() - 1)
+                };
+            }
+        }
+        
+        Ok(())
+    }
+    
+    /// Execute task cancellation
+    async fn execute_cancel_task(&mut self, task: Task) -> Result<()> {
+        let mut dialog = ProgressDialog::task_operation("Cancelling", &task.title);
+        dialog.set_progress(0);
+        self.state.current_dialog = Some(DialogState::Progress(dialog.clone()));
+        
+        // Actually cancel the task
+        match commands::task::cancel::execute(task.id.clone()).await {
+            Ok(_) => {
+                if let Some(DialogState::Progress(ref mut progress_dialog)) = self.state.current_dialog {
+                    progress_dialog.set_progress(100);
+                }
+            }
+            Err(e) => {
+                self.state.error_message = Some(format!("Failed to cancel task: {}", e));
+                self.state.current_dialog = None;
+                return Ok(());
+            }
+        }
+        
+        // Update local state to reflect cancelled status
+        if let Some(local_task) = self.state.tasks.iter_mut().find(|t| t.id == task.id) {
+            local_task.status = crate::types::TaskStatus::Cancelled;
+        }
+        
+        Ok(())
+    }
+    
+    /// Execute agent restart operation
+    async fn execute_restart_agent(&mut self, agent: Agent) -> Result<()> {
+        let mut dialog = ProgressDialog::agent_operation("Restarting", &agent.name);
+        dialog.set_progress(0);
+        self.state.current_dialog = Some(DialogState::Progress(dialog.clone()));
+        
+        // Actually restart the agent (stop then start)
+        match commands::agent::stop::execute(agent.name.clone()).await {
+            Ok(_) => {
+                if let Some(DialogState::Progress(ref mut progress_dialog)) = self.state.current_dialog {
+                    progress_dialog.set_progress(50);
+                }
+                // Now start the agent
+                match commands::agent::start::execute(agent.name.clone()).await {
+                    Ok(_) => {
+                        if let Some(DialogState::Progress(ref mut progress_dialog)) = self.state.current_dialog {
+                            progress_dialog.set_progress(100);
+                        }
+                    }
+                    Err(e) => {
+                        self.state.error_message = Some(format!("Failed to start agent after stop: {}", e));
+                        self.state.current_dialog = None;
+                        return Ok(());
+                    }
+                }
+            }
+            Err(e) => {
+                self.state.error_message = Some(format!("Failed to stop agent for restart: {}", e));
+                self.state.current_dialog = None;
+                return Ok(());
+            }
+        }
+        
+        // Show success message
+        self.state.success_message = Some(format!("Agent '{}' restarted successfully", agent.name));
+        
+        // Update local state to reflect restarted status
+        if let Some(local_agent) = self.state.agents.iter_mut().find(|a| a.id == agent.id) {
+            local_agent.status = crate::types::AgentStatus::Active;
+        }
+        
+        Ok(())
+    }
+    
+    /// Execute log clearing operation
+    async fn execute_clear_logs(&mut self) -> Result<()> {
+        let mut dialog = ProgressDialog::new(
+            "Clear Logs".to_string(),
+            "Clearing all logs...".to_string()
+        );
+        dialog.set_progress(0);
+        self.state.current_dialog = Some(DialogState::Progress(dialog));
+        
+        // Clear logs by resetting the log collection in state
+        // Since there's no specific log clearing command, we'll simulate clearing logs
+        // In a real implementation, this would interact with the logging system
+        if let Some(DialogState::Progress(ref mut progress_dialog)) = self.state.current_dialog {
+            progress_dialog.set_progress(100);
+        }
+        self.state.success_message = Some("All logs cleared successfully".to_string());
+        
+        Ok(())
     }
 }

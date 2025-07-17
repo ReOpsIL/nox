@@ -238,7 +238,12 @@ async fn main() -> Result<()> {
                 },
                 AgentCommands::Update { name, prompt } => {
                     info!("Updating agent: {}", name);
-                    commands::agent::update::execute(name, prompt).await
+                    // First, get the agent by name to find its ID
+                    let agents = crate::core::agent_manager::get_all_agents().await?;
+                    let agent = agents.iter().find(|a| a.name == name)
+                        .ok_or_else(|| anyhow::anyhow!("Agent '{}' not found", name))?;
+                    
+                    commands::agent::update::execute(agent.id.clone(), name, prompt).await
                 },
                 AgentCommands::Delete { name, force } => {
                     info!("Deleting agent: {}", name);

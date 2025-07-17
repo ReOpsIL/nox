@@ -48,7 +48,7 @@ async fn main() -> Result<()> {
                         if nox::tui::events::AppEvent::is_quit_key(&key) {
                             break;
                         }
-                        if let Err(e) = app.handle_key_input(key.code) {
+                        if let Err(e) = app.handle_key_input(key.code).await {
                             log::error!("Failed to handle key input: {}", e);
                         }
                     }
