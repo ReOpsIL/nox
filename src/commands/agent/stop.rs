@@ -15,14 +15,14 @@ pub async fn execute(name: String) -> Result<()> {
     
     // Check if the agent is already inactive
     if agent.status == AgentStatus::Inactive {
-        println!("Agent '{}' is already inactive", name);
+        info!("Agent '{}' is already inactive", name);
         return Ok(());
     }
     
     // Stop the agent
-    println!("Stopping agent '{}'...", name);
+    info!("Stopping agent '{}'...", name);
     agent_manager::stop_agent(&agent.id).await?;
     
-    println!("Agent '{}' stopped successfully", name);
+    info!("Agent '{}' stopped successfully", name);
     Ok(())
 }

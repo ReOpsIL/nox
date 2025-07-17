@@ -44,6 +44,6 @@ pub async fn execute(task_id: String, status: String) -> Result<()> {
     // Save the updated task
     task_manager::update_task(task).await?;
     
-    println!("Task '{}' status updated from {} to {}", task_id, old_status, task_status);
+    info!("Task '{}' status updated from {} to {}", task_id, old_status, task_status);
     Ok(())
 }

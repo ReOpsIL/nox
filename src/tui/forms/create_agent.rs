@@ -5,6 +5,7 @@ use crossterm::event::KeyCode;
 use ratatui::prelude::*;
 use ratatui::widgets::Paragraph;
 use chrono::Utc;
+use log::info;
 
 /// Form for creating a new agent
 #[derive(Debug, Clone)]
@@ -68,7 +69,7 @@ impl CreateAgentForm {
         };
 
         FormResult::Continue
-        
+
         // match input_result {
         //     InputResult::Continue => FormResult::Continue,
         //     InputResult::NextField => {
@@ -171,7 +172,7 @@ impl FormFieldNavigation for CreateAgentForm {
     }
     
     fn set_current_field(&mut self, index: usize) {
-        println!("{}",index);
+        info!("{}",index);
         self.current_field = index.min(self.field_count().saturating_sub(1));
     }
     

@@ -16,18 +16,18 @@ pub async fn execute(limit: usize) -> Result<()> {
     let history = git_manager::get_commit_history(&registry_path, limit).await?;
     
     if history.is_empty() {
-        println!("No commit history found.");
+        info!("No commit history found.");
         return Ok(());
     }
     
-    println!("Commit History:");
-    println!("---------------");
+    info!("Commit History:");
+    info!("---------------");
     
     for (i, entry) in history.iter().enumerate() {
-        println!("{}. {}", i + 1, entry);
+        info!("{}. {}", i + 1, entry);
     }
     
-    println!("\nUse 'nox git rollback <commit-hash> --confirm' to revert to a specific commit.");
+    info!("\nUse 'nox git rollback <commit-hash> --confirm' to revert to a specific commit.");
     
     Ok(())
 }

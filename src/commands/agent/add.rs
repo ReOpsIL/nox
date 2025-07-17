@@ -15,6 +15,6 @@ pub async fn execute(name: String, prompt: String) -> Result<()> {
     // Add the agent to the registry
     agent_manager::add_agent(agent).await?;
     
-    println!("Agent '{}' created successfully", name);
+    info!("Agent '{}' created successfully", name);
     Ok(())
 }

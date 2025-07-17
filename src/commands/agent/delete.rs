@@ -16,8 +16,8 @@ pub async fn execute(name: String, force: bool) -> Result<()> {
     
     // Check if the agent is active
     if agent.status == AgentStatus::Active {
-        println!("Warning: Agent '{}' is currently active", name);
-        println!("It will be stopped before deletion");
+        info!("Warning: Agent '{}' is currently active", name);
+        info!("It will be stopped before deletion");
     }
     
     // Confirm deletion if not forced
@@ -29,20 +29,20 @@ pub async fn execute(name: String, force: bool) -> Result<()> {
         io::stdin().read_line(&mut input)?;
         
         if !input.trim().eq_ignore_ascii_case("y") {
-            println!("Deletion cancelled");
+            info!("Deletion cancelled");
             return Ok(());
         }
     }
     
     // Stop the agent if it's active
     if agent.status == AgentStatus::Active {
-        println!("Stopping agent '{}'...", name);
+        info!("Stopping agent '{}'...", name);
         agent_manager::stop_agent(&agent.id).await?;
     }
     
     // Delete the agent
     agent_manager::delete_agent(&agent.id).await?;
     
-    println!("Agent '{}' deleted successfully", name);
+    info!("Agent '{}' deleted successfully", name);
     Ok(())
 }

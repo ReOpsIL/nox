@@ -115,7 +115,7 @@ impl ConfigManager {
 
         // Build the configuration
         let config = builder.build()?;
-        println!("{:?}", config);
+        info!("{:?}", config);
         // Deserialize the configuration
         let app_config: AppConfig = config.try_deserialize()?;
 

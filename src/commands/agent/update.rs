@@ -19,6 +19,6 @@ pub async fn execute(id: String, name: String, system_prompt: String) -> Result<
     // Save the updated agent
     agent_manager::update_agent(agent).await?;
     
-    println!("Agent '{}' updated successfully", name);
+    info!("Agent '{}' updated successfully", name);
     Ok(())
 }

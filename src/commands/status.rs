@@ -11,6 +11,6 @@ pub async fn execute() -> Result<()> {
     // Call the core get_status function
     let status = core::get_status().await?;
     
-    println!("{}", status);
+    info!("{}", status);
     Ok(())
 }

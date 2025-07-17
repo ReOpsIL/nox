@@ -19,6 +19,6 @@ pub async fn execute(agent_id: String, title: String, desc: String) -> Result<()
     // Add the task to the registry
     task_manager::add_task(task).await?;
     
-    println!("Task '{}' created successfully for agent '{}'", title, agent.name);
+    info!("Task '{}' created successfully for agent '{}'", title, agent.name);
     Ok(())
 }

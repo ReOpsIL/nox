@@ -3,6 +3,7 @@
 //! This module implements the task show command that displays detailed task information and results.
 
 use anyhow::Result;
+use log::{error, info};
 use crate::core::task_manager;
 use crate::core::agent_manager;
 
@@ -12,7 +13,7 @@ pub async fn execute(task_id: String) -> Result<()> {
     let task = match task_manager::get_task(&task_id).await? {
         Some(task) => task,
         None => {
-            eprintln!("❌ Task not found: {}", task_id);
+            error!("❌ Task not found: {}", task_id);
             return Err(anyhow::anyhow!("Task not found"));
         }
     };
@@ -21,64 +22,64 @@ pub async fn execute(task_id: String) -> Result<()> {
     let agent = match agent_manager::get_agent(&task.agent_id).await? {
         Some(agent) => agent,
         None => {
-            eprintln!("⚠️  Agent not found for task: {}", task.agent_id);
+            error!("⚠️  Agent not found for task: {}", task.agent_id);
             return Err(anyhow::anyhow!("Agent not found"));
         }
     };
 
     // Display task details
-    println!("📋 Task Details");
-    println!("{}", "=".repeat(60));
-    println!("ID:           {}", task.id);
-    println!("Title:        {}", task.title);
-    println!("Description:  {}", task.description);
-    println!("Status:       {:?}", task.status);
-    println!("Priority:     {:?}", task.priority);
-    println!("Progress:     {}%", task.progress);
-    println!();
+    info!("📋 Task Details");
+    info!("{}", "=".repeat(60));
+    info!("ID:           {}", task.id);
+    info!("Title:        {}", task.title);
+    info!("Description:  {}", task.description);
+    info!("Status:       {:?}", task.status);
+    info!("Priority:     {:?}", task.priority);
+    info!("Progress:     {}%", task.progress);
+    info!("");
 
     // Display agent information
-    println!("🤖 Assigned Agent");
-    println!("{}", "=".repeat(60));
-    println!("ID:           {}", agent.id);
-    println!("Name:         {}", agent.name);
-    println!("Status:       {:?}", agent.status);
-    println!();
+    info!("🤖 Assigned Agent");
+    info!("{}", "=".repeat(60));
+    info!("ID:           {}", agent.id);
+    info!("Name:         {}", agent.name);
+    info!("Status:       {:?}", agent.status);
+    info!("");
 
     // Display timestamps
-    println!("⏰ Timeline");
-    println!("{}", "=".repeat(60));
-    println!("Created:      {}", task.created_at.format("%Y-%m-%d %H:%M:%S UTC"));
+    info!("⏰ Timeline");
+    info!("{}", "=".repeat(60));
+    info!("Created:      {}", task.created_at.format("%Y-%m-%d %H:%M:%S UTC"));
     
     if let Some(started_at) = task.started_at {
-        println!("Started:      {}", started_at.format("%Y-%m-%d %H:%M:%S UTC"));
+        info!("Started:      {}", started_at.format("%Y-%m-%d %H:%M:%S UTC"));
     }
     
     if let Some(completed_at) = task.completed_at {
-        println!("Completed:    {}", completed_at.format("%Y-%m-%d %H:%M:%S UTC"));
+        info!("Completed:    {}", completed_at.format("%Y-%m-%d %H:%M:%S UTC"));
         
         if let Some(started_at) = task.started_at {
             let duration = completed_at.signed_duration_since(started_at);
-            println!("Duration:     {} seconds", duration.num_seconds());
+            info!("Duration:     {} seconds", duration.num_seconds());
         }
     }
-    println!();
+    info!("");
 
     // Display Claude response if available
     if let Some(claude_response) = task.metadata.get("claude_response") {
-        println!("🤖 Claude Response");
-        println!("{}", "=".repeat(60));
-        println!("{}", claude_response);
-        println!();
+        info!("🤖 Claude Response");
+        info!("{}", "=".repeat(60));
+        info!("{}", claude_response);
+        info!("");
         
         if let Some(exec_timestamp) = task.metadata.get("execution_timestamp") {
-            println!("Response generated: {}", exec_timestamp);
-            println!();
+            info!("Response generated: {}", exec_timestamp);
+            info!("");
         }
     } else if task.status == crate::types::TaskStatus::Done {
-        println!("⚠️  No Claude response found in task metadata");
-        println!("   (This task may have been completed before response storage was implemented)");
-        println!();
+        info!("⚠️  No Claude response found in task metadata");
+        info!("   (This task may have been completed before response storage was implemented)");
+        info!("");
     }
 
     // Display metadata if any additional data exists
@@ -88,12 +89,12 @@ pub async fn execute(task_id: String) -> Result<()> {
         .collect();
     
     if !non_system_metadata.is_empty() {
-        println!("📝 Additional Metadata");
-        println!("{}", "=".repeat(60));
+        info!("📝 Additional Metadata");
+        info!("{}", "=".repeat(60));
         for (key, value) in non_system_metadata {
-            println!("{}: {}", key, value);
+            info!("{}: {}", key, value);
         }
-        println!();
+        info!("");
     }
 
     Ok(())

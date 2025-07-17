@@ -14,6 +14,6 @@ pub async fn execute() -> Result<()> {
     // Call the core initialization function
     core::initialize().await?;
     
-    println!("Nox agent ecosystem initialized successfully");
+    info!("Nox agent ecosystem initialized successfully");
     Ok(())
 }

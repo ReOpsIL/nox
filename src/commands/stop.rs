@@ -7,11 +7,11 @@ use log::info;
 /// Execute the stop command
 pub async fn execute() -> Result<()> {
     info!("Stopping Nox agent ecosystem");
-    println!("Stopping Nox agent ecosystem...");
+    info!("Stopping Nox agent ecosystem...");
     
     // Call the core stop function
     core::stop().await?;
     
-    println!("Nox agent ecosystem stopped successfully");
+    info!("Nox agent ecosystem stopped successfully");
     Ok(())
 }

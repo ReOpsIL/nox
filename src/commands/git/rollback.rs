@@ -10,9 +10,9 @@ pub async fn execute(commit_hash: String, confirm: bool) -> Result<()> {
     info!("Rolling back registry to commit: {}", commit_hash);
     
     if !confirm {
-        println!("WARNING: This operation will revert the registry to a previous state.");
-        println!("All changes made after commit {} will be lost.", commit_hash);
-        println!("Use --confirm flag to proceed with the rollback.");
+        info!("WARNING: This operation will revert the registry to a previous state.");
+        info!("All changes made after commit {} will be lost.", commit_hash);
+        info!("Use --confirm flag to proceed with the rollback.");
         return Ok(());
     }
     
@@ -25,16 +25,16 @@ pub async fn execute(commit_hash: String, confirm: bool) -> Result<()> {
     
     if !commit_exists {
         warn!("Commit {} not found in the recent history", commit_hash);
-        println!("Error: Commit {} not found in the recent history.", commit_hash);
-        println!("Use 'nox git history' to see available commits.");
+        info!("Error: Commit {} not found in the recent history.", commit_hash);
+        info!("Use 'nox git history' to see available commits.");
         return Ok(());
     }
     
     // Perform the rollback
     git_manager::revert_to_commit(&registry_path, &commit_hash).await?;
     
-    println!("Successfully rolled back registry to commit: {}", commit_hash);
-    println!("Note: You may need to restart the system for changes to take effect.");
+    info!("Successfully rolled back registry to commit: {}", commit_hash);
+    info!("Note: You may need to restart the system for changes to take effect.");
     
     Ok(())
 }

@@ -12,16 +12,16 @@ pub async fn execute() -> Result<()> {
     let agents = agent_manager::get_all_agents().await?;
     
     if agents.is_empty() {
-        println!("No agents found");
+        info!("No agents found");
         return Ok(());
     }
     
-    println!("Registered agents:");
-    println!("{:<36} {:<20} {:<10}", "ID", "NAME", "STATUS");
-    println!("{}", "-".repeat(70));
+    info!("Registered agents:");
+    info!("{:<36} {:<20} {:<10}", "ID", "NAME", "STATUS");
+    info!("{}", "-".repeat(70));
     
     for agent in agents {
-        println!("{:<36} {:<20} {:<10}", agent.id, agent.name, agent.status);
+        info!("{:<36} {:<20} {:<10}", agent.id, agent.name, agent.status);
     }
     
     Ok(())

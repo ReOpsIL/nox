@@ -13,8 +13,8 @@ pub async fn execute() -> Result<()> {
 
     info!("Starting API server on port {}", port);
 
-    println!("Starting API server on port {}...", port);
-    println!("Press Ctrl+C to stop the server");
+    info!("Starting API server on port {}...", port);
+    info!("Press Ctrl+C to stop the server");
 
     // Start the API server
     server::start_server().await?;

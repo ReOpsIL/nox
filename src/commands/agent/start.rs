@@ -15,14 +15,14 @@ pub async fn execute(name: String) -> Result<()> {
     
     // Check if the agent is already active
     if agent.status == AgentStatus::Active {
-        println!("Agent '{}' is already active", name);
+        info!("Agent '{}' is already active", name);
         return Ok(());
     }
     
     // Start the agent
-    println!("Starting agent '{}'...", name);
+    info!("Starting agent '{}'...", name);
     agent_manager::start_agent(&agent.id).await?;
     
-    println!("Agent '{}' started successfully", name);
+    info!("Agent '{}' started successfully", name);
     Ok(())
 }

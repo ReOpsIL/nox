@@ -21,18 +21,18 @@ pub async fn execute(action: &str, branch_name: Option<String>, force: bool) -> 
             let branches = git_manager::list_branches(&registry_path).await?;
             
             if branches.is_empty() {
-                println!("No branches found.");
+                info!("No branches found.");
                 return Ok(());
             }
             
-            println!("Git Branches:");
-            println!("-------------");
+            info!("Git Branches:");
+            info!("-------------");
             
             for branch in branches {
                 if branch == current_branch {
-                    println!("* {} (current)", branch);
+                    info!("* {} (current)", branch);
                 } else {
-                    println!("  {}", branch);
+                    info!("  {}", branch);
                 }
             }
         },
@@ -42,10 +42,10 @@ pub async fn execute(action: &str, branch_name: Option<String>, force: bool) -> 
             
             // Create the branch
             match git_manager::create_branch(&registry_path, &branch_name).await {
-                Ok(_) => println!("Branch '{}' created successfully", branch_name),
+                Ok(_) => info!("Branch '{}' created successfully", branch_name),
                 Err(e) => {
                     warn!("Failed to create branch: {}", e);
-                    println!("Error: {}", e);
+                    info!("Error: {}", e);
                     return Ok(());
                 }
             }
@@ -56,10 +56,10 @@ pub async fn execute(action: &str, branch_name: Option<String>, force: bool) -> 
             
             // Switch to the branch
             match git_manager::switch_branch(&registry_path, &branch_name).await {
-                Ok(_) => println!("Switched to branch '{}'", branch_name),
+                Ok(_) => info!("Switched to branch '{}'", branch_name),
                 Err(e) => {
                     warn!("Failed to switch branch: {}", e);
-                    println!("Error: {}", e);
+                    info!("Error: {}", e);
                     return Ok(());
                 }
             }
@@ -70,16 +70,16 @@ pub async fn execute(action: &str, branch_name: Option<String>, force: bool) -> 
             
             // Delete the branch
             match git_manager::delete_branch(&registry_path, &branch_name, force).await {
-                Ok(_) => println!("Branch '{}' deleted successfully", branch_name),
+                Ok(_) => info!("Branch '{}' deleted successfully", branch_name),
                 Err(e) => {
                     warn!("Failed to delete branch: {}", e);
-                    println!("Error: {}", e);
+                    info!("Error: {}", e);
                     return Ok(());
                 }
             }
         },
         _ => {
-            println!("Unknown action: {}. Valid actions are: list, create, switch, delete", action);
+            info!("Unknown action: {}. Valid actions are: list, create, switch, delete", action);
         }
     }
     

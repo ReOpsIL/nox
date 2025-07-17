@@ -17,7 +17,7 @@ pub async fn execute() -> Result<()> {
     let tasks = task_manager::get_all_tasks().await?;
 
     if tasks.is_empty() {
-        println!("No tasks found in the system");
+        info!("No tasks found in the system");
         return Ok(());
     }
 
@@ -42,9 +42,9 @@ pub async fn execute() -> Result<()> {
     let mut total_done = 0;
     let mut total_cancelled = 0;
 
-    println!("Task Overview by Agent:");
-    println!("{:<20} {:<10} {:<15} {:<10} {:<10}", "AGENT", "TODO", "IN PROGRESS", "DONE", "CANCELLED");
-    println!("{}", "-".repeat(70));
+    info!("Task Overview by Agent:");
+    info!("{:<20} {:<10} {:<15} {:<10} {:<10}", "AGENT", "TODO", "IN PROGRESS", "DONE", "CANCELLED");
+    info!("{}", "-".repeat(70));
 
     for (agent_id, agent_tasks) in &tasks_by_agent {
         let fallback_name = agent_id.clone();
@@ -62,7 +62,7 @@ pub async fn execute() -> Result<()> {
         total_done += done;
         total_cancelled += cancelled;
 
-        println!("{:<20} {:<10} {:<15} {:<10} {:<10}", 
+        info!("{:<20} {:<10} {:<15} {:<10} {:<10}",
             truncate(agent_name, 17),
             todo,
             in_progress,
@@ -71,8 +71,8 @@ pub async fn execute() -> Result<()> {
         );
     }
 
-    println!("{}", "-".repeat(70));
-    println!("{:<20} {:<10} {:<15} {:<10} {:<10}", 
+    info!("{}", "-".repeat(70));
+    info!("{:<20} {:<10} {:<15} {:<10} {:<10}",
         "TOTAL",
         total_todo,
         total_in_progress,
@@ -88,9 +88,9 @@ pub async fn execute() -> Result<()> {
         0.0
     };
 
-    println!("\nOverall Statistics:");
-    println!("Total Tasks:     {}", total_tasks);
-    println!("Completion Rate: {:.1}%", completion_rate);
+    info!("\nOverall Statistics:");
+    info!("Total Tasks:     {}", total_tasks);
+    info!("Completion Rate: {:.1}%", completion_rate);
 
     Ok(())
 }

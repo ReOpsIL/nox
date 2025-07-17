@@ -712,7 +712,7 @@ impl App {
                                     self.state.agents.push(agent.clone());
                                     // Update progress dialog
                                     if let Some(DialogState::Progress(ref mut dialog)) = self.state.current_dialog {
-                                        dialog.set_progress(100);
+                                        dialog.set_complete("Done");
                                     }
                                 }
                                 Err(e) => {
@@ -744,7 +744,7 @@ impl App {
                                         *local_agent = agent.clone();
                                     }
                                     if let Some(DialogState::Progress(ref mut dialog)) = self.state.current_dialog {
-                                        dialog.set_progress(100);
+                                        dialog.set_complete("Done");;
                                     }
                                 }
                                 Err(e) => {
@@ -774,7 +774,7 @@ impl App {
                                     // Add to local state for immediate UI update
                                     self.state.tasks.push(task.clone());
                                     if let Some(DialogState::Progress(ref mut dialog)) = self.state.current_dialog {
-                                        dialog.set_progress(100);
+                                        dialog.set_complete("Done");
                                     }
                                 }
                                 Err(e) => {
@@ -806,7 +806,7 @@ impl App {
                                         *local_task = task.clone();
                                     }
                                     if let Some(DialogState::Progress(ref mut dialog)) = self.state.current_dialog {
-                                        dialog.set_progress(100);
+                                        dialog.set_complete("Done");
                                     }
                                 }
                                 Err(e) => {
@@ -941,7 +941,7 @@ impl App {
                     local_agent.status = crate::types::AgentStatus::Active;
                 }
                 if let Some(DialogState::Progress(ref mut dialog)) = self.state.current_dialog {
-                    dialog.set_progress(100);
+                    dialog.set_complete("Done");
                 }
                 self.state.success_message = Some(format!("Agent '{}' started successfully", agent.name));
             }
@@ -967,7 +967,7 @@ impl App {
                     local_task.status = crate::types::TaskStatus::InProgress;
                 }
                 if let Some(DialogState::Progress(ref mut dialog)) = self.state.current_dialog {
-                    dialog.set_progress(100);
+                    dialog.set_complete("Done");
                 }
                 self.state.success_message = Some(format!("Task '{}' executed successfully", task.title));
             }
@@ -1192,7 +1192,7 @@ impl App {
         match commands::agent::stop::execute(agent.name.clone()).await {
             Ok(_) => {
                 if let Some(DialogState::Progress(ref mut progress_dialog)) = self.state.current_dialog {
-                    progress_dialog.set_progress(100);
+                    progress_dialog.set_complete("Done");
                 }
             }
             Err(e) => {
@@ -1224,7 +1224,7 @@ impl App {
         match crate::core::task_manager::delete_task(&task.id).await {
             Ok(_) => {
                 if let Some(DialogState::Progress(ref mut progress_dialog)) = self.state.current_dialog {
-                    progress_dialog.set_progress(100);
+                    progress_dialog.set_complete("Done");
                 }
             }
             Err(e) => {
@@ -1264,7 +1264,7 @@ impl App {
         match commands::task::cancel::execute(task.id.clone()).await {
             Ok(_) => {
                 if let Some(DialogState::Progress(ref mut progress_dialog)) = self.state.current_dialog {
-                    progress_dialog.set_progress(100);
+                    progress_dialog.set_complete("Done");
                 }
             }
             Err(e) => {
@@ -1298,7 +1298,7 @@ impl App {
                 match commands::agent::start::execute(agent.name.clone()).await {
                     Ok(_) => {
                         if let Some(DialogState::Progress(ref mut progress_dialog)) = self.state.current_dialog {
-                            progress_dialog.set_progress(100);
+                            progress_dialog.set_complete("Done");
                         }
                     }
                     Err(e) => {
@@ -1339,7 +1339,7 @@ impl App {
         // Since there's no specific log clearing command, we'll simulate clearing logs
         // In a real implementation, this would interact with the logging system
         if let Some(DialogState::Progress(ref mut progress_dialog)) = self.state.current_dialog {
-            progress_dialog.set_progress(100);
+            progress_dialog.set_complete("Done");
         }
         self.state.success_message = Some("All logs cleared successfully".to_string());
         

@@ -12,7 +12,7 @@ pub async fn execute(agent_id: Option<String>) -> Result<()> {
         // Check if the agent exists
         let agent = agent_manager::get_agent(id).await?;
         if agent.is_none() {
-            println!("Agent with ID '{}' not found", id);
+            info!("Agent with ID '{}' not found", id);
             return Ok(());
         }
         
@@ -20,11 +20,11 @@ pub async fn execute(agent_id: Option<String>) -> Result<()> {
         let tasks = task_manager::get_tasks_by_agent(id).await?;
         
         if tasks.is_empty() {
-            println!("No tasks found for agent '{}'", id);
+            info!("No tasks found for agent '{}'", id);
             return Ok(());
         }
         
-        println!("Tasks for agent '{}':", agent.unwrap().name);
+        info!("Tasks for agent '{}':", agent.unwrap().name);
         print_tasks(tasks);
     } else {
         info!("Listing all tasks");
@@ -33,11 +33,11 @@ pub async fn execute(agent_id: Option<String>) -> Result<()> {
         let tasks = task_manager::get_all_tasks().await?;
         
         if tasks.is_empty() {
-            println!("No tasks found");
+            info!("No tasks found");
             return Ok(());
         }
         
-        println!("All tasks:");
+        info!("All tasks:");
         print_tasks(tasks);
     }
     
@@ -46,11 +46,11 @@ pub async fn execute(agent_id: Option<String>) -> Result<()> {
 
 /// Helper function to print tasks in a formatted table
 fn print_tasks(tasks: Vec<crate::types::Task>) {
-    println!("{:<36} {:<30} {:<15} {:<10}", "ID", "TITLE", "STATUS", "PROGRESS");
-    println!("{}", "-".repeat(95));
+    info!("{:<36} {:<30} {:<15} {:<10}", "ID", "TITLE", "STATUS", "PROGRESS");
+    info!("{}", "-".repeat(95));
     
     for task in tasks {
-        println!("{:<36} {:<30} {:<15} {:<10}%", 
+        info!("{:<36} {:<30} {:<15} {:<10}%",
             task.id, 
             truncate(&task.title, 27), 
             task.status,

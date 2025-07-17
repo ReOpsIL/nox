@@ -12,9 +12,9 @@ pub async fn execute() -> Result<()> {
     let is_healthy = core::check_health().await?;
     
     if is_healthy {
-        println!("System health: OK");
+        info!("System health: OK");
     } else {
-        println!("System health: Issues detected");
+        info!("System health: Issues detected");
         // In a real implementation, we would print details about the issues
     }
     

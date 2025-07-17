@@ -19,7 +19,7 @@ pub async fn execute(task_id: String) -> Result<()> {
             return Err(anyhow!("Cannot cancel a completed task"));
         },
         TaskStatus::Cancelled => {
-            println!("Task '{}' is already cancelled", task_id);
+            info!("Task '{}' is already cancelled", task_id);
             return Ok(());
         },
         _ => {}
@@ -32,6 +32,6 @@ pub async fn execute(task_id: String) -> Result<()> {
     // Save the updated task
     task_manager::update_task(task).await?;
     
-    println!("Task '{}' cancelled successfully (was: {})", task_id, old_status);
+    info!("Task '{}' cancelled successfully (was: {})", task_id, old_status);
     Ok(())
 }
