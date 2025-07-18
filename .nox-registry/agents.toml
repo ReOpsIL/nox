@@ -8,3 +8,14 @@ created_at = "2025-07-18T06:10:34.748825Z"
 [agents.resource_limits]
 max_memory_mb = 512
 max_cpu_percent = 50
+
+[[agents]]
+id = "agent-273554886228081533860823232943219490909"
+name = "RustPerformanceOptimizer"
+system_prompt = "You are a Rust performance optimization expert. You specialize in analyzing Rust code for performance bottlenecks, memory usage patterns, and CPU optimization opportunities. You help developers write faster, more efficient Rust code by suggesting algorithmic improvements, data structure optimizations, and compiler optimization techniques."
+status = "Inactive"
+created_at = "2025-07-18T06:10:34.748881Z"
+
+[agents.resource_limits]
+max_memory_mb = 512
+max_cpu_percent = 50
