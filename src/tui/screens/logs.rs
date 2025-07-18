@@ -86,48 +86,54 @@ impl LogsScreen {
         frame.render_widget(paragraph, area);
     }
 
-    fn render_log_entries(frame: &mut Frame, area: Rect, _state: &AppState) {
-        // Mock log entries - in a real implementation, these would come from the log system
-        let log_entries = vec![
-            ("[14:23:15]", "INFO", "Agent 'NewsBot' started task"),
-            ("[14:23:10]", "INFO", "Task 'Generate report' queued"),
-            ("[14:23:05]", "WARN", "High memory usage detected (85%)"),
-            ("[14:22:58]", "INFO", "Agent 'CodeReviewer' went active"),
-            ("[14:22:45]", "ERROR", "Task 'Update docs' failed"),
-            ("[14:22:30]", "INFO", "System started successfully"),
-            ("[14:22:15]", "INFO", "Registry initialized"),
-            ("[14:22:10]", "INFO", "Git repository ready"),
-            ("[14:22:05]", "INFO", "Claude CLI integration verified"),
-            ("[14:22:00]", "INFO", "Configuration loaded"),
-            ("[14:21:55]", "INFO", "Starting Nox v0.1.0"),
-        ];
+    fn render_log_entries(frame: &mut Frame, area: Rect, state: &AppState) {
+        // Get real log entries from the log storage
+        let log_entries = if let Ok(storage) = state.log_storage.lock() {
+            storage.get_entries().iter().map(|entry| {
+                let formatted_time = entry.timestamp.format("[%H:%M:%S]").to_string();
+                (formatted_time, entry.level.clone(), entry.message.clone())
+            }).collect::<Vec<_>>()
+        } else {
+            // Fallback if mutex is poisoned
+            vec![]
+        };
 
         let items: Vec<ListItem> = log_entries
             .iter()
+            .rev() // Show newest logs first
             .map(|(time, level, message)| {
-                let (level_icon, level_style) = match *level {
+                let (level_icon, level_style) = match level.as_str() {
                     "ERROR" => ("🟥", error_style()),
                     "WARN" => ("🟨", warning_style()),
                     "INFO" => ("🟦", info_style()),
                     "DEBUG" => ("⚪", muted_style()),
+                    "TRACE" => ("⚫", muted_style()),
                     _ => ("🟦", info_style()),
                 };
 
                 ListItem::new(Line::from(vec![
-                    Span::styled(*time, text_secondary_style()),
+                    Span::styled(time.clone(), text_secondary_style()),
                     Span::styled(" ", text_secondary_style()),
                     Span::styled(level_icon, level_style),
-                    Span::styled(*level, level_style.add_modifier(Modifier::BOLD)),
+                    Span::styled(level.clone(), level_style.add_modifier(Modifier::BOLD)),
                     Span::styled("  ", text_secondary_style()),
-                    Span::styled(*message, text_primary_style()),
+                    Span::styled(message.clone(), text_primary_style()),
                 ]))
             })
             .collect();
 
+        let total_entries = if let Ok(storage) = state.log_storage.lock() {
+            storage.get_entries().len()
+        } else {
+            0
+        };
+        
         let footer_text = format!(
             "[F] Filter  [C] Clear  [S] Save  [/] Search\n\
-             Showing: 1,247 entries\n\
-             Filtered: 247 entries"
+             Showing: {} entries\n\
+             Total: {} entries",
+            log_entries.len(),
+            total_entries
         );
 
         let log_area = Layout::default()

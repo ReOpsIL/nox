@@ -7,6 +7,8 @@ use anyhow::Result;
 use std::collections::HashMap;
 use tokio::sync::mpsc;
 use crate::commands;
+use std::sync::{Arc, Mutex};
+use chrono::{DateTime, Utc};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Screen {
@@ -50,6 +52,48 @@ pub enum PendingOperation {
     CancelTask(Task),
     RestartAgent(Agent),
     ClearLogs,
+}
+
+/// Log entry structure for TUI display
+#[derive(Debug, Clone)]
+pub struct LogEntry {
+    pub timestamp: DateTime<Utc>,
+    pub level: String,
+    pub target: String,
+    pub message: String,
+}
+
+/// Log storage for TUI display
+#[derive(Debug, Clone)]
+pub struct LogStorage {
+    pub entries: Vec<LogEntry>,
+    pub max_entries: usize,
+}
+
+impl LogStorage {
+    pub fn new(max_entries: usize) -> Self {
+        Self {
+            entries: Vec::new(),
+            max_entries,
+        }
+    }
+    
+    pub fn add_entry(&mut self, entry: LogEntry) {
+        self.entries.push(entry);
+        
+        // Keep only the most recent entries
+        if self.entries.len() > self.max_entries {
+            self.entries.remove(0);
+        }
+    }
+    
+    pub fn clear(&mut self) {
+        self.entries.clear();
+    }
+    
+    pub fn get_entries(&self) -> &[LogEntry] {
+        &self.entries
+    }
 }
 
 /// Operation status for tracking async operations
@@ -123,6 +167,7 @@ pub struct AppState {
     pub error_message: Option<String>,
     pub success_message: Option<String>,
     pub pending_operation: Option<PendingOperation>,
+    pub log_storage: Arc<Mutex<LogStorage>>,
 }
 
 impl Default for AppState {
@@ -157,6 +202,7 @@ impl Default for AppState {
             error_message: None,
             success_message: None,
             pending_operation: None,
+            log_storage: Arc::new(Mutex::new(LogStorage::new(1000))),
         }
     }
 }
@@ -1160,26 +1206,39 @@ impl App {
         self.state.current_dialog = Some(DialogState::Progress(dialog));
 
         // TODO: Queue async operation to actually delete agent via agent_manager
-        commands::agent::delete::execute(agent.name.clone(), true).await?;
+        match commands::agent::delete::execute(agent.name.clone(), true).await {
+            Ok(_) => {
+                // For now, just show a success message
+                self.state.success_message = Some(format!("Agent '{}' deleted successfully", agent.name.clone()));
 
-        // For now, just show a success message
-        self.state.success_message = Some(format!("Agent '{}' deleted successfully", agent.name.clone()));
+                if let Some(DialogState::Progress(ref mut dialog)) = self.state.current_dialog {
+                    dialog.set_complete("Done");
+                }
+                
+                // Remove from local state immediately for UI responsiveness
+                self.state.agents.retain(|a| a.id != agent.id);
 
-        // Remove from local state immediately for UI responsiveness
-        self.state.agents.retain(|a| a.id != agent.id);
+                // Reset selection if deleted agent was selected
+                if let Some(selected_index) = self.state.selected_agent {
+                    if selected_index >= self.state.agents.len() {
+                        self.state.selected_agent = if self.state.agents.is_empty() {
+                            None
+                        } else {
+                            Some(self.state.agents.len() - 1)
+                        };
+                    }
+                }
 
-        // Reset selection if deleted agent was selected
-        if let Some(selected_index) = self.state.selected_agent {
-            if selected_index >= self.state.agents.len() {
-                self.state.selected_agent = if self.state.agents.is_empty() {
-                    None
-                } else {
-                    Some(self.state.agents.len() - 1)
-                };
+                Ok(())
+            }
+            Err(e) => {
+                self.state.error_message = Some(format!("Failed to delete agent: {}", e));
+                self.state.current_dialog = None;
+                return Ok(());
             }
         }
 
-        Ok(())
+
     }
     
     /// Execute agent stop operation
@@ -1335,9 +1394,11 @@ impl App {
         dialog.set_progress(0);
         self.state.current_dialog = Some(DialogState::Progress(dialog));
         
-        // Clear logs by resetting the log collection in state
-        // Since there's no specific log clearing command, we'll simulate clearing logs
-        // In a real implementation, this would interact with the logging system
+        // Clear logs by clearing the log storage
+        if let Ok(mut storage) = self.state.log_storage.lock() {
+            storage.clear();
+        }
+        
         if let Some(DialogState::Progress(ref mut progress_dialog)) = self.state.current_dialog {
             progress_dialog.set_complete("Done");
         }

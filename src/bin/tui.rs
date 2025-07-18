@@ -4,7 +4,7 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use nox::tui::{app::App, events::EventHandler, ui};
+use nox::tui::{app::App, events::EventHandler, ui, logger};
 use ratatui::{
     backend::CrosstermBackend,
     Terminal,
@@ -17,14 +17,19 @@ use tokio::time::interval;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    env_logger::init();
-
-    // Initialize logging
-
     let mut event_handler = EventHandler::new(Duration::from_millis(250));
     let event_sender = event_handler.sender();
 
     let mut app = App::new(event_sender.clone());
+    
+    // Initialize custom TUI logger that captures logs for display
+    logger::init_tui_logger(app.state.log_storage.clone())?;
+    
+    // Test log messages to verify integration
+    log::info!("Nox TUI started successfully");
+    // log::debug!("Log capture system initialized");
+    // log::warn!("This is a test warning message");
+    // log::error!("This is a test error message");
 
     enable_raw_mode()?;
     let mut stdout = io::stdout();

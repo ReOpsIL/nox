@@ -8,6 +8,8 @@ pub mod core;
 pub mod api;
 pub mod commands;
 pub mod tui;
+pub mod testing_fw;
+pub mod testing_fw_extended;
 
 pub use core::{
     agent_manager,

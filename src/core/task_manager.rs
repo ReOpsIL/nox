@@ -5,7 +5,7 @@
 use crate::core::registry_manager;
 use crate::types::Task;
 use anyhow::Result;
-use log::{info, error};
+use log::{error, info};
 
 /// Add a new task to the registry
 pub async fn add_task(task: Task) -> Result<()> {
@@ -39,6 +39,35 @@ pub async fn update_task(task: Task) -> Result<()> {
 pub async fn delete_task(task_id: &str) -> Result<()> {
     info!("Deleting task: {}", task_id);
     registry_manager::delete_task(task_id).await
+}
+
+/// Delete all tasks for a specific agent
+pub async fn delete_all_tasks_for_agent(agent_id: &str) -> Result<()> {
+    info!("Deleting all tasks for agent: {}", agent_id);
+    
+    // Get all tasks for the agent
+    let agent_tasks = get_tasks_by_agent(agent_id).await?;
+    
+    // Force stop any in-progress tasks and delete them
+    for task in agent_tasks {
+        if task.status == crate::types::TaskStatus::InProgress {
+            info!("Force stopping task '{}' ({})", task.title, task.id);
+            // Note: We could add logic here to gracefully stop running tasks
+            // For now, we'll just mark them as cancelled before deletion
+            match cancel_task(&task.id).await {
+                Ok(_) => info!("Task '{}' cancelled before deletion", task.title),
+                Err(e) => error!("Failed to cancel task '{}': {}", task.title, e),
+            }
+        }
+        
+        info!("Deleting task '{}' ({})", task.title, task.id);
+        if let Err(e) = delete_task(&task.id).await {
+            error!("Failed to delete task '{}': {}", task.title, e);
+        }
+    }
+    
+    info!("Finished deleting tasks for agent: {}", agent_id);
+    Ok(())
 }
 
 /// Start a task (change status to InProgress)

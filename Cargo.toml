@@ -13,6 +13,10 @@ description = "Autonomous AI Agent Ecosystem"
 name = "nox-tui"
 path = "src/bin/tui.rs"
 
+[[bin]]
+name = "nox-test-tui"
+path = "src/bin/test_tui.rs"
+
 [dependencies]
 tokio = { version = "1.28", features = ["full"] }
 clap = { version = "4.3", features = ["derive"] }

@@ -21,6 +21,8 @@ pub struct CreateTaskForm {
     pub current_field: usize,
     /// Validation errors
     pub validation_errors: Vec<String>,
+    /// Existing task ID (for updates, None for new tasks)
+    pub existing_task_id: Option<String>,
 }
 
 impl CreateTaskForm {
@@ -39,6 +41,7 @@ impl CreateTaskForm {
             priority_selector: PrioritySelector::new("Priority"),
             current_field: 0,
             validation_errors: Vec::new(),
+            existing_task_id: None,
         }
     }
     
@@ -55,6 +58,7 @@ impl CreateTaskForm {
         form.agent_selector.set_agents(agents);
         form.agent_selector.set_selected_agent(&task.agent_id);
         form.priority_selector.set_selected_priority(task.priority.clone());
+        form.existing_task_id = Some(task.id.clone());
         form.update_focus();
         form
     }
@@ -222,8 +226,9 @@ impl Form for CreateTaskForm {
         let selected_agent = self.agent_selector.selected_agent()
             .ok_or("Agent selection is required")?;
         
-        // Generate unique ID for the task
-        let id = format!("task_{}", Utc::now().timestamp());
+        // Use existing ID if updating, otherwise generate a new one
+        let id = self.existing_task_id.clone()
+            .unwrap_or_else(|| format!("task_{}", Utc::now().timestamp()));
         
         Ok(Task {
             id,
@@ -292,6 +297,7 @@ mod tests {
         assert_eq!(*form.priority_selector.selected_priority(), TaskPriority::Medium);
         assert_eq!(form.current_field, 0);
         assert!(form.validation_errors.is_empty());
+        assert!(form.existing_task_id.is_none());
     }
     
     #[test]
@@ -304,6 +310,7 @@ mod tests {
         assert_eq!(form.description.value(), "Test task description");
         assert_eq!(form.agent_selector.selected_agent().unwrap().id, "test_agent");
         assert_eq!(*form.priority_selector.selected_priority(), TaskPriority::Medium);
+        assert_eq!(form.existing_task_id, Some("test_task".to_string()));
     }
     
     #[test]

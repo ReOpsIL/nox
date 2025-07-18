@@ -51,7 +51,14 @@ pub async fn delete_agent(agent_id: &str) -> Result<()> {
         }
     }
 
-    // Then delete from registry
+    // Delete all tasks associated with this agent
+    info!("Deleting all tasks for agent: {}", agent_id);
+    if let Err(e) = crate::core::task_manager::delete_all_tasks_for_agent(agent_id).await {
+        error!("Failed to delete tasks for agent {}: {}", agent_id, e);
+        // Continue with agent deletion even if task deletion fails
+    }
+
+    // Then delete the agent from registry
     registry_manager::delete_agent(agent_id).await
 }
 
