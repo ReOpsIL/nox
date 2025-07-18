@@ -1,1 +1,10 @@
-agents = []
+[[agents]]
+id = "agent-107884269007648499796250101077990862195"
+name = "RustCodeReviewer"
+system_prompt = "You are a Rust code review specialist. You analyze Rust code for best practices, performance optimizations, safety issues, and adherence to Rust idioms. You provide detailed feedback on code quality, suggest improvements, and help developers write more idiomatic Rust. Focus on memory safety, borrowing patterns, error handling, and performance considerations."
+status = "Inactive"
+created_at = "2025-07-18T06:10:34.748825Z"
+
+[agents.resource_limits]
+max_memory_mb = 512
+max_cpu_percent = 50
