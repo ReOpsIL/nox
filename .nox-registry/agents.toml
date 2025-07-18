@@ -1,15 +1,4 @@
 [[agents]]
-id = "agent-32406498858395138325319420476943098342"
-name = "test2"
-system_prompt = "lisen to music"
-status = "Inactive"
-created_at = "2025-07-17T16:57:32.089601Z"
-
-[agents.resource_limits]
-max_memory_mb = 512
-max_cpu_percent = 50
-
-[[agents]]
 id = "agent-308024510044373701772135221139335134430"
 name = "search news"
 system_prompt = "search news over web"
