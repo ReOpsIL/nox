@@ -15,7 +15,7 @@ impl TasksScreen {
             .direction(Direction::Horizontal)
             .margin(1)
             .constraints([
-                Constraint::Percentage(50),
+                Constraint::Percentage(40),
                 Constraint::Percentage(50),
             ])
             .split(area);
@@ -25,8 +25,9 @@ impl TasksScreen {
     }
 
     fn render_task_list(frame: &mut Frame, area: Rect, state: &AppState) {
-        // Get sorted task indices (same logic as navigation)
-        let sorted_indices = Self::get_sorted_task_indices(state);
+        // Get filtered and sorted task indices
+        let filtered_indices = Self::get_filtered_task_indices(state);
+        let sorted_indices = Self::sort_task_indices(filtered_indices, state);
 
         let items: Vec<ListItem> = sorted_indices
             .iter()
@@ -92,16 +93,29 @@ impl TasksScreen {
             .get(&crate::types::TaskStatus::Done)
             .unwrap_or(&0);
 
+        let filter_status = if let Some(ref filter) = state.filters.task_status_filter {
+            format!("(Filter: {})", match filter.as_str() {
+                "Todo" => "Pending",
+                "InProgress" => "Running", 
+                "Done" => "Complete",
+                "Cancelled" => "Cancelled",
+                _ => "Unknown"
+            })
+        } else {
+            String::new()
+        };
+
         let footer_text = format!(
             "Filter: [A] All [R] Running       \n\
-             [P] Pending [C] Complete  \n\
+             [P] Pending [M] Complete  \n\
              \n\
              [N] New  [E] Execute  [C] Cancel\n\
              [U] Update  [D] Delete            \n\
              \n\
-             Total: {} tasks\n\
+             Total: {} tasks {}\n\
              {} Running, {} Pending, {} Done",
-            state.tasks.len(),
+            sorted_indices.len(),
+            filter_status,
             running_count,
             pending_count,
             completed_count
@@ -136,6 +150,9 @@ impl TasksScreen {
                 let (priority_icon, priority_text) = format_task_priority(&task.priority);
                 let created_at = format_datetime(&task.created_at);
                 let progress_bar = format_progress_bar(task.progress, 20);
+
+                // Calculate available width for text wrapping (accounting for borders and padding)
+                let text_width = area.width.saturating_sub(4) as usize; // 2 for borders + 2 for padding
 
                 let agent_name = state.agents
                     .iter()
@@ -177,14 +194,24 @@ impl TasksScreen {
                     ]),
                     Line::from(""),
                     Line::from(Span::styled("📜 Description:", secondary_style())),
-                    Line::from(Span::styled(&task.description, text_primary_style())),
+                ];
+
+                // Add wrapped description text
+                let wrapped_description = crate::tui::utils::formatting::wrap_text(
+                    &task.description, 
+                    text_width, 
+                    text_primary_style()
+                );
+                lines.extend(wrapped_description);
+                
+                lines.extend(vec![
                     Line::from(""),
                     Line::from(vec![
                         Span::styled("📈 Progress: ", text_secondary_style()),
                         Span::styled(progress_bar, progress_style()),
                         Span::styled(format!(" {}%", task.progress), accent_style()),
                     ]),
-                ];
+                ]);
 
                 if let Some(started_at) = &task.started_at {
                     lines.push(Line::from(vec![
@@ -216,6 +243,56 @@ impl TasksScreen {
 
         let paragraph = Paragraph::new(content).block(block);
         frame.render_widget(paragraph, area);
+    }
+
+    // Get tasks filtered by current filter state
+    fn get_filtered_task_indices(state: &AppState) -> Vec<usize> {
+        let mut task_indices: Vec<usize> = (0..state.tasks.len()).collect();
+        
+        // Apply status filter if set
+        if let Some(ref status_filter) = state.filters.task_status_filter {
+            task_indices.retain(|&i| {
+                let task = &state.tasks[i];
+                match status_filter.as_str() {
+                    "Todo" => matches!(task.status, crate::types::TaskStatus::Todo),
+                    "InProgress" => matches!(task.status, crate::types::TaskStatus::InProgress),
+                    "Done" => matches!(task.status, crate::types::TaskStatus::Done),
+                    "Cancelled" => matches!(task.status, crate::types::TaskStatus::Cancelled),
+                    _ => true, // Show all for unknown filters
+                }
+            });
+        }
+        
+        // Apply search query filter if set
+        if !state.filters.search_query.is_empty() {
+            let search_query = state.filters.search_query.to_lowercase();
+            task_indices.retain(|&i| {
+                let task = &state.tasks[i];
+                task.title.to_lowercase().contains(&search_query) ||
+                task.description.to_lowercase().contains(&search_query)
+            });
+        }
+        
+        task_indices
+    }
+
+    // Sort task indices by agent name
+    fn sort_task_indices(task_indices: Vec<usize>, state: &AppState) -> Vec<usize> {
+        let mut sorted_indices = task_indices;
+        sorted_indices.sort_by(|&a, &b| {
+            let agent_a_name = state.agents
+                .iter()
+                .find(|agent| agent.id == state.tasks[a].agent_id)
+                .map(|agent| agent.name.as_str())
+                .unwrap_or("Unknown");
+            let agent_b_name = state.agents
+                .iter()
+                .find(|agent| agent.id == state.tasks[b].agent_id)
+                .map(|agent| agent.name.as_str())
+                .unwrap_or("Unknown");
+            agent_a_name.cmp(agent_b_name)
+        });
+        sorted_indices
     }
 
     // Get tasks sorted by agent name with original indices (same logic as App)

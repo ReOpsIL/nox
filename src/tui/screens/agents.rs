@@ -15,8 +15,8 @@ impl AgentsScreen {
             .direction(Direction::Horizontal)
             .margin(1)
             .constraints([
-                Constraint::Percentage(50),
-                Constraint::Percentage(50),
+                Constraint::Percentage(30),
+                Constraint::Percentage(70),
             ])
             .split(area);
 
@@ -100,7 +100,10 @@ impl AgentsScreen {
                 let (status_icon, status_text) = format_agent_status(&agent.status);
                 let created_at = format_datetime(&agent.created_at);
 
-                vec![
+                // Calculate available width for text wrapping (accounting for borders and padding)
+                let text_width = area.width.saturating_sub(4) as usize; // 2 for borders + 2 for padding
+
+                let mut content = vec![
                     Line::from(vec![
                         Span::styled("🏷️  Name: ", text_secondary_style()),
                         Span::styled(&agent.name, highlight_style()),
@@ -126,7 +129,17 @@ impl AgentsScreen {
                     ]),
                     Line::from(""),
                     Line::from(Span::styled("📜 System Prompt:", primary_style())),
-                    Line::from(Span::styled(&agent.system_prompt, text_primary_style())),
+                ];
+
+                // Add wrapped system prompt text
+                let wrapped_prompt = crate::tui::utils::formatting::wrap_text(
+                    &agent.system_prompt, 
+                    text_width, 
+                    text_primary_style()
+                );
+                content.extend(wrapped_prompt);
+                
+                content.extend(vec![
                     Line::from(""),
                     Line::from(Span::styled("⚙️  Resource Limits:", accent_style())),
                     Line::from(vec![
@@ -141,7 +154,9 @@ impl AgentsScreen {
                             warning_style()
                         ),
                     ]),
-                ]
+                ]);
+
+                content
             } else {
                 vec![Line::from(Span::styled("👀 No agent selected", muted_style()))]
             }

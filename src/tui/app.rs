@@ -493,7 +493,7 @@ impl App {
                     self.show_delete_task_confirmation(task.clone());
                 }
             }
-            crossterm::event::KeyCode::Char('c') | crossterm::event::KeyCode::Char('C') => {
+            crossterm::event::KeyCode::Char('x') | crossterm::event::KeyCode::Char('X') => {
                 if let Some(task) = self.get_selected_task() {
                     self.show_cancel_task_confirmation(task.clone());
                 }
@@ -512,6 +512,9 @@ impl App {
             }
             crossterm::event::KeyCode::Char('p') | crossterm::event::KeyCode::Char('P') => {
                 self.filter_tasks_pending();
+            }
+            crossterm::event::KeyCode::Char('c') | crossterm::event::KeyCode::Char('C') => {
+                self.filter_tasks_completed();
             }
             crossterm::event::KeyCode::Char('/') => {
                 self.activate_search();
@@ -694,10 +697,9 @@ impl App {
                 }
             }
             Screen::Tasks => {
-                let task_count = self.state.tasks.len();
+                let sorted_indices = self.get_sorted_task_indices();
+                let task_count = sorted_indices.len();
                 if task_count > 0 {
-                    let sorted_indices = self.get_sorted_task_indices();
-                    
                     // Find current position in sorted display order
                     let current_display_pos = if let Some(selected_idx) = self.state.selected_task {
                         sorted_indices.iter().position(|&idx| idx == selected_idx).unwrap_or(0)
@@ -729,10 +731,41 @@ impl App {
         self.state.selected_task.and_then(|idx| self.state.tasks.get(idx))
     }
 
-    // Get tasks sorted by agent name with original indices
-    fn get_sorted_task_indices(&self) -> Vec<usize> {
+    // Get tasks filtered by current filter state
+    fn get_filtered_task_indices(&self) -> Vec<usize> {
         let mut task_indices: Vec<usize> = (0..self.state.tasks.len()).collect();
-        task_indices.sort_by(|&a, &b| {
+        
+        // Apply status filter if set
+        if let Some(ref status_filter) = self.state.filters.task_status_filter {
+            task_indices.retain(|&i| {
+                let task = &self.state.tasks[i];
+                match status_filter.as_str() {
+                    "Todo" => matches!(task.status, crate::types::TaskStatus::Todo),
+                    "InProgress" => matches!(task.status, crate::types::TaskStatus::InProgress),
+                    "Done" => matches!(task.status, crate::types::TaskStatus::Done),
+                    "Cancelled" => matches!(task.status, crate::types::TaskStatus::Cancelled),
+                    _ => true, // Show all for unknown filters
+                }
+            });
+        }
+        
+        // Apply search query filter if set
+        if !self.state.filters.search_query.is_empty() {
+            let search_query = self.state.filters.search_query.to_lowercase();
+            task_indices.retain(|&i| {
+                let task = &self.state.tasks[i];
+                task.title.to_lowercase().contains(&search_query) ||
+                task.description.to_lowercase().contains(&search_query)
+            });
+        }
+        
+        task_indices
+    }
+
+    // Sort task indices by agent name
+    fn sort_task_indices(&self, task_indices: Vec<usize>) -> Vec<usize> {
+        let mut sorted_indices = task_indices;
+        sorted_indices.sort_by(|&a, &b| {
             let agent_a_name = self.state.agents
                 .iter()
                 .find(|agent| agent.id == self.state.tasks[a].agent_id)
@@ -745,7 +778,13 @@ impl App {
                 .unwrap_or("Unknown");
             agent_a_name.cmp(agent_b_name)
         });
-        task_indices
+        sorted_indices
+    }
+
+    // Get tasks sorted by agent name with original indices
+    fn get_sorted_task_indices(&self) -> Vec<usize> {
+        let filtered_indices = self.get_filtered_task_indices();
+        self.sort_task_indices(filtered_indices)
     }
     
     // Form management methods

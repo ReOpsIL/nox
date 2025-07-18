@@ -93,7 +93,7 @@ async fn execute_claude_command(agent: &Agent, user_message: &str) -> Result<Str
     
     info!("Executing Claude command for agent: {}", agent.name);
     debug!("User message: {}", 
-           if user_message.len() > 100 { &user_message[..100] } else { user_message });
+           if user_message.len() > 200 { &user_message[..200] } else { user_message });
 
     // Combine system prompt with user message
     let full_message = format!("{}\n\nUser: {}", system_prompt, user_message);
@@ -102,7 +102,8 @@ async fn execute_claude_command(agent: &Agent, user_message: &str) -> Result<Str
     let mut cmd = Command::new("claude");
     
     cmd.arg("--print")  // Non-interactive mode
-       .arg("--model").arg("claude-sonnet-4-20250514")  // Current model
+       .arg("--dangerously-skip-permissions")
+       //.arg("--model").arg("claude-sonnet-4-20250514")  // Current model
        .arg("--output-format").arg("text")  // Text output
        .arg(&full_message)  // The prompt as argument
        .stdout(Stdio::piped())

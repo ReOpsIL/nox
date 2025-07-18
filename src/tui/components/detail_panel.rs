@@ -14,7 +14,10 @@ impl DetailPanel {
         let (status_icon, status_text) = format_agent_status(&agent.status);
         let created_at = format_datetime(&agent.created_at);
 
-        let content = vec![
+        // Calculate available width for text wrapping (accounting for borders and padding)
+        let text_width = area.width.saturating_sub(4) as usize; // 2 for borders + 2 for padding
+
+        let mut content = vec![
             Line::from(vec![
                 Span::styled("Name: ", muted_style()),
                 Span::styled(&agent.name, info_style()),
@@ -38,7 +41,13 @@ impl DetailPanel {
             ]),
             Line::from(""),
             Line::from(Span::styled("System Prompt:", muted_style())),
-            Line::from(Span::styled(&agent.system_prompt, info_style())),
+        ];
+
+        // Add wrapped system prompt text
+        let wrapped_prompt = wrap_text(&agent.system_prompt, text_width, info_style());
+        content.extend(wrapped_prompt);
+        
+        content.extend(vec![
             Line::from(""),
             Line::from(Span::styled("Resource Limits:", muted_style())),
             Line::from(vec![
@@ -53,7 +62,7 @@ impl DetailPanel {
                     info_style()
                 ),
             ]),
-        ];
+        ]);
 
         let block = Block::default()
             .title("Agent Details")
@@ -69,6 +78,9 @@ impl DetailPanel {
         let (priority_icon, priority_text) = format_task_priority(&task.priority);
         let created_at = format_datetime(&task.created_at);
         let progress_bar = format_progress_bar(task.progress, 20);
+
+        // Calculate available width for text wrapping (accounting for borders and padding)
+        let text_width = area.width.saturating_sub(4) as usize; // 2 for borders + 2 for padding
 
         let mut lines = vec![
             Line::from(vec![
@@ -104,14 +116,20 @@ impl DetailPanel {
             ]),
             Line::from(""),
             Line::from(Span::styled("Description:", muted_style())),
-            Line::from(Span::styled(&task.description, info_style())),
+        ];
+
+        // Add wrapped description text
+        let wrapped_description = wrap_text(&task.description, text_width, info_style());
+        lines.extend(wrapped_description);
+        
+        lines.extend(vec![
             Line::from(""),
             Line::from(vec![
                 Span::styled("Progress: ", muted_style()),
                 Span::styled(progress_bar, primary_style()),
                 Span::styled(format!(" {}%", task.progress), info_style()),
             ]),
-        ];
+        ]);
 
         if let Some(started_at) = &task.started_at {
             lines.push(Line::from(vec![
