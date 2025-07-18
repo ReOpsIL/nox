@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use nox::testing_fw::{run_tui_tests, TestConfig, TuiTestFramework};
+use nox::testing_fw::{TestConfig, TuiTestFramework};
 use nox::testing_fw_extended::ExtendedTuiTestFramework;
 use std::path::PathBuf;
 
@@ -225,9 +225,9 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn list_shortcuts(screen_filter: Option<String>, format: &str) -> Result<()> {
-    let config = TestConfig::default();
-    let framework = TuiTestFramework::new(config);
+async fn list_shortcuts(screen_filter: Option<String>, _format: &str) -> Result<()> {
+    let _config = TestConfig::default();
+    let _framework = TuiTestFramework::new(_config);
     
     // This would need to be exposed as a public method in the framework
     println!("📋 Available Keyboard Shortcuts\n");
@@ -245,8 +245,8 @@ async fn list_shortcuts(screen_filter: Option<String>, format: &str) -> Result<(
     Ok(())
 }
 
-async fn test_specific_screen(screen: &str, format: &str, output: Option<PathBuf>) -> Result<()> {
-    let config = TestConfig {
+async fn test_specific_screen(screen: &str, format: &str, _output: Option<PathBuf>) -> Result<()> {
+    let _config = TestConfig {
         output_format: format.to_string(),
         ..TestConfig::default()
     };

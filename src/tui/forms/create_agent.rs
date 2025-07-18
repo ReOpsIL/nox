@@ -3,7 +3,6 @@ use crate::tui::components::inputs::{TextInput, TextArea, InputResult};
 use crate::types::{Agent, AgentStatus, ResourceLimits};
 use crossterm::event::KeyCode;
 use ratatui::prelude::*;
-use ratatui::widgets::Paragraph;
 use chrono::Utc;
 use log::info;
 
@@ -60,7 +59,7 @@ impl CreateAgentForm {
     
     /// Handle input for the currently focused field
     fn handle_field_input(&mut self, key: KeyCode) -> FormResult {
-        let input_result = match self.current_field {
+        let _input_result = match self.current_field {
             0 => self.name.handle_input(key),
             1 => self.system_prompt.handle_input(key),
             2 => self.max_memory_mb.handle_input(key),

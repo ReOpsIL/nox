@@ -3,11 +3,11 @@
 //! This module implements advanced agent capabilities such as self-modification,
 //! dynamic prompt evolution, and the ability for agents to spawn other agents.
 
-use crate::core::{agent_manager, claude_process_manager, message_broker, registry_manager};
+use crate::core::agent_manager;
 use crate::types::Agent;
 use anyhow::{anyhow, Result};
 use chrono::{DateTime, Utc};
-use log::{debug, error, info, warn};
+use log::info;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -73,6 +73,7 @@ pub struct PromptEvolutionRecord {
 
 impl PromptEvolutionRecord {
     /// Create a new prompt evolution record
+    #[allow(dead_code)]
     fn new(
         agent_id: String,
         original_prompt: String,

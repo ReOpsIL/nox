@@ -3,14 +3,12 @@
 //! This module handles loading and managing configuration settings.
 
 use anyhow::{anyhow, Result};
-use config::{Config, ConfigError, Environment, File as ConfigFile};
+use config::{Config, Environment, File as ConfigFile};
 use lazy_static::lazy_static;
 use log::{debug, info, warn};
 use serde::{Deserialize, Serialize};
-use std::env;
-use std::fs::{self, File};
-use std::io::Read;
-use std::path::{Path, PathBuf};
+use std::fs::{self};
+use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -134,6 +132,7 @@ impl ConfigManager {
     }
 
     /// Save the current configuration to file
+    #[allow(dead_code)]
     async fn save_config(&self) -> Result<()> {
         match &self.config {
             Some(config) => {
@@ -158,6 +157,7 @@ impl ConfigManager {
     }
 
     /// Update a specific configuration value
+    #[allow(dead_code)]
     async fn update_value<T: serde::Serialize + std::fmt::Debug + Into<config::Value> + Clone>(&mut self, key: &str, value: T) -> Result<()> {
         // Ensure configuration is loaded
         if self.config.is_none() {
@@ -232,18 +232,21 @@ pub async fn get_config() -> Result<AppConfig> {
 }
 
 /// Save the current configuration to file
+#[allow(dead_code)]
 pub async fn save_config() -> Result<()> {
     let manager = CONFIG_MANAGER.read().await;
     manager.save_config().await
 }
 
 /// Update a specific configuration value
+#[allow(dead_code)]
 pub async fn update_value<T: serde::Serialize + std::fmt::Debug + Into<config::Value> + Clone>(key: &str, value: T) -> Result<()> {
     let mut manager = CONFIG_MANAGER.write().await;
     manager.update_value(key, value).await
 }
 
 /// Get the registry path
+#[allow(dead_code)]
 pub async fn get_registry_path() -> Result<PathBuf> {
     ensure_initialized().await?;
     let config = get_config().await?;
@@ -258,6 +261,7 @@ pub async fn get_server_config() -> Result<ServerConfig> {
 }
 
 /// Get the Claude CLI configuration
+#[allow(dead_code)]
 pub async fn get_claude_cli_config() -> Result<ClaudeCliConfig> {
     ensure_initialized().await?;
     let config = get_config().await?;
@@ -265,6 +269,7 @@ pub async fn get_claude_cli_config() -> Result<ClaudeCliConfig> {
 }
 
 /// Get the logging configuration
+#[allow(dead_code)]
 pub async fn get_logging_config() -> Result<LoggingConfig> {
     ensure_initialized().await?;
     let config = get_config().await?;

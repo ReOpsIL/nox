@@ -1,6 +1,6 @@
-use super::{Form, FormResult, FormFieldNavigation, FormValidator, FormError, handle_form_navigation, render_utils};
+use super::{Form, FormResult, FormFieldNavigation, FormValidator, handle_form_navigation, render_utils};
 use crate::tui::components::inputs::{TextInput, TextArea, AgentSelector, PrioritySelector, InputResult};
-use crate::types::{Agent, Task, TaskStatus, TaskPriority};
+use crate::types::{Agent, Task, TaskStatus};
 use std::collections::HashMap;
 use crossterm::event::KeyCode;
 use ratatui::prelude::*;
@@ -65,7 +65,7 @@ impl CreateTaskForm {
     
     /// Handle input for the currently focused field
     fn handle_field_input(&mut self, key: KeyCode) -> FormResult {
-        let input_result = match self.current_field {
+        let _input_result = match self.current_field {
             0 => self.title.handle_input(key),
             1 => self.description.handle_input(key),
             2 => self.agent_selector.handle_input(key),

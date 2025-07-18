@@ -5,7 +5,7 @@
 use crossterm::event::KeyCode;
 use ratatui::{
     prelude::*,
-    widgets::{Block, Borders, Clear, List, ListItem, ListState, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState},
+    widgets::{Block, Borders, Clear, List, ListItem, ListState, Paragraph},
     style::{Color, Modifier, Style},
 };
 use regex::Regex;

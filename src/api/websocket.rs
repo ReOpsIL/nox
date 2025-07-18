@@ -6,13 +6,12 @@ use crate::types::{Agent, AgentStatus, Task, TaskStatus};
 use actix_web::{web, Error, HttpRequest, HttpResponse};
 use actix_ws::{Message, MessageStream, Session};
 use futures::StreamExt;
-use log::{debug, error, info, warn};
+use log::{debug, warn};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::{broadcast, Mutex};
-use tokio::time::sleep;
 
 // Constants for WebSocket stability
 const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(30);
@@ -74,6 +73,7 @@ impl WebSocketManager {
     }
 
     /// Get the number of connected clients
+    #[allow(dead_code)]
     pub async fn client_count(&self) -> usize {
         *self.clients.lock().await
     }
@@ -207,6 +207,7 @@ async fn ws_client(
 }
 
 /// Broadcast an agent status update
+#[allow(dead_code)]
 pub async fn broadcast_agent_status(
     agent: &Agent,
     previous_status: AgentStatus,
@@ -226,6 +227,7 @@ pub async fn broadcast_agent_status(
 }
 
 /// Broadcast a task update
+#[allow(dead_code)]
 pub async fn broadcast_task_update(
     task: &Task,
     previous_status: Option<TaskStatus>,

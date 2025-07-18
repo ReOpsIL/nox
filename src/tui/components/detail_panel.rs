@@ -1,4 +1,4 @@
-use crate::tui::{app::AppState, utils::{colors::*, formatting::*}};
+use crate::tui::utils::{colors::*, formatting::*};
 use crate::types::{Agent, Task};
 use ratatui::{
     layout::Rect,
@@ -143,6 +143,15 @@ impl DetailPanel {
                 Span::styled("Completed: ", muted_style()),
                 Span::styled(format_datetime(completed_at), info_style()),
             ]));
+        }
+
+        // Add execution output if available
+        if let Some(claude_response) = task.metadata.get("claude_response") {
+            lines.push(Line::from(""));
+            lines.push(Line::from(Span::styled("Execution Output:", muted_style())));
+            
+            let wrapped_output = wrap_text(claude_response, text_width, info_style());
+            lines.extend(wrapped_output);
         }
 
         let block = Block::default()

@@ -1,7 +1,6 @@
 use super::{Dialog, DialogResult, render_utils, dialog_utils};
 use crossterm::event::KeyCode;
 use ratatui::prelude::*;
-use ratatui::widgets::Paragraph;
 
 /// Confirmation dialog for destructive or important actions
 #[derive(Debug, Clone)]

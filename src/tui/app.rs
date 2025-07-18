@@ -1,5 +1,5 @@
 use crate::core::{agent_manager, task_manager};
-use crate::types::{Agent, Task, SystemStatus, TaskStatus};
+use crate::types::{Agent, Task, SystemStatus};
 use crate::tui::forms::{create_agent::CreateAgentForm, create_task::CreateTaskForm, Form};
 use crate::tui::dialogs::{confirmation::ConfirmationDialog, progress::ProgressDialog, help::HelpDialog, Dialog};
 use crate::tui::system_monitor::SystemMonitor;
@@ -209,7 +209,7 @@ impl Default for AppState {
 
 pub struct App {
     pub state: AppState,
-    event_sender: mpsc::UnboundedSender<crate::tui::events::AppEvent>,
+    _event_sender: mpsc::UnboundedSender<crate::tui::events::AppEvent>,
     system_monitor: SystemMonitor,
 }
 
@@ -219,7 +219,7 @@ impl App {
     ) -> Self {
         Self {
             state: AppState::default(),
-            event_sender,
+            _event_sender: event_sender,
             system_monitor: SystemMonitor::new(),
         }
     }
@@ -859,7 +859,7 @@ impl App {
                                         *local_agent = agent.clone();
                                     }
                                     if let Some(DialogState::Progress(ref mut dialog)) = self.state.current_dialog {
-                                        dialog.set_complete("Done");;
+                                        dialog.set_complete("Done");
                                     }
                                 }
                                 Err(e) => {

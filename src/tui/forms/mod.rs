@@ -3,7 +3,6 @@ pub mod create_task;
 
 use crossterm::event::KeyCode;
 use ratatui::prelude::*;
-use crate::tui::components::inputs::InputResult;
 
 /// Result of form interactions
 #[derive(Debug, Clone, PartialEq)]

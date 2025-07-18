@@ -1,4 +1,4 @@
-use crate::tui::{app::AppState, utils::{colors::*, formatting::*}};
+use crate::tui::utils::{colors::*, formatting::*};
 use crate::types::Agent;
 use ratatui::{
     layout::Rect,

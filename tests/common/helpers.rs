@@ -62,7 +62,7 @@ websocket_enabled = true
 cors_origins = []
 
 [claude]
-executable_path = "claude"
+executable_path = "-claude-"
 default_timeout = 30000
 max_retries = 3
 retry_delay = 1000

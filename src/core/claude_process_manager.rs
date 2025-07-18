@@ -77,11 +77,13 @@ impl ClaudeProcessManager {
     }
 
     /// Check if an agent is active
+    #[allow(dead_code)]
     async fn has_process(&self, agent_id: &str) -> bool {
         self.active_agents.contains_key(agent_id)
     }
 
     /// Get the number of active agents
+    #[allow(dead_code)]
     async fn process_count(&self) -> usize {
         self.active_agents.len()
     }
@@ -99,7 +101,7 @@ async fn execute_claude_command(agent: &Agent, user_message: &str) -> Result<Str
     let full_message = format!("{}\n\nUser: {}", system_prompt, user_message);
 
     // Build the command with proper Claude CLI syntax
-    let mut cmd = Command::new("claude");
+    let mut cmd = Command::new("-claude-");
     
     cmd.arg("--print")  // Non-interactive mode
        .arg("--dangerously-skip-permissions")
@@ -146,18 +148,21 @@ pub async fn stop_process(agent_id: &str) -> Result<()> {
 }
 
 /// Send a message to a Claude process and get the response
+#[allow(dead_code)]
 pub async fn send_message(agent_id: &str, message: &str) -> Result<String> {
     let mut manager = CLAUDE_PROCESS_MANAGER.lock().await;
     manager.send_message(agent_id, message).await
 }
 
 /// Check if a process exists for an agent
+#[allow(dead_code)]
 pub async fn has_process(agent_id: &str) -> Result<bool> {
     let manager = CLAUDE_PROCESS_MANAGER.lock().await;
     Ok(manager.has_process(agent_id).await)
 }
 
 /// Get the number of running processes
+#[allow(dead_code)]
 pub async fn process_count() -> Result<usize> {
     let manager = CLAUDE_PROCESS_MANAGER.lock().await;
     Ok(manager.process_count().await)

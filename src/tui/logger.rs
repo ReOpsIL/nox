@@ -1,6 +1,6 @@
 use crate::tui::app::{LogEntry, LogStorage};
 use chrono::Utc;
-use log::{Level, Log, Metadata, Record};
+use log::{Log, Metadata, Record};
 use std::sync::{Arc, Mutex};
 
 /// Custom logger that captures log messages for TUI display

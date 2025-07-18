@@ -5,12 +5,9 @@
 use crate::api::routes;
 use crate::api::websocket;
 use crate::core::config_manager;
-use actix_cors::Cors;
-use actix_files::{Files, NamedFile};
-use actix_web::{middleware, web, App, HttpResponse, HttpServer, Result};
-use log::{error, info, warn};
-use std::path::PathBuf;
-use std::sync::Arc;
+use actix_files::Files;
+use actix_web::{middleware, web, App, HttpResponse, HttpServer};
+use log::info;
 
 
 /// Start the API server
@@ -25,7 +22,7 @@ pub async fn start_server() -> anyhow::Result<()> {
     info!("Starting API server on {}:{}", host, port);
     
     // Clone data needed in the closure
-    let cors_origins = server_config.cors_origins.clone();
+    let _cors_origins = server_config.cors_origins.clone();
     
     // Create and start the HTTP server
     HttpServer::new(move || {

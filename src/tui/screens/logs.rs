@@ -1,7 +1,7 @@
-use crate::tui::{app::AppState, utils::{colors::*, formatting::*}};
+use crate::tui::{app::AppState, utils::colors::*};
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
-    style::{Modifier, Style},
+    style::Modifier,
     text::{Line, Span},
     widgets::{Block, Borders, List, ListItem, Paragraph},
     Frame,

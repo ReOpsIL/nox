@@ -8,7 +8,6 @@ pub mod registry_manager;
 pub mod git_manager;
 pub mod config_manager;
 pub mod claude_process_manager;
-pub mod message_broker;
 pub mod mcp_manager;
 pub mod advanced_agent_features;
 pub mod resource_manager;

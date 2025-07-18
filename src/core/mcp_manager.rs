@@ -5,13 +5,13 @@
 
 use anyhow::{anyhow, Result};
 use chrono::{DateTime, Utc};
-use log::{debug, error, info, warn};
+use log::{debug, error, info};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::process::Stdio;
 use std::sync::Arc;
 use tokio::process::Command;
-use tokio::sync::{Mutex, RwLock};
+use tokio::sync::Mutex;
 use uuid::Uuid;
 
 // Singleton instance of the MCP manager

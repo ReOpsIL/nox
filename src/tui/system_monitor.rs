@@ -1,5 +1,5 @@
 use std::time::Instant;
-use sysinfo::{System, Cpu, Process};
+use sysinfo::System;
 
 pub struct SystemMonitor {
     system: System,

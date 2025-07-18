@@ -4,15 +4,13 @@
 //! user approval workflows, permission gates for sensitive agent actions,
 //! and process sandboxing.
 
-use crate::core::{agent_manager, claude_process_manager, registry_manager};
-use crate::types::Agent;
 use anyhow::{anyhow, Result};
 use chrono::{DateTime, Utc};
-use log::{debug, error, info, warn};
+use log::info;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::Arc;
-use tokio::sync::{Mutex, RwLock};
+use tokio::sync::Mutex;
 use uuid::Uuid;
 
 // Singleton instance of the security manager
@@ -234,25 +232,6 @@ impl SecurityProfile {
         self.allowed_permissions.contains(&permission)
     }
     
-    /// Add a permission to the allowed set
-    fn allow_permission(&mut self, permission: PermissionType) {
-        self.allowed_permissions.insert(permission);
-        self.denied_permissions.remove(&permission);
-        self.updated_at = Utc::now();
-    }
-    
-    /// Add a permission to the denied set
-    fn deny_permission(&mut self, permission: PermissionType) {
-        self.denied_permissions.insert(permission);
-        self.allowed_permissions.remove(&permission);
-        self.updated_at = Utc::now();
-    }
-    
-    /// Set resource limits
-    fn set_resource_limits(&mut self, limits: ResourceLimits) {
-        self.resource_limits = limits;
-        self.updated_at = Utc::now();
-    }
 }
 
 /// Resource limits struct
@@ -473,17 +452,6 @@ impl SecurityAuditLogEntry {
     }
     
     /// Add metadata to the log entry
-    fn with_metadata(mut self, key: &str, value: &str) -> Self {
-        self.metadata.insert(key.to_string(), value.to_string());
-        self
-    }
-    
-    /// Set the IP address
-    fn with_ip(mut self, ip: &str) -> Self {
-        self.ip_address = Some(ip.to_string());
-        self
-    }
-    
     /// Set the user
     fn with_user(mut self, user: &str) -> Self {
         self.user = Some(user.to_string());

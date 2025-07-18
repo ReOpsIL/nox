@@ -2,7 +2,7 @@ use super::{Dialog, DialogResult, render_utils};
 use crossterm::event::KeyCode;
 use ratatui::prelude::*;
 use ratatui::widgets::{Paragraph, Gauge, Block, Borders};
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 /// Progress dialog for long-running operations
 #[derive(Debug, Clone)]

@@ -5,17 +5,13 @@
 //! and anti-runaway protection.
 
 use crate::core::{agent_manager, claude_process_manager};
-use crate::types::{Agent, AgentStatus};
 use anyhow::{anyhow, Result};
 use chrono::{DateTime, Duration, Utc};
-use log::{debug, error, info, warn};
+use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
-use std::process::Stdio;
 use std::sync::Arc;
-use tokio::process::Command;
-use tokio::sync::{Mutex, RwLock};
-use tokio::time::sleep;
+use tokio::sync::Mutex;
 use uuid::Uuid;
 
 // Singleton instance of the resource manager
@@ -220,7 +216,7 @@ impl Default for RunawayDetectionSettings {
 #[derive(Debug, Clone)]
 struct RunawayDetectionState {
     /// Agent ID
-    agent_id: String,
+    _agent_id: String,
     /// Whether the agent is currently over the CPU threshold
     over_cpu_threshold: bool,
     /// Whether the agent is currently over the memory threshold
@@ -235,7 +231,7 @@ impl RunawayDetectionState {
     /// Create a new runaway detection state
     fn new(agent_id: String) -> Self {
         Self {
-            agent_id,
+            _agent_id: agent_id,
             over_cpu_threshold: false,
             over_memory_threshold: false,
             threshold_exceeded_at: None,

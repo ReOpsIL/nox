@@ -1,13 +1,11 @@
 use anyhow::Result;
 use chrono::{DateTime, Utc};
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use crossterm::event::{KeyCode, KeyModifiers};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::io;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Mutex;
-use tokio::time::timeout;
 
 /// Represents a keyboard shortcut for testing
 #[derive(Debug, Clone)]

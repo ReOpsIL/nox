@@ -3,9 +3,8 @@
 //! This module handles Git operations for version control of the registry.
 
 use anyhow::{anyhow, Result};
-use log::{error, info, warn};
-use std::path::{Path, PathBuf};
-use std::process::Command;
+use log::{info, warn};
+use std::path::Path;
 use tokio::process::Command as TokioCommand;
 
 /// Initialize a Git repository in the specified directory
@@ -220,6 +219,7 @@ pub async fn get_commit_history(repo_path: &Path, limit: usize) -> Result<Vec<St
 }
 
 /// Get the diff for a specific file
+#[allow(dead_code)]
 pub async fn get_file_diff(repo_path: &Path, file_path: &Path) -> Result<String> {
     let relative_path = file_path.strip_prefix(repo_path)?;
 

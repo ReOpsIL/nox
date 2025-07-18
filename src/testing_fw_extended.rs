@@ -7,8 +7,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Mutex;
 
-use crate::types::{Agent, Task, AgentStatus, TaskStatus, TaskPriority, ResourceLimits};
-use crate::core::{agent_manager, task_manager};
+use crate::types::{Agent, Task, AgentStatus, TaskStatus, TaskPriority};
 use crate::testing_fw::{TestLogger, TestConfig, TestStatus};
 
 /// Extended test result for CRUD operations
@@ -597,7 +596,7 @@ impl ExtendedTuiTestFramework {
     
     /// Run a single CRUD test scenario
     async fn run_crud_scenario(&mut self, scenario: &CrudTestScenario) -> Result<bool> {
-        let start_time = std::time::Instant::now();
+        let _start_time = std::time::Instant::now();
         let mut scenario_success = true;
         let mut step_context: HashMap<String, String> = HashMap::new();
         
@@ -650,7 +649,7 @@ impl ExtendedTuiTestFramework {
     /// Execute a single test step
     async fn execute_test_step(&mut self, step: &TestStep, context: &mut HashMap<String, String>) -> Result<()> {
         match &step.action {
-            TestAction::CreateAgent { name, system_prompt } => {
+            TestAction::CreateAgent { name, system_prompt: _ } => {
                 let agent = self.mock_factory.create_mock_agent(Some(name));
                 // Simulate agent creation - in real implementation, call actual API
                 context.insert("last_agent_id".to_string(), agent.id.clone());
@@ -658,7 +657,7 @@ impl ExtendedTuiTestFramework {
                 Ok(())
             }
             
-            TestAction::UpdateAgent { id, name, system_prompt } => {
+            TestAction::UpdateAgent { id, name: _, system_prompt: _ } => {
                 let agent_id = if id == "PLACEHOLDER" {
                     context.get("last_agent_id").unwrap_or(&"unknown".to_string()).clone()
                 } else {
@@ -698,7 +697,7 @@ impl ExtendedTuiTestFramework {
                 Ok(())
             }
             
-            TestAction::CreateTask { agent_id, title, description, priority } => {
+            TestAction::CreateTask { agent_id, title, description: _, priority: _ } => {
                 let actual_agent_id = if agent_id == "PLACEHOLDER" {
                     context.get("last_agent_id").unwrap_or(&"unknown".to_string()).clone()
                 } else {
@@ -924,11 +923,3 @@ impl ExtendedTuiTestFramework {
     }
 }
 
-/// Helper function to truncate strings for display
-fn truncate_string(s: &str, max_len: usize) -> String {
-    if s.len() <= max_len {
-        s.to_string()
-    } else {
-        format!("{}...", &s[..max_len.saturating_sub(3)])
-    }
-}

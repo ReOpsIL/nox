@@ -2,7 +2,7 @@ use super::{Dialog, DialogResult, render_utils};
 use crate::tui::app::Screen;
 use crossterm::event::KeyCode;
 use ratatui::prelude::*;
-use ratatui::widgets::{Paragraph, List, ListItem, Block, Borders};
+use ratatui::widgets::{List, ListItem, Block, Borders};
 use ratatui::text::{Line, Span};
 
 /// Help dialog showing context-sensitive keybindings and instructions
