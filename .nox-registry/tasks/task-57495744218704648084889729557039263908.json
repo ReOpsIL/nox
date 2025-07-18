@@ -1,0 +1,13 @@
+{
+  "id": "task-57495744218704648084889729557039263908",
+  "agent_id": "agent-107884269007648499796250101077990862195",
+  "title": "Optimize borrowing and lifetime annotations",
+  "description": "Examine a complex data structure implementation and suggest improvements to borrowing patterns and lifetime management.",
+  "priority": "High",
+  "status": "Todo",
+  "created_at": "2025-07-18T06:10:34.823335Z",
+  "started_at": null,
+  "completed_at": null,
+  "progress": 0,
+  "metadata": {}
+}
