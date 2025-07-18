@@ -4,7 +4,7 @@
   "title": "Optimize web server for high concurrency",
   "description": "Configure and optimize an Actix-web or Axum server for high-concurrency workloads with proper connection pooling and resource management.",
   "priority": "High",
-  "status": "Todo",
+  "status": "Cancelled",
   "created_at": "2025-07-18T06:10:36.327009Z",
   "started_at": null,
   "completed_at": null,
