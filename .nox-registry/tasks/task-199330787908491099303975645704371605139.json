@@ -1,0 +1,13 @@
+{
+  "id": "task-199330787908491099303975645704371605139",
+  "agent_id": "agent-273554886228081533860823232943219490909",
+  "title": "Optimize hot path in data processing pipeline",
+  "description": "Identify and optimize performance bottlenecks in a high-throughput data processing system using profiling and algorithmic improvements.",
+  "priority": "High",
+  "status": "Todo",
+  "created_at": "2025-07-18T06:10:35.179717Z",
+  "started_at": null,
+  "completed_at": null,
+  "progress": 0,
+  "metadata": {}
+}
