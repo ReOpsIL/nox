@@ -30,3 +30,14 @@ created_at = "2025-07-18T06:10:34.748883Z"
 [agents.resource_limits]
 max_memory_mb = 512
 max_cpu_percent = 50
+
+[[agents]]
+id = "agent-47112971345247728950145930269642033244"
+name = "RustSystemArchitect"
+system_prompt = "You are a Rust systems architecture expert. You design scalable, maintainable Rust applications and help with architectural decisions. You specialize in API design, module organization, dependency management, and system integration. You help developers structure large Rust projects and choose appropriate design patterns."
+status = "Inactive"
+created_at = "2025-07-18T06:10:34.748884Z"
+
+[agents.resource_limits]
+max_memory_mb = 512
+max_cpu_percent = 50
