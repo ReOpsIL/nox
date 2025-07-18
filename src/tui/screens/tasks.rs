@@ -1,7 +1,6 @@
 use crate::tui::{app::AppState, utils::{colors::*, formatting::*}};
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
-    style::{Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, List, ListItem, Paragraph},
     Frame,
@@ -32,7 +31,7 @@ impl TasksScreen {
         let items: Vec<ListItem> = sorted_indices
             .iter()
             .enumerate()
-            .map(|(display_i, &original_i)| {
+            .map(|(_display_i, &original_i)| {
                 let task = &state.tasks[original_i];
                 let (status_icon, _) = format_task_status(&task.status);
                 let (priority_icon, _) = format_task_priority(&task.priority);
@@ -107,9 +106,9 @@ impl TasksScreen {
 
         let footer_text = format!(
             "Filter: [A] All [R] Running       \n\
-             [P] Pending [M] Complete  \n\
+             [P] Pending [C] Complete  \n\
              \n\
-             [N] New  [E] Execute  [C] Cancel\n\
+             [N] New  [E] Execute  [X] Cancel\n\
              [U] Update  [D] Delete            \n\
              \n\
              Total: {} tasks {}\n\
@@ -227,6 +226,19 @@ impl TasksScreen {
                     ]));
                 }
 
+                // Add execution output if available
+                if let Some(claude_response) = task.metadata.get("claude_response") {
+                    lines.push(Line::from(""));
+                    lines.push(Line::from(Span::styled("⚡ Execution Output:", accent_style())));
+                    
+                    let wrapped_output = crate::tui::utils::formatting::wrap_text(
+                        claude_response, 
+                        text_width, 
+                        text_primary_style()
+                    );
+                    lines.extend(wrapped_output);
+                }
+
                 lines
             } else {
                 vec![Line::from(Span::styled("👀 No task selected", muted_style()))]
@@ -295,22 +307,4 @@ impl TasksScreen {
         sorted_indices
     }
 
-    // Get tasks sorted by agent name with original indices (same logic as App)
-    fn get_sorted_task_indices(state: &AppState) -> Vec<usize> {
-        let mut task_indices: Vec<usize> = (0..state.tasks.len()).collect();
-        task_indices.sort_by(|&a, &b| {
-            let agent_a_name = state.agents
-                .iter()
-                .find(|agent| agent.id == state.tasks[a].agent_id)
-                .map(|agent| agent.name.as_str())
-                .unwrap_or("Unknown");
-            let agent_b_name = state.agents
-                .iter()
-                .find(|agent| agent.id == state.tasks[b].agent_id)
-                .map(|agent| agent.name.as_str())
-                .unwrap_or("Unknown");
-            agent_a_name.cmp(agent_b_name)
-        });
-        task_indices
-    }
 }
