@@ -25,14 +25,17 @@ impl TasksScreen {
     }
 
     fn render_task_list(frame: &mut Frame, area: Rect, state: &AppState) {
-        let items: Vec<ListItem> = state
-            .tasks
+        // Get sorted task indices (same logic as navigation)
+        let sorted_indices = Self::get_sorted_task_indices(state);
+
+        let items: Vec<ListItem> = sorted_indices
             .iter()
             .enumerate()
-            .map(|(i, task)| {
+            .map(|(display_i, &original_i)| {
+                let task = &state.tasks[original_i];
                 let (status_icon, _) = format_task_status(&task.status);
                 let (priority_icon, _) = format_task_priority(&task.priority);
-                let is_selected = Some(i) == state.selected_task;
+                let is_selected = Some(original_i) == state.selected_task;
                 
                 let status_style = match task.status {
                     crate::types::TaskStatus::Done => task_done_style(),
@@ -47,9 +50,16 @@ impl TasksScreen {
                     crate::types::TaskPriority::Low => priority_low_style(),
                 };
 
+                let agent_name = state.agents
+                    .iter()
+                    .find(|a| a.id == task.agent_id)
+                    .map(|a| a.name.as_str())
+                    .unwrap_or("Unknown");
+
                 let content = if is_selected {
                     Line::from(vec![
                         Span::styled("👉 ", highlight_style()),
+                        Span::styled(format!("[{}]: ", agent_name), text_secondary_style()),
                         Span::styled(&task.title, selected_style()),
                         Span::styled(" ", text_primary_style()),
                         Span::styled(status_icon, status_style),
@@ -59,6 +69,7 @@ impl TasksScreen {
                 } else {
                     Line::from(vec![
                         Span::styled("   ", text_primary_style()),
+                        Span::styled(format!("[{}]: ", agent_name), text_secondary_style()),
                         Span::styled(&task.title, text_primary_style()),
                         Span::styled(" ", text_primary_style()),
                         Span::styled(status_icon, status_style),
@@ -205,5 +216,24 @@ impl TasksScreen {
 
         let paragraph = Paragraph::new(content).block(block);
         frame.render_widget(paragraph, area);
+    }
+
+    // Get tasks sorted by agent name with original indices (same logic as App)
+    fn get_sorted_task_indices(state: &AppState) -> Vec<usize> {
+        let mut task_indices: Vec<usize> = (0..state.tasks.len()).collect();
+        task_indices.sort_by(|&a, &b| {
+            let agent_a_name = state.agents
+                .iter()
+                .find(|agent| agent.id == state.tasks[a].agent_id)
+                .map(|agent| agent.name.as_str())
+                .unwrap_or("Unknown");
+            let agent_b_name = state.agents
+                .iter()
+                .find(|agent| agent.id == state.tasks[b].agent_id)
+                .map(|agent| agent.name.as_str())
+                .unwrap_or("Unknown");
+            agent_a_name.cmp(agent_b_name)
+        });
+        task_indices
     }
 }

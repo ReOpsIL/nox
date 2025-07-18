@@ -696,13 +696,24 @@ impl App {
             Screen::Tasks => {
                 let task_count = self.state.tasks.len();
                 if task_count > 0 {
-                    let current = self.state.selected_task.unwrap_or(0);
-                    let new_index = if direction > 0 {
-                        (current + 1) % task_count
+                    let sorted_indices = self.get_sorted_task_indices();
+                    
+                    // Find current position in sorted display order
+                    let current_display_pos = if let Some(selected_idx) = self.state.selected_task {
+                        sorted_indices.iter().position(|&idx| idx == selected_idx).unwrap_or(0)
                     } else {
-                        if current == 0 { task_count - 1 } else { current - 1 }
+                        0
                     };
-                    self.state.selected_task = Some(new_index);
+                    
+                    // Navigate in display order
+                    let new_display_pos = if direction > 0 {
+                        (current_display_pos + 1) % task_count
+                    } else {
+                        if current_display_pos == 0 { task_count - 1 } else { current_display_pos - 1 }
+                    };
+                    
+                    // Set selection to the original index at the new display position
+                    self.state.selected_task = Some(sorted_indices[new_display_pos]);
                 }
             }
             _ => {}
@@ -716,6 +727,25 @@ impl App {
     
     fn get_selected_task(&self) -> Option<&Task> {
         self.state.selected_task.and_then(|idx| self.state.tasks.get(idx))
+    }
+
+    // Get tasks sorted by agent name with original indices
+    fn get_sorted_task_indices(&self) -> Vec<usize> {
+        let mut task_indices: Vec<usize> = (0..self.state.tasks.len()).collect();
+        task_indices.sort_by(|&a, &b| {
+            let agent_a_name = self.state.agents
+                .iter()
+                .find(|agent| agent.id == self.state.tasks[a].agent_id)
+                .map(|agent| agent.name.as_str())
+                .unwrap_or("Unknown");
+            let agent_b_name = self.state.agents
+                .iter()
+                .find(|agent| agent.id == self.state.tasks[b].agent_id)
+                .map(|agent| agent.name.as_str())
+                .unwrap_or("Unknown");
+            agent_a_name.cmp(agent_b_name)
+        });
+        task_indices
     }
     
     // Form management methods

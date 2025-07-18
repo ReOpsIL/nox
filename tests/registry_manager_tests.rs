@@ -115,3 +115,56 @@ async fn test_agent_deletion_with_task_cleanup() {
         assert!(task_after.is_none(), "Task {} should be deleted", task.id);
     }
 }
+
+/// Test default seeding functionality
+#[tokio::test]
+async fn test_default_seeding() {
+    setup_test_env();
+    
+    // Initialize registry (this should be empty)
+    registry_manager::initialize().await.unwrap();
+    
+    // Verify registry is empty before seeding
+    let agents_before = agent_manager::get_all_agents().await.unwrap();
+    let tasks_before = task_manager::get_all_tasks().await.unwrap();
+    assert_eq!(agents_before.len(), 0, "Registry should be empty before seeding");
+    assert_eq!(tasks_before.len(), 0, "Registry should have no tasks before seeding");
+    
+    // Trigger seeding
+    nox::core::seeding::seed_default_data().await.unwrap();
+    
+    // Verify agents were created
+    let agents_after = agent_manager::get_all_agents().await.unwrap();
+    assert_eq!(agents_after.len(), 5, "Should create exactly 5 default agents");
+    
+    // Verify agent names and specialties
+    let agent_names: Vec<&str> = agents_after.iter().map(|a| a.name.as_str()).collect();
+    assert!(agent_names.contains(&"RustCodeReviewer"));
+    assert!(agent_names.contains(&"RustPerformanceOptimizer"));
+    assert!(agent_names.contains(&"RustTestingEngineer"));
+    assert!(agent_names.contains(&"RustSystemArchitect"));
+    assert!(agent_names.contains(&"RustWebDeveloper"));
+    
+    // Verify tasks were created
+    let tasks_after = task_manager::get_all_tasks().await.unwrap();
+    assert_eq!(tasks_after.len(), 25, "Should create exactly 25 default tasks (5 per agent)");
+    
+    // Verify each agent has exactly 5 tasks
+    for agent in &agents_after {
+        let agent_tasks = task_manager::get_tasks_by_agent(&agent.id).await.unwrap();
+        assert_eq!(agent_tasks.len(), 5, "Each agent should have exactly 5 tasks");
+        
+        // Verify all tasks belong to this agent
+        for task in &agent_tasks {
+            assert_eq!(task.agent_id, agent.id, "Task should belong to the correct agent");
+        }
+    }
+    
+    // Verify seeding is idempotent (running again should not create duplicates)
+    nox::core::seeding::seed_default_data().await.unwrap();
+    
+    let agents_after_second = agent_manager::get_all_agents().await.unwrap();
+    let tasks_after_second = task_manager::get_all_tasks().await.unwrap();
+    assert_eq!(agents_after_second.len(), 5, "Second seeding should not create duplicate agents");
+    assert_eq!(tasks_after_second.len(), 25, "Second seeding should not create duplicate tasks");
+}

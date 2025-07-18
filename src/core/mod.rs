@@ -13,6 +13,7 @@ pub mod mcp_manager;
 pub mod advanced_agent_features;
 pub mod resource_manager;
 pub mod security_manager;
+pub mod seeding;
 
 use anyhow::Result;
 
@@ -29,6 +30,9 @@ pub async fn initialize() -> Result<()> {
 
     // Initialize resource monitoring
     resource_manager::start_monitoring().await?;
+
+    // Seed default data if registry is empty
+    seeding::seed_default_data().await?;
 
     // Log initialization
     log::info!("Nox agent ecosystem initialized");

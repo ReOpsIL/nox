@@ -14,7 +14,8 @@ impl TaskList {
         frame: &mut Frame, 
         area: Rect, 
         tasks: &[Task], 
-        selected: Option<usize>
+        selected: Option<usize>,
+        state: &AppState
     ) {
         let items: Vec<ListItem> = tasks
             .iter()
@@ -28,8 +29,15 @@ impl TaskList {
                     info_style()
                 };
 
-                let content = format!("{} {} {} {}", 
+                let agent_name = state.agents
+                    .iter()
+                    .find(|a| a.id == task.agent_id)
+                    .map(|a| a.name.as_str())
+                    .unwrap_or("Unknown");
+
+                let content = format!("{} [{}]: {} {} {}", 
                     if Some(i) == selected { ">" } else { " " },
+                    agent_name,
                     task.title,
                     status_icon,
                     priority_icon
