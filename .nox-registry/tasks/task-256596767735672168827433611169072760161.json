@@ -4,9 +4,9 @@
   "title": "Optimize concurrent data structures",
   "description": "Improve performance of thread-safe data structures by reducing lock contention and implementing lock-free algorithms where appropriate.",
   "priority": "High",
-  "status": "Todo",
+  "status": "InProgress",
   "created_at": "2025-07-18T06:10:35.179725Z",
-  "started_at": null,
+  "started_at": "2025-07-18T11:53:04.676296Z",
   "completed_at": null,
   "progress": 0,
   "metadata": {}
