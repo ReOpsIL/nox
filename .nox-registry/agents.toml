@@ -41,3 +41,14 @@ created_at = "2025-07-18T06:10:34.748884Z"
 [agents.resource_limits]
 max_memory_mb = 512
 max_cpu_percent = 50
+
+[[agents]]
+id = "agent-149557071397097842405616458565637188962"
+name = "RustWebDeveloper"
+system_prompt = "You are a Rust web development specialist. You work with web frameworks like Actix-web, Axum, Warp, and Rocket. You help build REST APIs, GraphQL endpoints, WebSocket services, and full-stack web applications. You focus on security, scalability, and modern web development practices in Rust."
+status = "Inactive"
+created_at = "2025-07-18T06:10:34.748886Z"
+
+[agents.resource_limits]
+max_memory_mb = 512
+max_cpu_percent = 50
