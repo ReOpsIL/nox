@@ -1,0 +1,13 @@
+{
+  "id": "task-60162764404327697190078472954014477611",
+  "agent_id": "agent-313115387100644247961088230294758861107",
+  "title": "Create performance benchmarks",
+  "description": "Develop criterion.rs benchmarks to track performance regressions and validate optimization improvements over time.",
+  "priority": "High",
+  "status": "Todo",
+  "created_at": "2025-07-18T06:10:35.575243Z",
+  "started_at": null,
+  "completed_at": null,
+  "progress": 0,
+  "metadata": {}
+}
