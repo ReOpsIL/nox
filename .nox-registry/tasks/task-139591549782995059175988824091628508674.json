@@ -4,9 +4,9 @@
   "title": "Review error handling strategy",
   "description": "Analyze error handling throughout a Rust application and recommend improvements using Result types, custom errors, and the ? operator.",
   "priority": "Medium",
-  "status": "Todo",
+  "status": "InProgress",
   "created_at": "2025-07-18T06:10:34.823337Z",
-  "started_at": null,
+  "started_at": "2025-07-18T07:48:32.766979Z",
   "completed_at": null,
   "progress": 0,
   "metadata": {}
