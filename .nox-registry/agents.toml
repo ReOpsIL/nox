@@ -1,10 +1,1 @@
-[[agents]]
-id = "test-agent-001"
-name = "Test Agent"
-system_prompt = "You are a helpful test agent."
-status = "Inactive"
-created_at = "2025-07-18T05:50:15.806391Z"
-
-[agents.resource_limits]
-max_memory_mb = 512
-max_cpu_percent = 50
+agents = []
