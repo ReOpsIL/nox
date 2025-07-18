@@ -4,9 +4,9 @@
   "title": "Optimize borrowing and lifetime annotations",
   "description": "Examine a complex data structure implementation and suggest improvements to borrowing patterns and lifetime management.",
   "priority": "High",
-  "status": "Todo",
+  "status": "InProgress",
   "created_at": "2025-07-18T06:10:34.823335Z",
-  "started_at": null,
+  "started_at": "2025-07-18T11:52:59.729841Z",
   "completed_at": null,
   "progress": 0,
   "metadata": {}
