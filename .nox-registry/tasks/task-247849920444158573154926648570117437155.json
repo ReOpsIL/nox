@@ -1,0 +1,13 @@
+{
+  "id": "task-247849920444158573154926648570117437155",
+  "agent_id": "agent-107884269007648499796250101077990862195",
+  "title": "Review async/await patterns in web handler",
+  "description": "Analyze a web service handler that uses async/await and provide feedback on proper error handling, resource management, and async best practices.",
+  "priority": "Medium",
+  "status": "Todo",
+  "created_at": "2025-07-18T06:10:34.823325Z",
+  "started_at": null,
+  "completed_at": null,
+  "progress": 0,
+  "metadata": {}
+}
