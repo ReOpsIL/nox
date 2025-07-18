@@ -1,0 +1,13 @@
+{
+  "id": "task-41422098075099354172144225911751042170",
+  "agent_id": "agent-149557071397097842405616458565637188962",
+  "title": "Add WebSocket real-time features",
+  "description": "Implement real-time features using WebSockets with proper connection management, broadcasting, and state synchronization.",
+  "priority": "Medium",
+  "status": "Todo",
+  "created_at": "2025-07-18T06:10:36.327005Z",
+  "started_at": null,
+  "completed_at": null,
+  "progress": 0,
+  "metadata": {}
+}
