@@ -4,7 +4,7 @@
   "title": "Validate trait implementations and generics",
   "description": "Review trait design and generic implementations to ensure they follow Rust best practices and provide good API ergonomics.",
   "priority": "Medium",
-  "status": "InProgress",
+  "status": "Cancelled",
   "created_at": "2025-07-18T06:10:34.823339Z",
   "started_at": "2025-07-18T11:24:59.311708Z",
   "completed_at": null,
