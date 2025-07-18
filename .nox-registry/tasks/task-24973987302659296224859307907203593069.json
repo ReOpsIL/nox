@@ -1,0 +1,13 @@
+{
+  "id": "task-24973987302659296224859307907203593069",
+  "agent_id": "agent-47112971345247728950145930269642033244",
+  "title": "Design event-driven architecture",
+  "description": "Implement an event sourcing system with CQRS patterns using Rust, ensuring proper event ordering and consistency guarantees.",
+  "priority": "Medium",
+  "status": "Todo",
+  "created_at": "2025-07-18T06:10:35.944656Z",
+  "started_at": null,
+  "completed_at": null,
+  "progress": 0,
+  "metadata": {}
+}
