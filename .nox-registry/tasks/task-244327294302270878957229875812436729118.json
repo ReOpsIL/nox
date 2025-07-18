@@ -1,0 +1,13 @@
+{
+  "id": "task-244327294302270878957229875812436729118",
+  "agent_id": "agent-313115387100644247961088230294758861107",
+  "title": "Implement property-based tests for API",
+  "description": "Create comprehensive property-based tests using quickcheck or proptest to validate API behavior under various input conditions.",
+  "priority": "Medium",
+  "status": "Todo",
+  "created_at": "2025-07-18T06:10:35.575232Z",
+  "started_at": null,
+  "completed_at": null,
+  "progress": 0,
+  "metadata": {}
+}
