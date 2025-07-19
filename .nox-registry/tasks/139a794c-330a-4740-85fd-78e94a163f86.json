@@ -4,9 +4,9 @@
   "title": "Simple Math Question",
   "description": "What is 5 + 3? Please provide just the number.",
   "priority": "High",
-  "status": "Todo",
+  "status": "InProgress",
   "created_at": "2025-07-19T10:14:05.205989Z",
-  "started_at": null,
+  "started_at": "2025-07-19T10:14:05.279418Z",
   "completed_at": null,
   "progress": 0,
   "metadata": {}
