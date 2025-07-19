@@ -52,3 +52,14 @@ created_at = "2025-07-18T06:10:34.748886Z"
 [agents.resource_limits]
 max_memory_mb = 512
 max_cpu_percent = 50
+
+[[agents]]
+id = "7249457b-b560-4280-9d8d-01d6b22d0057"
+name = "Test Agent"
+system_prompt = "You are a helpful assistant that provides clear, concise answers."
+status = "Active"
+created_at = "2025-07-19T16:16:44.860202Z"
+
+[agents.resource_limits]
+max_memory_mb = 512
+max_cpu_percent = 50
