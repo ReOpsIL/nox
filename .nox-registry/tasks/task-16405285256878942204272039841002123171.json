@@ -4,9 +4,9 @@
   "title": "Audit unsafe code block usage",
   "description": "Review unsafe code blocks in a systems programming project and ensure they are properly justified, documented, and minimize safety risks.",
   "priority": "High",
-  "status": "Cancelled",
+  "status": "InProgress",
   "created_at": "2025-07-18T06:10:34.823333Z",
-  "started_at": "2025-07-19T06:02:15.273684Z",
+  "started_at": "2025-07-19T09:50:57.576116Z",
   "completed_at": null,
   "progress": 0,
   "metadata": {}
