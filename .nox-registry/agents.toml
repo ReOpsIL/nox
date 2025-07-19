@@ -52,14 +52,3 @@ created_at = "2025-07-18T06:10:34.748886Z"
 [agents.resource_limits]
 max_memory_mb = 512
 max_cpu_percent = 50
-
-[[agents]]
-id = "2dfab23a-063c-454d-94e6-5020b990d14b"
-name = "Test Agent"
-system_prompt = "You are a helpful assistant that provides clear, concise answers."
-status = "Inactive"
-created_at = "2025-07-19T10:14:05.109416Z"
-
-[agents.resource_limits]
-max_memory_mb = 512
-max_cpu_percent = 50
