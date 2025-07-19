@@ -76,6 +76,11 @@ async fn main() -> Result<()> {
                 if let Err(e) = app.refresh_data().await {
                     log::error!("Failed to refresh data: {}", e);
                 }
+                
+                // Poll for streaming output from running tasks
+                if let Err(e) = app.poll_streaming_output().await {
+                    log::error!("Failed to poll streaming output: {}", e);
+                }
             }
         }
     }

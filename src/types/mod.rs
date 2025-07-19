@@ -110,6 +110,9 @@ pub enum TaskStatus {
     Done,
     /// Task is cancelled
     Cancelled,
+    /// Task is failed
+    Failed,
+
 }
 
 impl std::fmt::Display for TaskStatus {
@@ -119,6 +122,7 @@ impl std::fmt::Display for TaskStatus {
             TaskStatus::InProgress => write!(f, "In Progress"),
             TaskStatus::Done => write!(f, "Done"),
             TaskStatus::Cancelled => write!(f, "Cancelled"),
+            TaskStatus::Failed => write!(f, "Failed"),
         }
     }
 }

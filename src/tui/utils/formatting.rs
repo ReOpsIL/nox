@@ -19,6 +19,7 @@ pub fn format_task_status(status: &TaskStatus) -> (&'static str, &'static str) {
         TaskStatus::InProgress => ("🔄", "Running"),
         TaskStatus::Done => ("✅", "Done"),
         TaskStatus::Cancelled => ("❌", "Cancelled"),
+        TaskStatus::Failed => ("⚠️", "Failed"),
     }
 }
 

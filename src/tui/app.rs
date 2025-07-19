@@ -52,6 +52,7 @@ pub enum PendingOperation {
     CancelTask(Task),
     RestartAgent(Agent),
     ClearLogs,
+    CancelAllRunningTasks,
 }
 
 /// Log entry structure for TUI display
@@ -168,6 +169,35 @@ pub struct AppState {
     pub success_message: Option<String>,
     pub pending_operation: Option<PendingOperation>,
     pub log_storage: Arc<Mutex<LogStorage>>,
+    /// Real-time output from running tasks
+    pub task_outputs: HashMap<String, Vec<String>>,
+}
+
+impl AppState {
+    /// Add a line of output to a task's output stream
+    pub fn add_task_output(&mut self, task_id: &str, output_line: String) {
+        self.task_outputs
+            .entry(task_id.to_string())
+            .or_insert_with(Vec::new)
+            .push(output_line);
+            
+        // Keep only the last 1000 lines per task to prevent memory issues
+        if let Some(lines) = self.task_outputs.get_mut(task_id) {
+            if lines.len() > 1000 {
+                lines.remove(0);
+            }
+        }
+    }
+    
+    /// Clear output for a task (when task is cancelled or completed)
+    pub fn clear_task_output(&mut self, task_id: &str) {
+        self.task_outputs.remove(task_id);
+    }
+    
+    /// Get current output lines for a task
+    pub fn get_task_output(&self, task_id: &str) -> Option<&Vec<String>> {
+        self.task_outputs.get(task_id)
+    }
 }
 
 impl Default for AppState {
@@ -203,6 +233,7 @@ impl Default for AppState {
             success_message: None,
             pending_operation: None,
             log_storage: Arc::new(Mutex::new(LogStorage::new(1000))),
+            task_outputs: HashMap::new(),
         }
     }
 }
@@ -235,6 +266,11 @@ impl App {
         if  self.state.tasks.len() > 0  && self.state.selected_task == None {
             self.state.selected_task = Some(0);
         }
+        
+        // Auto-select running task if we're on the execution screen
+        if self.state.current_screen == Screen::Execution {
+            self.auto_select_running_task();
+        }
 
         let active_agents = self.state.agents.iter()
             .filter(|a| matches!(a.status, crate::types::AgentStatus::Active))
@@ -266,6 +302,27 @@ impl App {
 
         Ok(())
     }
+    
+    /// Poll for streaming output from all running tasks
+    pub async fn poll_streaming_output(&mut self) -> Result<()> {
+        // Get all running task IDs
+        let running_task_ids: Vec<String> = self.state.tasks
+            .iter()
+            .filter(|task| task.status == crate::types::TaskStatus::InProgress)
+            .map(|task| task.id.clone())
+            .collect();
+        
+        // Poll each running task for new output
+        for task_id in running_task_ids {
+            if let Some(new_output) = task_manager::poll_task_output(&task_id).await {
+                for line in new_output {
+                    self.state.add_task_output(&task_id, line);
+                }
+            }
+        }
+        
+        Ok(())
+    }
 
     pub fn quit(&mut self) {
         self.state.should_quit = true;
@@ -279,6 +336,11 @@ impl App {
             Screen::Execution => Screen::Logs,
             Screen::Logs => Screen::Dashboard,
         };
+        
+        // Auto-select running task when entering execution screen
+        if self.state.current_screen == Screen::Execution {
+            self.auto_select_running_task();
+        }
     }
 
     pub fn previous_screen(&mut self) {
@@ -289,6 +351,11 @@ impl App {
             Screen::Execution => Screen::Tasks,
             Screen::Logs => Screen::Execution,
         };
+        
+        // Auto-select running task when entering execution screen
+        if self.state.current_screen == Screen::Execution {
+            self.auto_select_running_task();
+        }
     }
 
     pub async fn handle_key_input(&mut self, key: crossterm::event::KeyCode) -> Result<()> {
@@ -532,38 +599,44 @@ impl App {
         match key {
             crossterm::event::KeyCode::Char(' ') => {
                 // Space - Pause/Resume execution
-                if let Some(task) = self.get_selected_task() {
+                if let Some(task) = self.get_selected_running_task() {
                     self.toggle_execution_pause(task.clone());
                 }
             }
             crossterm::event::KeyCode::Delete => {
                 // Del - Cancel execution
-                if let Some(task) = self.get_selected_task() {
+                if let Some(task) = self.get_selected_running_task() {
                     self.cancel_execution(task.clone());
                 }
             }
             crossterm::event::KeyCode::Enter => {
                 // Enter - View execution details
-                if let Some(task) = self.get_selected_task() {
+                if let Some(task) = self.get_selected_running_task() {
                     self.show_execution_details(task.clone());
                 }
             }
             crossterm::event::KeyCode::Char('p') | crossterm::event::KeyCode::Char('P') => {
                 // P - Pause execution
-                if let Some(task) = self.get_selected_task() {
+                if let Some(task) = self.get_selected_running_task() {
                     self.pause_execution(task.clone());
                 }
             }
             crossterm::event::KeyCode::Char('r') | crossterm::event::KeyCode::Char('R') => {
                 // R - Resume execution
-                if let Some(task) = self.get_selected_task() {
+                if let Some(task) = self.get_selected_running_task() {
                     self.resume_execution(task.clone());
                 }
             }
             crossterm::event::KeyCode::Char('c') | crossterm::event::KeyCode::Char('C') => {
                 // C - Cancel execution
-                if let Some(task) = self.get_selected_task() {
+                if let Some(task) = self.get_selected_running_task() {
                     self.cancel_execution(task.clone());
+                }
+            }
+            crossterm::event::KeyCode::Char('a') | crossterm::event::KeyCode::Char('A') => {
+                // A - Cancel All running tasks (only if there are running tasks)
+                if self.has_running_tasks() {
+                    self.cancel_all_running_tasks();
                 }
             }
             crossterm::event::KeyCode::Char('/') => {
@@ -667,6 +740,8 @@ impl App {
             }
             crossterm::event::KeyCode::Char('4') => {
                 self.state.current_screen = Screen::Execution;
+                // Auto-select the first running task if any exist
+                self.auto_select_running_task();
             }
             crossterm::event::KeyCode::Char('5') => {
                 self.state.current_screen = Screen::Logs;
@@ -718,7 +793,60 @@ impl App {
                     self.state.selected_task = Some(sorted_indices[new_display_pos]);
                 }
             }
+            Screen::Execution => {
+                // Get running tasks for navigation
+                let running_task_indices: Vec<usize> = self.state.tasks
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, task)| task.status == crate::types::TaskStatus::InProgress)
+                    .map(|(i, _)| i)
+                    .collect();
+                
+                let running_count = running_task_indices.len();
+                if running_count > 0 {
+                    // Find current position in running tasks
+                    let current_display_pos = if let Some(selected_idx) = self.state.selected_task {
+                        running_task_indices.iter().position(|&idx| idx == selected_idx).unwrap_or(0)
+                    } else {
+                        0
+                    };
+                    
+                    // Navigate in running tasks order
+                    let new_display_pos = if direction > 0 {
+                        (current_display_pos + 1) % running_count
+                    } else {
+                        if current_display_pos == 0 { running_count - 1 } else { current_display_pos - 1 }
+                    };
+                    
+                    // Set selection to the original index at the new display position
+                    self.state.selected_task = Some(running_task_indices[new_display_pos]);
+                }
+            }
             _ => {}
+        }
+    }
+    
+    /// Auto-select the first running task for the execution screen
+    fn auto_select_running_task(&mut self) {
+        let running_task_indices: Vec<usize> = self.state.tasks
+            .iter()
+            .enumerate()
+            .filter(|(_, task)| task.status == crate::types::TaskStatus::InProgress)
+            .map(|(i, _)| i)
+            .collect();
+        
+        if !running_task_indices.is_empty() {
+            // If no task is selected or the selected task is not running, select the first running task
+            if let Some(selected_idx) = self.state.selected_task {
+                if !running_task_indices.contains(&selected_idx) {
+                    self.state.selected_task = Some(running_task_indices[0]);
+                }
+            } else {
+                self.state.selected_task = Some(running_task_indices[0]);
+            }
+        } else {
+            // If no running tasks, clear the selection to prevent actions on non-running tasks
+            self.state.selected_task = None;
         }
     }
     
@@ -729,6 +857,21 @@ impl App {
     
     fn get_selected_task(&self) -> Option<&Task> {
         self.state.selected_task.and_then(|idx| self.state.tasks.get(idx))
+    }
+    
+    /// Get the selected task only if it's a running task (for execution screen)
+    fn get_selected_running_task(&self) -> Option<&Task> {
+        if let Some(task) = self.get_selected_task() {
+            if task.status == crate::types::TaskStatus::InProgress {
+                return Some(task);
+            }
+        }
+        None
+    }
+    
+    /// Check if there are any running tasks
+    fn has_running_tasks(&self) -> bool {
+        self.state.tasks.iter().any(|task| task.status == crate::types::TaskStatus::InProgress)
     }
 
     // Get tasks filtered by current filter state
@@ -1132,6 +1275,21 @@ impl App {
         self.state.pending_operation = Some(PendingOperation::CancelTask(task));
     }
     
+    fn cancel_all_running_tasks(&mut self) {
+        let running_count = self.state.tasks.iter()
+            .filter(|task| task.status == crate::types::TaskStatus::InProgress)
+            .count();
+        
+        if running_count > 0 {
+            let dialog = ConfirmationDialog::new(
+                "Cancel All Running Tasks".to_string(),
+                format!("Are you sure you want to cancel all {} running tasks?", running_count)
+            );
+            self.state.current_dialog = Some(DialogState::Confirmation(dialog));
+            self.state.pending_operation = Some(PendingOperation::CancelAllRunningTasks);
+        }
+    }
+    
     fn show_execution_details(&mut self, task: Task) {
         // TODO: Create detailed execution view dialog
         self.state.success_message = Some(format!("Showing details for task '{}'", task.title));
@@ -1263,6 +1421,9 @@ impl App {
             }
             PendingOperation::ClearLogs => {
                 self.execute_clear_logs().await?;
+            }
+            PendingOperation::CancelAllRunningTasks => {
+                self.execute_cancel_all_running_tasks().await?;
             }
         }
         Ok(())
@@ -1405,6 +1566,69 @@ impl App {
         // Update local state to reflect cancelled status
         if let Some(local_task) = self.state.tasks.iter_mut().find(|t| t.id == task.id) {
             local_task.status = crate::types::TaskStatus::Cancelled;
+        }
+        
+        Ok(())
+    }
+    
+    /// Execute cancel all running tasks operation
+    async fn execute_cancel_all_running_tasks(&mut self) -> Result<()> {
+        // Get all running tasks
+        let running_tasks: Vec<Task> = self.state.tasks.iter()
+            .filter(|task| task.status == crate::types::TaskStatus::InProgress)
+            .cloned()
+            .collect();
+        
+        if running_tasks.is_empty() {
+            self.state.success_message = Some("No running tasks to cancel".to_string());
+            return Ok(());
+        }
+        
+        let total_tasks = running_tasks.len();
+        let mut dialog = ProgressDialog::new(
+            "Cancel All Running Tasks".to_string(),
+            format!("Cancelling {} running tasks...", total_tasks)
+        );
+        dialog.set_progress(0);
+        self.state.current_dialog = Some(DialogState::Progress(dialog.clone()));
+        
+        let mut cancelled_count = 0;
+        let mut failed_count = 0;
+        
+        // Cancel each running task
+        for (index, task) in running_tasks.iter().enumerate() {
+            // Update progress
+            let progress = ((index + 1) as f32 / total_tasks as f32 * 100.0) as u8;
+            if let Some(DialogState::Progress(ref mut progress_dialog)) = self.state.current_dialog {
+                progress_dialog.set_progress(progress);
+                progress_dialog.set_message(format!("Cancelling task '{}' ({}/{})", task.title, index + 1, total_tasks));
+            }
+            
+            // Cancel the task
+            match commands::task::cancel::execute(task.id.clone()).await {
+                Ok(_) => {
+                    cancelled_count += 1;
+                    // Update local state
+                    if let Some(local_task) = self.state.tasks.iter_mut().find(|t| t.id == task.id) {
+                        local_task.status = crate::types::TaskStatus::Cancelled;
+                    }
+                }
+                Err(e) => {
+                    failed_count += 1;
+                    log::error!("Failed to cancel task '{}': {}", task.title, e);
+                }
+            }
+        }
+        
+        // Show completion status
+        if let Some(DialogState::Progress(ref mut progress_dialog)) = self.state.current_dialog {
+            if failed_count == 0 {
+                progress_dialog.set_complete("All tasks cancelled successfully");
+                self.state.success_message = Some(format!("Successfully cancelled {} running tasks", cancelled_count));
+            } else {
+                progress_dialog.set_complete(&format!("Cancelled {} tasks, {} failed", cancelled_count, failed_count));
+                self.state.error_message = Some(format!("Cancelled {} tasks, but {} tasks failed to cancel", cancelled_count, failed_count));
+            }
         }
         
         Ok(())
