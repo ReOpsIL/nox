@@ -4,7 +4,7 @@
   "title": "Design microservices architecture",
   "description": "Architect a distributed system using Rust microservices with proper service boundaries, communication patterns, and data consistency strategies.",
   "priority": "Medium",
-  "status": "InProgress",
+  "status": "Cancelled",
   "created_at": "2025-07-18T06:10:35.944648Z",
   "started_at": "2025-07-19T05:41:52.138649Z",
   "completed_at": null,
