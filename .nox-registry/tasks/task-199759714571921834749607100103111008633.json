@@ -1,0 +1,13 @@
+{
+  "id": "task-199759714571921834749607100103111008633",
+  "agent_id": "agent-313115387100644247961088230294758861107",
+  "title": "Configure CI/CD pipeline for Rust project",
+  "description": "Set up GitHub Actions or similar CI/CD pipeline with proper caching, testing, linting, and automated deployment for a Rust project.",
+  "priority": "Medium",
+  "status": "Todo",
+  "created_at": "2025-07-18T06:10:35.575246Z",
+  "started_at": null,
+  "completed_at": null,
+  "progress": 0,
+  "metadata": {}
+}

@@ -1,0 +1,18 @@
+[server]
+port = 8080
+frontend_port = 5173
+host = "localhost"
+websocket_enabled = true
+api_enabled = true
+cors_origins = ["*"]
+
+[storage]
+registry_path = ".nox-registry"
+
+[claude_cli]
+session_timeout = 3600
+auto_restart_on_crash = true
+
+[logging]
+level = "info"
+format = "json"

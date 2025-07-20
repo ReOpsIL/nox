@@ -1,0 +1,13 @@
+{
+  "id": "task-95822357754940820101832183633793799176",
+  "agent_id": "agent-149557071397097842405616458565637188962",
+  "title": "Optimize web server for high concurrency",
+  "description": "Configure and optimize an Actix-web or Axum server for high-concurrency workloads with proper connection pooling and resource management.",
+  "priority": "High",
+  "status": "Cancelled",
+  "created_at": "2025-07-18T06:10:36.327009Z",
+  "started_at": null,
+  "completed_at": null,
+  "progress": 0,
+  "metadata": {}
+}

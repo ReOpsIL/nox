@@ -1,80 +1,152 @@
 #!/bin/bash
+
+# Nox Production Deployment Script
+# This script builds and deploys Nox to a production server
+
 set -e
 
-# Nox Deployment Script
-echo "🚀 Deploying Nox..."
+echo "📦 Nox Production Deployment"
+echo "==========================="
 
-# Check if target directory is provided
-if [ -z "$1" ]; then
-    echo "❌ Target directory not specified."
-    echo "Usage: ./scripts/deploy.sh <target_directory>"
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Function to print colored output
+print_status() {
+    echo -e "${BLUE}[INFO]${NC} $1"
+}
+
+print_success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
+print_warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+print_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+# Get script directory
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+
+cd "$PROJECT_ROOT"
+
+# Configuration
+DEPLOY_USER="${DEPLOY_USER:-ubuntu}"
+DEPLOY_HOST="${DEPLOY_HOST:-}"
+DEPLOY_PATH="${DEPLOY_PATH:-/opt/nox}"
+SYSTEMD_SERVICE="${SYSTEMD_SERVICE:-nox}"
+
+# Check if deployment host is provided
+if [[ -z "$DEPLOY_HOST" ]]; then
+    print_error "DEPLOY_HOST environment variable is required"
+    echo "Usage: DEPLOY_HOST=your-server.com ./scripts/deploy.sh"
+    echo "Optional: DEPLOY_USER=ubuntu DEPLOY_PATH=/opt/nox ./scripts/deploy.sh"
     exit 1
 fi
 
-TARGET_DIR="$1"
+print_status "Deployment Configuration:"
+echo "  Host: $DEPLOY_HOST"
+echo "  User: $DEPLOY_USER"
+echo "  Path: $DEPLOY_PATH"
+echo "  Service: $SYSTEMD_SERVICE"
 
-# Create target directory if it doesn't exist
-if [ ! -d "$TARGET_DIR" ]; then
-    echo "📁 Creating target directory: $TARGET_DIR"
-    mkdir -p "$TARGET_DIR"
+# Step 1: Build for production
+print_status "Step 1: Building for production..."
+./scripts/build.sh
+
+# Step 2: Create deployment package
+print_status "Step 2: Creating deployment package..."
+cd deploy
+tar -czf nox-deployment.tar.gz *
+cd ..
+
+# Step 3: Upload to server
+print_status "Step 3: Uploading to server..."
+scp deploy/nox-deployment.tar.gz "$DEPLOY_USER@$DEPLOY_HOST:/tmp/"
+
+# Step 4: Deploy on server
+print_status "Step 4: Deploying on server..."
+ssh "$DEPLOY_USER@$DEPLOY_HOST" << EOF
+set -e
+
+# Create deployment directory
+sudo mkdir -p $DEPLOY_PATH
+sudo chown $DEPLOY_USER:$DEPLOY_USER $DEPLOY_PATH
+
+# Extract deployment package
+cd $DEPLOY_PATH
+tar -xzf /tmp/nox-deployment.tar.gz
+rm /tmp/nox-deployment.tar.gz
+
+# Make executable
+chmod +x nox run.sh
+
+# Create systemd service if it doesn't exist
+if [[ ! -f /etc/systemd/system/$SYSTEMD_SERVICE.service ]]; then
+    sudo tee /etc/systemd/system/$SYSTEMD_SERVICE.service > /dev/null << 'EOL'
+[Unit]
+Description=Nox Agent Ecosystem
+After=network.target
+
+[Service]
+Type=simple
+User=$DEPLOY_USER
+WorkingDirectory=$DEPLOY_PATH
+ExecStart=$DEPLOY_PATH/nox serve
+Restart=always
+RestartSec=10
+Environment=RUST_LOG=info
+Environment=NOX_SERVER__HOST=0.0.0.0
+Environment=NOX_SERVER__PORT=8080
+
+[Install]
+WantedBy=multi-user.target
+EOL
+    
+    sudo systemctl daemon-reload
+    sudo systemctl enable $SYSTEMD_SERVICE
+    echo "Created systemd service: $SYSTEMD_SERVICE"
 fi
 
-# Check if git is installed
-if command -v git &> /dev/null; then
-    # Get current git commit hash
-    GIT_COMMIT=$(git rev-parse --short HEAD)
-    echo "📌 Deploying commit: $GIT_COMMIT"
-else
-    echo "⚠️ Git not found, skipping commit information"
-    GIT_COMMIT="unknown"
-fi
+# Restart service
+sudo systemctl restart $SYSTEMD_SERVICE
 
-# Create a timestamp for the deployment
-TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-DEPLOY_ID="${TIMESTAMP}_${GIT_COMMIT}"
-echo "🔖 Deployment ID: $DEPLOY_ID"
-
-# Create a directory for this deployment
-DEPLOY_DIR="${TARGET_DIR}/${DEPLOY_ID}"
-mkdir -p "$DEPLOY_DIR"
-
-# Copy necessary files
-echo "📋 Copying files to deployment directory..."
-cp -r package.json package-lock.json tsconfig.json "$DEPLOY_DIR/"
-cp -r src "$DEPLOY_DIR/"
-cp -r scripts "$DEPLOY_DIR/"
-
-# Create necessary directories
-mkdir -p "$DEPLOY_DIR/dist"
-
-# Create a deployment info file
-echo "Creating deployment info file..."
-cat > "$DEPLOY_DIR/deployment.json" << EOF
-{
-  "id": "$DEPLOY_ID",
-  "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
-  "git_commit": "$GIT_COMMIT",
-  "deployed_by": "$(whoami)"
-}
+# Check status
+sudo systemctl status $SYSTEMD_SERVICE --no-pager
 EOF
 
-# Navigate to deployment directory
-cd "$DEPLOY_DIR"
+# Step 5: Verify deployment
+print_status "Step 5: Verifying deployment..."
+sleep 5
 
-# Install dependencies
-echo "📦 Installing dependencies..."
-npm ci
+# Check if service is running
+if ssh "$DEPLOY_USER@$DEPLOY_HOST" "sudo systemctl is-active $SYSTEMD_SERVICE" | grep -q "active"; then
+    print_success "Deployment successful!"
+    print_status "Service is running on: http://$DEPLOY_HOST:8080"
+else
+    print_error "Deployment failed - service is not running"
+    exit 1
+fi
 
-# Build the application
-echo "🔨 Building application..."
-npm run build
+# Cleanup
+rm -f deploy/nox-deployment.tar.gz
 
-# Create symbolic link for current deployment
-echo "🔗 Creating symbolic link for current deployment..."
-cd "$TARGET_DIR"
-rm -f current
-ln -s "$DEPLOY_ID" current
-
-echo "✅ Deployment completed successfully!"
-echo "📂 Deployed to: $DEPLOY_DIR"
-echo "🚀 To start the application, run: cd $TARGET_DIR/current && ./scripts/run-prod.sh"
+print_success "🚀 Deployment completed successfully!"
+echo ""
+echo "🌐 Access your application:"
+echo "  Web Interface: http://$DEPLOY_HOST:8080"
+echo "  API Endpoints: http://$DEPLOY_HOST:8080/api"
+echo "  Health Check:  http://$DEPLOY_HOST:8080/health"
+echo ""
+echo "🛠️  Management commands:"
+echo "  Check status:  ssh $DEPLOY_USER@$DEPLOY_HOST 'sudo systemctl status $SYSTEMD_SERVICE'"
+echo "  View logs:     ssh $DEPLOY_USER@$DEPLOY_HOST 'sudo journalctl -u $SYSTEMD_SERVICE -f'"
+echo "  Restart:       ssh $DEPLOY_USER@$DEPLOY_HOST 'sudo systemctl restart $SYSTEMD_SERVICE'"

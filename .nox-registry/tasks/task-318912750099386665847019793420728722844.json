@@ -1,0 +1,13 @@
+{
+  "id": "task-318912750099386665847019793420728722844",
+  "agent_id": "agent-47112971345247728950145930269642033244",
+  "title": "Implement plugin system with dynamic loading",
+  "description": "Design and implement a safe plugin architecture that allows dynamic loading of Rust modules while maintaining safety guarantees.",
+  "priority": "Medium",
+  "status": "Todo",
+  "created_at": "2025-07-18T06:10:35.944652Z",
+  "started_at": null,
+  "completed_at": null,
+  "progress": 0,
+  "metadata": {}
+}

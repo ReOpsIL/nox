@@ -1,0 +1,470 @@
+# Predefined AI Agents Configuration
+# Defines specialized agents for different software development domains
+
+version: "1.0"
+metadata:
+  created_at: "2025-07-20"
+  description: "Predefined AI agents for software development tasks"
+  author: "Nox Team"
+
+# Agent Categories
+categories:
+  - id: "rust_cli"
+    name: "Rust CLI Development"
+    description: "Specialized in command-line application development"
+  
+  - id: "fullstack_web"
+    name: "Fullstack Web Development" 
+    description: "Frontend and backend web application development"
+  
+  - id: "documentation"
+    name: "Documentation Master"
+    description: "Technical documentation and specification writing"
+  
+  - id: "maintenance"
+    name: "Code Maintenance"
+    description: "Code review, testing, and quality assurance"
+  
+  - id: "planning"
+    name: "Project Planning"
+    description: "High-level planning and task breakdown"
+
+# Predefined Agents
+agents:
+  # Rust CLI Development Agents
+  - id: "rust_cli_expert"
+    name: "Rust CLI Expert"
+    category: "rust_cli"
+    description: "Specialized in building robust command-line applications in Rust"
+    system_prompt: |
+      You are a Rust CLI development expert. You specialize in:
+      - Building efficient command-line applications using Rust
+      - Implementing argument parsing with clap or structopt
+      - File I/O operations and data processing
+      - Error handling with anyhow and thiserror
+      - Logging with env_logger or tracing
+      - Cross-platform compatibility
+      
+      Always follow Rust best practices, use idiomatic code patterns, and ensure proper error handling.
+    
+    capabilities:
+      - "CLI architecture design"
+      - "Argument parsing implementation"
+      - "File I/O operations"
+      - "Error handling patterns"
+      - "Cross-platform development"
+    
+    default_tasks:
+      - template: "cli_basic_setup"
+        title: "Set up basic CLI structure"
+        description: "Create a new CLI project with proper argument parsing and basic commands"
+        priority: "high"
+        estimated_duration: "30m"
+      
+      - template: "cli_file_operations"
+        title: "Implement file I/O operations"
+        description: "Add file reading, writing, and processing capabilities"
+        priority: "medium"
+        estimated_duration: "45m"
+      
+      - template: "cli_error_handling"
+        title: "Implement comprehensive error handling"
+        description: "Set up proper error types and handling throughout the CLI"
+        priority: "medium"
+        estimated_duration: "30m"
+
+  - id: "rust_tui_specialist"
+    name: "Rust TUI Specialist"
+    category: "rust_cli"
+    description: "Expert in building terminal user interfaces with ratatui"
+    system_prompt: |
+      You are a Rust TUI (Terminal User Interface) specialist. You excel at:
+      - Building interactive terminal applications with ratatui
+      - Implementing event handling with crossterm
+      - Creating responsive layouts and widgets
+      - State management in TUI applications
+      - Performance optimization for terminal rendering
+      
+      Focus on creating intuitive, responsive, and visually appealing terminal interfaces.
+    
+    capabilities:
+      - "TUI layout design"
+      - "Event handling systems"
+      - "Widget creation and customization"
+      - "State management patterns"
+      - "Terminal performance optimization"
+    
+    default_tasks:
+      - template: "tui_basic_setup"
+        title: "Set up TUI application structure"
+        description: "Create a new TUI project with ratatui and crossterm"
+        priority: "high"
+        estimated_duration: "45m"
+      
+      - template: "tui_interactive_components"
+        title: "Implement interactive components"
+        description: "Add menus, forms, and navigation between screens"
+        priority: "medium"
+        estimated_duration: "60m"
+
+  # Fullstack Web Development Agents
+  - id: "react_mui_rust_expert"
+    name: "React + MUI + Rust Fullstack Expert"
+    category: "fullstack_web"
+    description: "Specialized in React frontend with Material-UI and Rust backend"
+    system_prompt: |
+      You are a fullstack web development expert specializing in:
+      - React frontend development with TypeScript
+      - Material-UI (MUI) component library and theming
+      - Rust backend development with actix-web or axum
+      - RESTful API design and implementation
+      - State management with Redux Toolkit or Zustand
+      - Authentication and authorization patterns
+      
+      Create modern, scalable, and maintainable web applications with excellent UX.
+    
+    capabilities:
+      - "React component development"
+      - "MUI theming and customization"
+      - "Rust web server implementation"
+      - "API design and documentation"
+      - "Frontend-backend integration"
+      - "Authentication systems"
+    
+    default_tasks:
+      - template: "react_project_setup"
+        title: "Set up React + MUI project"
+        description: "Initialize React project with TypeScript, MUI, and routing"
+        priority: "high"
+        estimated_duration: "30m"
+      
+      - template: "rust_api_setup"
+        title: "Set up Rust backend API"
+        description: "Create Rust web server with routing and middleware"
+        priority: "high"
+        estimated_duration: "45m"
+      
+      - template: "auth_implementation"
+        title: "Implement authentication system"
+        description: "Add JWT-based authentication for frontend and backend"
+        priority: "medium"
+        estimated_duration: "90m"
+
+  - id: "react_python_expert"
+    name: "React + Python Fullstack Expert"
+    category: "fullstack_web"
+    description: "Expert in React frontend with Python FastAPI backend"
+    system_prompt: |
+      You are a fullstack developer specializing in:
+      - React frontend with modern JavaScript/TypeScript
+      - Material-UI for consistent design systems
+      - Python backend development with FastAPI
+      - SQLAlchemy or MongoDB for data persistence
+      - Pydantic for data validation
+      - Docker containerization and deployment
+      
+      Build scalable web applications with clean architecture and excellent developer experience.
+    
+    capabilities:
+      - "React application architecture"
+      - "FastAPI development patterns"
+      - "Database integration and ORM"
+      - "API documentation with OpenAPI"
+      - "Data validation and serialization"
+      - "Docker deployment strategies"
+    
+    default_tasks:
+      - template: "fastapi_project_setup"
+        title: "Set up FastAPI backend"
+        description: "Initialize FastAPI project with database integration"
+        priority: "high"
+        estimated_duration: "45m"
+      
+      - template: "api_endpoints"
+        title: "Implement REST API endpoints"
+        description: "Create CRUD operations with proper validation"
+        priority: "medium"
+        estimated_duration: "60m"
+
+  # Documentation Agents
+  - id: "documentation_master"
+    name: "Documentation Master"
+    category: "documentation"
+    description: "Expert in creating comprehensive technical documentation"
+    system_prompt: |
+      You are a technical documentation expert specializing in:
+      - Writing clear, comprehensive README files
+      - Creating Product Requirements Documents (PRD)
+      - Developing Software Requirements Specifications (SRS)
+      - Architecture documentation and diagrams
+      - API documentation and integration guides
+      - User manuals and deployment guides
+      
+      Focus on clarity, completeness, and accessibility for different audiences.
+    
+    capabilities:
+      - "README and project documentation"
+      - "Requirements specification writing"
+      - "Architecture documentation"
+      - "API documentation generation"
+      - "User guide creation"
+      - "Documentation automation"
+    
+    default_tasks:
+      - template: "readme_generation"
+        title: "Generate comprehensive README"
+        description: "Create detailed README with installation, usage, and examples"
+        priority: "high"
+        estimated_duration: "45m"
+      
+      - template: "prd_creation"
+        title: "Create Product Requirements Document"
+        description: "Document project requirements, goals, and specifications"
+        priority: "medium"
+        estimated_duration: "90m"
+      
+      - template: "api_documentation"
+        title: "Generate API documentation"
+        description: "Create comprehensive API docs with examples"
+        priority: "medium"
+        estimated_duration: "60m"
+
+  # Code Maintenance Agents
+  - id: "code_reviewer"
+    name: "Code Review Specialist"
+    category: "maintenance"
+    description: "Expert in code quality, security, and performance analysis"
+    system_prompt: |
+      You are a code review and quality assurance expert. You specialize in:
+      - Comprehensive code review for style, logic, and performance
+      - Security vulnerability identification and mitigation
+      - Best practices enforcement and refactoring suggestions
+      - Performance optimization recommendations
+      - Code documentation and maintainability improvements
+      
+      Provide constructive feedback that improves code quality and team productivity.
+    
+    capabilities:
+      - "Code quality analysis"
+      - "Security audit and recommendations"
+      - "Performance optimization"
+      - "Refactoring suggestions"
+      - "Best practices enforcement"
+    
+    default_tasks:
+      - template: "code_review"
+        title: "Perform comprehensive code review"
+        description: "Review code for quality, security, and performance issues"
+        priority: "high"
+        estimated_duration: "60m"
+      
+      - template: "security_audit"
+        title: "Conduct security audit"
+        description: "Identify and document security vulnerabilities"
+        priority: "high"
+        estimated_duration: "45m"
+
+  - id: "test_engineer"
+    name: "Test Engineering Specialist"
+    category: "maintenance"
+    description: "Expert in comprehensive testing strategies and implementation"
+    system_prompt: |
+      You are a test engineering expert specializing in:
+      - Unit testing with appropriate frameworks
+      - Integration testing strategies
+      - End-to-end testing implementation
+      - Test plan creation and documentation
+      - Test automation and CI/CD integration
+      - Performance and load testing
+      
+      Create robust testing suites that ensure software reliability and quality.
+    
+    capabilities:
+      - "Unit test implementation"
+      - "Integration test design"
+      - "E2E test automation"
+      - "Test plan creation"
+      - "CI/CD test integration"
+      - "Performance testing"
+    
+    default_tasks:
+      - template: "unit_test_suite"
+        title: "Implement comprehensive unit tests"
+        description: "Create unit tests for all core functionality"
+        priority: "high"
+        estimated_duration: "90m"
+      
+      - template: "integration_tests"
+        title: "Set up integration testing"
+        description: "Implement integration tests for API endpoints and services"
+        priority: "medium"
+        estimated_duration: "75m"
+
+  # Planning Agent
+  - id: "project_planner"
+    name: "Project Planning Specialist"
+    category: "planning"
+    description: "Expert in breaking down complex projects into manageable tasks"
+    system_prompt: |
+      You are a project planning and analysis expert. You excel at:
+      - Breaking down complex software projects into manageable tasks
+      - Creating detailed implementation roadmaps
+      - Estimating timelines and identifying dependencies
+      - Risk assessment and mitigation planning
+      - Resource allocation and team coordination
+      - Converting free-form requirements into structured plans
+      
+      Create clear, actionable plans that guide successful project execution.
+    
+    capabilities:
+      - "Project decomposition and task breakdown"
+      - "Timeline and milestone planning"
+      - "Dependency analysis"
+      - "Risk assessment and mitigation"
+      - "Resource planning"
+      - "Requirements analysis"
+    
+    default_tasks:
+      - template: "project_breakdown"
+        title: "Break down project into tasks"
+        description: "Analyze project requirements and create detailed task breakdown"
+        priority: "high"
+        estimated_duration: "60m"
+      
+      - template: "timeline_planning"
+        title: "Create project timeline"
+        description: "Develop realistic timeline with milestones and dependencies"
+        priority: "medium"
+        estimated_duration: "45m"
+
+# Task Templates
+task_templates:
+  # CLI Development Templates
+  cli_basic_setup:
+    title: "CLI Basic Setup"
+    description: "Set up a new CLI project with argument parsing and basic structure"
+    category: "rust_cli"
+    tags: ["cli", "setup", "rust"]
+    default_priority: "high"
+    estimated_duration: "30m"
+    steps:
+      - "Initialize new Rust project with Cargo"
+      - "Add clap dependency for argument parsing"
+      - "Set up basic command structure"
+      - "Implement help and version commands"
+      - "Add basic error handling"
+  
+  cli_file_operations:
+    title: "CLI File Operations"
+    description: "Implement file reading, writing, and processing capabilities"
+    category: "rust_cli"
+    tags: ["cli", "file-io", "rust"]
+    default_priority: "medium"
+    estimated_duration: "45m"
+    steps:
+      - "Add file reading functionality"
+      - "Implement file writing and creation"
+      - "Add directory traversal capabilities"
+      - "Handle file permissions and errors"
+      - "Add progress indicators for large files"
+  
+  tui_basic_setup:
+    title: "TUI Basic Setup"
+    description: "Set up terminal user interface with ratatui"
+    category: "rust_cli"
+    tags: ["tui", "ratatui", "terminal", "rust"]
+    default_priority: "high"
+    estimated_duration: "45m"
+    steps:
+      - "Add ratatui and crossterm dependencies"
+      - "Set up terminal initialization and cleanup"
+      - "Create basic layout with header and content areas"
+      - "Implement keyboard event handling"
+      - "Add basic navigation between screens"
+  
+  # Web Development Templates
+  react_project_setup:
+    title: "React + MUI Project Setup"
+    description: "Initialize React project with TypeScript and Material-UI"
+    category: "fullstack_web"
+    tags: ["react", "mui", "typescript", "frontend"]
+    default_priority: "high"
+    estimated_duration: "30m"
+    steps:
+      - "Create React app with TypeScript template"
+      - "Install and configure Material-UI"
+      - "Set up routing with React Router"
+      - "Configure theme and styling"
+      - "Add basic layout components"
+  
+  rust_api_setup:
+    title: "Rust API Setup"
+    description: "Create Rust web server with actix-web or axum"
+    category: "fullstack_web"
+    tags: ["rust", "api", "backend", "actix-web"]
+    default_priority: "high"
+    estimated_duration: "45m"
+    steps:
+      - "Initialize Rust web project"
+      - "Set up web framework (actix-web/axum)"
+      - "Configure CORS and middleware"
+      - "Implement basic routing structure"
+      - "Add health check endpoints"
+  
+  # Documentation Templates
+  readme_generation:
+    title: "README Generation"
+    description: "Create comprehensive README documentation"
+    category: "documentation"
+    tags: ["readme", "documentation", "markdown"]
+    default_priority: "high"
+    estimated_duration: "45m"
+    steps:
+      - "Analyze project structure and purpose"
+      - "Create installation instructions"
+      - "Document usage examples and API"
+      - "Add contributing guidelines"
+      - "Include license and contact information"
+  
+  # Testing Templates
+  unit_test_suite:
+    title: "Unit Test Suite Implementation"
+    description: "Create comprehensive unit tests for core functionality"
+    category: "maintenance"
+    tags: ["testing", "unit-tests", "quality"]
+    default_priority: "high"
+    estimated_duration: "90m"
+    steps:
+      - "Set up testing framework"
+      - "Create test structure and organization"
+      - "Implement core functionality tests"
+      - "Add edge case and error handling tests"
+      - "Configure test coverage reporting"
+
+# Agent Selection Filters
+filters:
+  by_category:
+    - rust_cli
+    - fullstack_web
+    - documentation
+    - maintenance
+    - planning
+  
+  by_technology:
+    - rust
+    - react
+    - python
+    - typescript
+    - fastapi
+    - mui
+    - ratatui
+  
+  by_complexity:
+    - beginner
+    - intermediate
+    - advanced
+  
+  by_duration:
+    - quick (< 30m)
+    - medium (30m - 2h)
+    - long (> 2h)

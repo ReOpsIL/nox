@@ -1,0 +1,84 @@
+[package]
+name = "nox"
+version = "0.1.0"
+edition = "2021"
+authors = ["Nox Team"]
+description = "Autonomous AI Agent Ecosystem"
+
+#[[bin]]
+#name = "nox"
+#path = "src/main.rs"
+
+[[bin]]
+name = "nox-tui"
+path = "src/bin/tui.rs"
+
+[[bin]]
+name = "nox-test-tui"
+path = "src/bin/test_tui.rs"
+
+[[bin]]
+name = "test-claude-pty"
+path = "src/bin/test_claude_pty.rs"
+
+[[bin]]
+name = "test-claude-simple"
+path = "src/bin/test_claude_pty_simple.rs"
+
+[[bin]]
+name = "test-claude-fixed"
+path = "src/bin/test_claude_fixed.rs"
+
+[[bin]]
+name = "test-task-execution"
+path = "src/bin/test_task_execution.rs"
+
+[[bin]]
+name = "test-claude-json"
+path = "src/bin/test_claude_json.rs"
+
+[[bin]]
+name = "agent-selector"
+path = "src/bin/agent_selector_tui.rs"
+
+[dependencies]
+tokio = { version = "1.28", features = ["full"] }
+clap = { version = "4.3", features = ["derive"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_yaml = "0.9"
+toml = "0.9.2"
+chrono = { version = "0.4", features = ["serde"] }
+anyhow = "1.0"
+thiserror = "1.0"
+git2 = "0.17"
+uuid = { version = "1.4", features = ["v4", "serde"] }
+config = "0.13"
+log = "0.4"
+env_logger = "0.11.8"
+actix-web = "4.3"
+actix-rt = "2.8"
+actix-cors = "0.6"
+actix-ws = "0.2"
+actix-files = "0.6"
+markdown = "0.3"
+futures = "0.3"
+async-trait = "0.1"
+lazy_static = "1.4"
+rand = "0.8"
+ratatui = "0.24"
+crossterm = "0.27"
+regex = "1.11.1"
+sysinfo = "0.30"
+dashmap = "5.5"
+crossbeam-queue = "0.3"
+parking_lot = "0.12"
+portable-pty = "0.9"
+tokio-util = { version = "0.7", features = ["io", "io-util"] }
+
+[dev-dependencies]
+tempfile = "3.5"
+tokio-test = "0.4"
+mockall = "0.11"
+serial_test = "3.0"
+assert_matches = "1.5"
