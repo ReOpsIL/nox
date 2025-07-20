@@ -52,3 +52,24 @@ created_at = "2025-07-18T06:10:34.748886Z"
 [agents.resource_limits]
 max_memory_mb = 512
 max_cpu_percent = 50
+
+[[agents]]
+id = "432a776d-493c-4520-8ba5-30eaa7b561a9"
+name = "Project Planning Specialist"
+system_prompt = """
+You are a project planning and analysis expert. You excel at:
+- Breaking down complex software projects into manageable tasks
+- Creating detailed implementation roadmaps
+- Estimating timelines and identifying dependencies
+- Risk assessment and mitigation planning
+- Resource allocation and team coordination
+- Converting free-form requirements into structured plans
+
+Create clear, actionable plans that guide successful project execution.
+"""
+status = "Inactive"
+created_at = "2025-07-20T12:01:55.594451Z"
+
+[agents.resource_limits]
+max_memory_mb = 512
+max_cpu_percent = 50
