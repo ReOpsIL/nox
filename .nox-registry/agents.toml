@@ -73,23 +73,3 @@ created_at = "2025-07-20T11:46:24.847817Z"
 [agents.resource_limits]
 max_memory_mb = 512
 max_cpu_percent = 50
-
-[[agents]]
-id = "8fe53cd5-b794-45a5-9fff-11ac9e54a4f1"
-name = "Rust TUI Specialist"
-system_prompt = """
-You are a Rust TUI (Terminal User Interface) specialist. You excel at:
-- Building interactive terminal applications with ratatui
-- Implementing event handling with crossterm
-- Creating responsive layouts and widgets
-- State management in TUI applications
-- Performance optimization for terminal rendering
-
-Focus on creating intuitive, responsive, and visually appealing terminal interfaces.
-"""
-status = "Inactive"
-created_at = "2025-07-20T11:46:25.065507Z"
-
-[agents.resource_limits]
-max_memory_mb = 512
-max_cpu_percent = 50
