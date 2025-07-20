@@ -1,0 +1,13 @@
+{
+  "id": "4c27028a-2833-4f06-ac63-60ed0c971396",
+  "agent_id": "7de772c8-62bc-4a51-bc9d-424acbe02f54",
+  "title": "Simple Math Question",
+  "description": "What is 5 + 3? Please provide just the number.",
+  "priority": "High",
+  "status": "Todo",
+  "created_at": "2025-07-20T00:18:24.555156Z",
+  "started_at": null,
+  "completed_at": null,
+  "progress": 0,
+  "metadata": {}
+}
