@@ -3,6 +3,7 @@ use crate::types::{Agent, Task, SystemStatus};
 use crate::tui::forms::{create_agent::CreateAgentForm, create_task::CreateTaskForm, Form};
 use crate::tui::dialogs::{confirmation::ConfirmationDialog, progress::ProgressDialog, help::HelpDialog, Dialog};
 use crate::tui::system_monitor::SystemMonitor;
+use ratatui::widgets::ListState;
 use anyhow::Result;
 use std::collections::HashMap;
 use tokio::sync::mpsc;
@@ -17,6 +18,7 @@ pub enum Screen {
     Tasks,
     Execution,
     Logs,
+    PredefinedAgents,
 }
 
 #[derive(Debug, Clone)]
@@ -154,6 +156,10 @@ pub struct AppState {
     pub tasks: Vec<Task>,
     pub selected_agent: Option<usize>,
     pub selected_task: Option<usize>,
+    
+    // List states for scrolling
+    pub agents_list_state: ListState,
+    pub tasks_list_state: ListState,
     pub system_status: SystemStatus,
     pub filters: FilterState,
     pub should_quit: bool,
@@ -171,6 +177,13 @@ pub struct AppState {
     pub log_storage: Arc<Mutex<LogStorage>>,
     /// Real-time output from running tasks
     pub task_outputs: HashMap<String, Vec<String>>,
+    
+    // Predefined agents management
+    pub predefined_categories: Vec<crate::core::predefined_agents::Category>,
+    pub selected_category: Option<usize>,
+    pub predefined_agents: Vec<crate::core::predefined_agents::PredefinedAgent>,
+    pub selected_predefined_agent: Option<usize>,
+    pub predefined_agent_selection: Vec<bool>, // Track which agents are selected for loading
 }
 
 impl AppState {
@@ -208,6 +221,10 @@ impl Default for AppState {
             tasks: Vec::new(),
             selected_agent: None,
             selected_task: None,
+            
+            // Initialize list states
+            agents_list_state: ListState::default(),
+            tasks_list_state: ListState::default(),
             system_status: SystemStatus {
                 active_agents: 0,
                 inactive_agents: 0,
@@ -234,6 +251,13 @@ impl Default for AppState {
             pending_operation: None,
             log_storage: Arc::new(Mutex::new(LogStorage::new(1000))),
             task_outputs: HashMap::new(),
+            
+            // Initialize predefined agents fields
+            predefined_categories: Vec::new(),
+            selected_category: None,
+            predefined_agents: Vec::new(),
+            selected_predefined_agent: None,
+            predefined_agent_selection: Vec::new(),
         }
     }
 }
@@ -259,12 +283,39 @@ impl App {
         self.state.agents = agent_manager::get_all_agents().await?;
         self.state.tasks = task_manager::get_all_tasks().await?;
 
+        // Load predefined categories if not already loaded
+        if self.state.predefined_categories.is_empty() {
+            if let Err(e) = self.load_predefined_categories().await {
+                log::warn!("Failed to load predefined categories: {}", e);
+            }
+        }
+
         if  self.state.agents.len() > 0  && self.state.selected_agent == None {
             self.state.selected_agent = Some(0);
+            self.state.agents_list_state.select(Some(0));
+        } else if let Some(selected) = self.state.selected_agent {
+            // Ensure selected index is still valid
+            if selected >= self.state.agents.len() {
+                let new_index = if self.state.agents.is_empty() { None } else { Some(self.state.agents.len() - 1) };
+                self.state.selected_agent = new_index;
+                self.state.agents_list_state.select(new_index);
+            } else {
+                self.state.agents_list_state.select(Some(selected));
+            }
         }
 
         if  self.state.tasks.len() > 0  && self.state.selected_task == None {
             self.state.selected_task = Some(0);
+            self.state.tasks_list_state.select(Some(0));
+        } else if let Some(selected) = self.state.selected_task {
+            // Ensure selected index is still valid
+            if selected >= self.state.tasks.len() {
+                let new_index = if self.state.tasks.is_empty() { None } else { Some(self.state.tasks.len() - 1) };
+                self.state.selected_task = new_index;
+                self.state.tasks_list_state.select(new_index);
+            } else {
+                self.state.tasks_list_state.select(Some(selected));
+            }
         }
         
         // Auto-select running task if we're on the execution screen
@@ -334,7 +385,8 @@ impl App {
             Screen::Agents => Screen::Tasks,
             Screen::Tasks => Screen::Execution,
             Screen::Execution => Screen::Logs,
-            Screen::Logs => Screen::Dashboard,
+            Screen::Logs => Screen::PredefinedAgents,
+            Screen::PredefinedAgents => Screen::Dashboard,
         };
         
         // Auto-select running task when entering execution screen
@@ -345,11 +397,12 @@ impl App {
 
     pub fn previous_screen(&mut self) {
         self.state.current_screen = match self.state.current_screen {
-            Screen::Dashboard => Screen::Logs,
+            Screen::Dashboard => Screen::PredefinedAgents,
             Screen::Agents => Screen::Dashboard,
             Screen::Tasks => Screen::Agents,
             Screen::Execution => Screen::Tasks,
             Screen::Logs => Screen::Execution,
+            Screen::PredefinedAgents => Screen::Logs,
         };
         
         // Auto-select running task when entering execution screen
@@ -386,6 +439,7 @@ impl App {
             Screen::Execution => self.handle_execution_keys(key),
             Screen::Logs => self.handle_logs_keys(key),
             Screen::Dashboard => self.handle_dashboard_keys(key),
+            Screen::PredefinedAgents => self.handle_predefined_agents_keys(key).await,
         }
     }
     
@@ -746,6 +800,9 @@ impl App {
             crossterm::event::KeyCode::Char('5') => {
                 self.state.current_screen = Screen::Logs;
             }
+            crossterm::event::KeyCode::Char('6') => {
+                self.state.current_screen = Screen::PredefinedAgents;
+            }
             crossterm::event::KeyCode::Up => {
                 self.handle_list_navigation(-1);
             }
@@ -769,6 +826,7 @@ impl App {
                         if current == 0 { agent_count - 1 } else { current - 1 }
                     };
                     self.state.selected_agent = Some(new_index);
+                    self.state.agents_list_state.select(Some(new_index));
                 }
             }
             Screen::Tasks => {
@@ -790,7 +848,10 @@ impl App {
                     };
                     
                     // Set selection to the original index at the new display position
-                    self.state.selected_task = Some(sorted_indices[new_display_pos]);
+                    let new_task_index = sorted_indices[new_display_pos];
+                    self.state.selected_task = Some(new_task_index);
+                    // For tasks list state, use the display position not the original index
+                    self.state.tasks_list_state.select(Some(new_display_pos));
                 }
             }
             Screen::Execution => {
@@ -1697,6 +1758,258 @@ impl App {
         }
         self.state.success_message = Some("All logs cleared successfully".to_string());
         
+        Ok(())
+    }
+
+    // Predefined Agents Management
+
+    /// Load predefined agent categories
+    pub async fn load_predefined_categories(&mut self) -> Result<()> {
+        use crate::core::predefined_agents;
+        
+        match predefined_agents::get_categories().await {
+            Ok(categories) => {
+                self.state.predefined_categories = categories;
+                self.state.selected_category = if !self.state.predefined_categories.is_empty() { 
+                    Some(0) 
+                } else { 
+                    None 
+                };
+                
+                // Load agents for the first category
+                if let Some(0) = self.state.selected_category {
+                    if let Some(category) = self.state.predefined_categories.first().cloned() {
+                        self.load_agents_for_category(&category.id).await?;
+                    }
+                }
+            }
+            Err(e) => {
+                self.state.error_message = Some(format!("Failed to load predefined categories: {}", e));
+                log::error!("Failed to load predefined categories: {}", e);
+            }
+        }
+        
+        Ok(())
+    }
+
+    /// Load agents for a specific category
+    async fn load_agents_for_category(&mut self, category_id: &str) -> Result<()> {
+        use crate::core::predefined_agents;
+        
+        match predefined_agents::get_agents_by_category(category_id).await {
+            Ok(agents) => {
+                self.state.predefined_agents = agents;
+                self.state.selected_predefined_agent = if !self.state.predefined_agents.is_empty() { 
+                    Some(0) 
+                } else { 
+                    None 
+                };
+                // Initialize selection state
+                self.state.predefined_agent_selection = vec![false; self.state.predefined_agents.len()];
+            }
+            Err(e) => {
+                self.state.error_message = Some(format!("Failed to load agents for category: {}", e));
+                log::error!("Failed to load agents for category {}: {}", category_id, e);
+                self.state.predefined_agents.clear();
+                self.state.selected_predefined_agent = None;
+                self.state.predefined_agent_selection.clear();
+            }
+        }
+        
+        Ok(())
+    }
+
+    /// Handle predefined agents screen keys
+    async fn handle_predefined_agents_keys(&mut self, key: crossterm::event::KeyCode) -> Result<()> {
+        match key {
+            crossterm::event::KeyCode::Up => {
+                self.previous_predefined_category().await?;
+            }
+            crossterm::event::KeyCode::Down => {
+                self.next_predefined_category().await?;
+            }
+            crossterm::event::KeyCode::Left => {
+                self.previous_predefined_agent();
+            }
+            crossterm::event::KeyCode::Right => {
+                self.next_predefined_agent();
+            }
+            crossterm::event::KeyCode::Char(' ') => {
+                self.toggle_predefined_agent_selection();
+            }
+            crossterm::event::KeyCode::Char('a') | crossterm::event::KeyCode::Char('A') => {
+                self.select_all_predefined_agents();
+            }
+            crossterm::event::KeyCode::Char('n') | crossterm::event::KeyCode::Char('N') => {
+                self.deselect_all_predefined_agents();
+            }
+            crossterm::event::KeyCode::Enter => {
+                self.load_selected_predefined_agents().await?;
+            }
+            crossterm::event::KeyCode::Char('r') | crossterm::event::KeyCode::Char('R') => {
+                self.load_predefined_categories().await?;
+            }
+            _ => self.handle_navigation_keys(key)?,
+        }
+        Ok(())
+    }
+
+    /// Navigate to next predefined category
+    async fn next_predefined_category(&mut self) -> Result<()> {
+        if let Some(selected) = self.state.selected_category {
+            let next_idx = if selected >= self.state.predefined_categories.len() - 1 {
+                0
+            } else {
+                selected + 1
+            };
+            self.state.selected_category = Some(next_idx);
+            
+            if let Some(category) = self.state.predefined_categories.get(next_idx).cloned() {
+                self.load_agents_for_category(&category.id).await?;
+            }
+        }
+        Ok(())
+    }
+
+    /// Navigate to previous predefined category
+    async fn previous_predefined_category(&mut self) -> Result<()> {
+        if let Some(selected) = self.state.selected_category {
+            let prev_idx = if selected == 0 {
+                self.state.predefined_categories.len() - 1
+            } else {
+                selected - 1
+            };
+            self.state.selected_category = Some(prev_idx);
+            
+            if let Some(category) = self.state.predefined_categories.get(prev_idx).cloned() {
+                self.load_agents_for_category(&category.id).await?;
+            }
+        }
+        Ok(())
+    }
+
+    /// Navigate to next predefined agent
+    fn next_predefined_agent(&mut self) {
+        if let Some(selected) = self.state.selected_predefined_agent {
+            let next_idx = if selected >= self.state.predefined_agents.len() - 1 {
+                0
+            } else {
+                selected + 1
+            };
+            self.state.selected_predefined_agent = Some(next_idx);
+        }
+    }
+
+    /// Navigate to previous predefined agent
+    fn previous_predefined_agent(&mut self) {
+        if let Some(selected) = self.state.selected_predefined_agent {
+            let prev_idx = if selected == 0 {
+                self.state.predefined_agents.len() - 1
+            } else {
+                selected - 1
+            };
+            self.state.selected_predefined_agent = Some(prev_idx);
+        }
+    }
+
+    /// Toggle selection of current predefined agent
+    fn toggle_predefined_agent_selection(&mut self) {
+        if let Some(selected) = self.state.selected_predefined_agent {
+            if selected < self.state.predefined_agent_selection.len() {
+                self.state.predefined_agent_selection[selected] = !self.state.predefined_agent_selection[selected];
+            }
+        }
+    }
+
+    /// Select all predefined agents in current category
+    fn select_all_predefined_agents(&mut self) {
+        for selected in &mut self.state.predefined_agent_selection {
+            *selected = true;
+        }
+    }
+
+    /// Deselect all predefined agents
+    fn deselect_all_predefined_agents(&mut self) {
+        for selected in &mut self.state.predefined_agent_selection {
+            *selected = false;
+        }
+    }
+
+    /// Load selected predefined agents into Nox
+    async fn load_selected_predefined_agents(&mut self) -> Result<()> {
+        let selected_agent_ids: Vec<String> = self.state.predefined_agents
+            .iter()
+            .enumerate()
+            .filter_map(|(i, agent)| {
+                if i < self.state.predefined_agent_selection.len() && self.state.predefined_agent_selection[i] {
+                    Some(agent.id.clone())
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        if selected_agent_ids.is_empty() {
+            self.state.error_message = Some("No agents selected. Use Space to select agents, then press Enter to load.".to_string());
+            return Ok(());
+        }
+
+        // Show progress dialog
+        let mut dialog = ProgressDialog::new(
+            "Loading Agents".to_string(),
+            format!("Loading {} selected agents...", selected_agent_ids.len())
+        );
+        dialog.set_progress(0);
+        self.state.current_dialog = Some(DialogState::Progress(dialog));
+
+        use crate::core::predefined_agents;
+        
+        match predefined_agents::load_specific_agents(&selected_agent_ids).await {
+            Ok(loaded_agents) => {
+                if let Some(DialogState::Progress(ref mut progress_dialog)) = self.state.current_dialog {
+                    progress_dialog.set_complete("Loading Complete");
+                }
+                
+                let total_tasks: usize = loaded_agents.iter().map(|(_, tasks)| tasks.len()).sum();
+                let selected_count = selected_agent_ids.len();
+                let loaded_count = loaded_agents.len();
+                let skipped_count = selected_count - loaded_count;
+                
+                let message = if skipped_count > 0 {
+                    format!(
+                        "Loaded {} new agents with {} tasks (skipped {} duplicates)", 
+                        loaded_count, 
+                        total_tasks,
+                        skipped_count
+                    )
+                } else {
+                    format!(
+                        "Successfully loaded {} agents with {} tasks", 
+                        loaded_count, 
+                        total_tasks
+                    )
+                };
+                
+                self.state.success_message = Some(message);
+                
+                // Refresh data to show new agents and tasks
+                self.refresh_data().await?;
+                
+                // Reset selection
+                self.deselect_all_predefined_agents();
+                
+                log::info!("Loaded {} new agents, skipped {} duplicates", loaded_count, skipped_count);
+            }
+            Err(e) => {
+                if let Some(DialogState::Progress(ref mut progress_dialog)) = self.state.current_dialog {
+                    progress_dialog.set_complete("Failed");
+                }
+                
+                self.state.error_message = Some(format!("Failed to load agents: {}", e));
+                log::error!("Failed to load predefined agents: {}", e);
+            }
+        }
+
         Ok(())
     }
 }

@@ -83,7 +83,8 @@ impl HelpDialog {
             Screen::Agents => "Agents",
             Screen::Tasks => "Tasks",
             Screen::Execution => "Execution",
-            Screen::Logs => "Logs"
+            Screen::Logs => "Logs",
+            Screen::PredefinedAgents => "Predefined Agents"
         }
     }
     
@@ -100,6 +101,7 @@ impl HelpDialog {
             .add_entry("3", "Go to Tasks")
             .add_entry("4", "Go to Execution")
             .add_entry("5", "Go to Logs")
+            .add_entry("6", "Go to Predefined Agents")
             .add_entry("Esc", "Cancel current operation")
     }
     
@@ -193,6 +195,20 @@ impl HelpDialog {
                     .add_entry("3", "Show info, warnings, and errors")
                     .add_entry("4", "Show debug and all levels")
                     .add_entry("0", "Show all log levels")
+            ],
+            Screen::PredefinedAgents => vec![
+                HelpSection::new("Category Navigation")
+                    .add_entry("↑/↓", "Navigate categories")
+                    .add_entry("R", "Refresh categories"),
+                HelpSection::new("Agent Selection")
+                    .add_entry("←/→", "Navigate agents")
+                    .add_entry("Space", "Select/deselect agent")
+                    .add_entry("A", "Select all agents")
+                    .add_entry("N", "Deselect all agents"),
+                HelpSection::new("Agent Loading")
+                    .add_entry("Enter", "Load selected agents")
+                    .add_entry("V", "View agent details")
+                    .add_entry("T", "View agent tasks"),
             ],
         }
     }

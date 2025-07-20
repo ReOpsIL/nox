@@ -88,6 +88,17 @@ impl HelpPanel {
                     ("Home/End", "Jump to top/bottom"),
                 ]);
             }
+            Screen::PredefinedAgents => {
+                items.extend(vec![
+                    ("↑↓", "Navigate categories"),
+                    ("←→", "Navigate agents"),
+                    ("Space", "Select/deselect agent"),
+                    ("A", "Select all agents"),
+                    ("N", "Deselect all agents"),
+                    ("Enter", "Load selected agents"),
+                    ("R", "Refresh categories"),
+                ]);
+            }
         }
 
         items

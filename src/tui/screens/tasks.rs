@@ -9,7 +9,7 @@ use ratatui::{
 pub struct TasksScreen;
 
 impl TasksScreen {
-    pub fn render(frame: &mut Frame, area: Rect, state: &AppState) {
+    pub fn render(frame: &mut Frame, area: Rect, state: &mut AppState) {
         let chunks = Layout::default()
             .direction(Direction::Horizontal)
             .margin(1)
@@ -23,7 +23,7 @@ impl TasksScreen {
         Self::render_task_details(frame, chunks[1], state);
     }
 
-    fn render_task_list(frame: &mut Frame, area: Rect, state: &AppState) {
+    fn render_task_list(frame: &mut Frame, area: Rect, state: &mut AppState) {
         // Get filtered and sorted task indices
         let filtered_indices = Self::get_filtered_task_indices(state);
         let sorted_indices = Self::sort_task_indices(filtered_indices, state);
@@ -137,8 +137,10 @@ impl TasksScreen {
             .border_style(border_active_style())
             .title_style(accent_style());
 
-        let list = List::new(items).block(block);
-        frame.render_widget(list, list_area[0]);
+        let list = List::new(items)
+            .block(block)
+            .highlight_style(ratatui::style::Style::default().bg(ratatui::style::Color::DarkGray));
+        frame.render_stateful_widget(list, list_area[0], &mut state.tasks_list_state);
         frame.render_widget(footer, list_area[1]);
     }
 

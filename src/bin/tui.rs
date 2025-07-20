@@ -44,7 +44,7 @@ async fn main() -> Result<()> {
     app.refresh_data().await?;
 
     loop {
-        terminal.draw(|f| ui::render(f, &app))?;
+        terminal.draw(|f| ui::render(f, &mut app))?;
 
         tokio::select! {
             Some(event) = event_handler.next() => {

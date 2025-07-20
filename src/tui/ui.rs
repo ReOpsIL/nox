@@ -1,6 +1,6 @@
 use crate::tui::{
     app::{App, AppState, Screen, FormState, DialogState},
-    screens::{Dashboard, AgentsScreen, TasksScreen, ExecutionScreen, LogsScreen},
+    screens::{Dashboard, AgentsScreen, TasksScreen, ExecutionScreen, LogsScreen, PredefinedAgentsScreen},
     utils::colors::*,
     forms::Form,
     dialogs::Dialog,
@@ -12,8 +12,8 @@ use ratatui::{
     Frame,
 };
 
-pub fn render(frame: &mut Frame, app: &App) {
-    let state = &app.state;
+pub fn render(frame: &mut Frame, app: &mut App) {
+    let state = &mut app.state;
 
     let chunks = Layout::default()
         .direction(Direction::Vertical)
@@ -64,23 +64,25 @@ fn render_header(frame: &mut Frame, area: Rect, _state: &AppState) {
     frame.render_widget(help_paragraph, header_chunks[1]);
 }
 
-fn render_main_content(frame: &mut Frame, area: Rect, state: &AppState) {
+fn render_main_content(frame: &mut Frame, area: Rect, state: &mut AppState) {
     match state.current_screen {
         Screen::Dashboard => Dashboard::render(frame, area, state),
         Screen::Agents => AgentsScreen::render(frame, area, state),
         Screen::Tasks => TasksScreen::render(frame, area, state),
         Screen::Execution => ExecutionScreen::render(frame, area, state),
         Screen::Logs => LogsScreen::render(frame, area, state),
+        Screen::PredefinedAgents => PredefinedAgentsScreen::render(frame, state),
     }
 }
 
 fn render_footer(frame: &mut Frame, area: Rect, state: &AppState) {
     let navigation_text = match state.current_screen {
-        Screen::Dashboard => "📊 [1] Home [2] Agents  [3] Tasks  [4] Execution  [5] Logs  [Tab] Next  [←/→] Navigate",
+        Screen::Dashboard => "📊 [1] Home [2] Agents  [3] Tasks  [4] Execution  [5] Logs  [6] Load Agents  [Tab] Next",
         Screen::Agents => "🤖 [↑/↓] Select  [Enter] Action  [Tab] Switch Panel  [F1] Help",
         Screen::Tasks => "📋 [↑/↓] Select  [Enter] Action  [Tab] Switch Panel  [F] Filter",
         Screen::Execution => "⚡ [↑/↓] Select  [Enter] View Details  [Space] Pause/Resume  [Del] Cancel",
         Screen::Logs => "📜 [↑/↓] Scroll  [Home/End] Jump  [Space] Toggle Filter  [Enter] View Details",
+        Screen::PredefinedAgents => "🤖 [↑↓] Categories [←→] Agents [Space] Select [Enter] Load [A] Select All [R] Refresh",
     };
 
     let block = Block::default()

@@ -9,7 +9,7 @@ use ratatui::{
 pub struct Dashboard;
 
 impl Dashboard {
-    pub fn render(frame: &mut Frame, area: Rect, state: &AppState) {
+    pub fn render(frame: &mut Frame, area: Rect, state: &mut AppState) {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .margin(1)

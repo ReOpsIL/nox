@@ -10,7 +10,7 @@ use ratatui::{
 pub struct LogsScreen;
 
 impl LogsScreen {
-    pub fn render(frame: &mut Frame, area: Rect, state: &AppState) {
+    pub fn render(frame: &mut Frame, area: Rect, state: &mut AppState) {
         let chunks = Layout::default()
             .direction(Direction::Horizontal)
             .margin(1)

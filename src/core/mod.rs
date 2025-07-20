@@ -14,6 +14,7 @@ pub mod advanced_agent_features;
 pub mod resource_manager;
 pub mod security_manager;
 pub mod seeding;
+pub mod predefined_agents;
 
 use anyhow::Result;
 

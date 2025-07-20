@@ -3,6 +3,18 @@
 
 ![Nox](nox_s.jpg)
 
+![Nox](nox1.jpg)
+
+![Nox](nox2.jpg)
+
+![Nox](nox3.jpg)
+
+![Nox](nox4.jpg)
+
+![Nox](nox5.jpg)
+
+![Nox](nox6.jpg)
+
 ## 1. Overview
 
 Nox is an agent management platform that provides the infrastructure for creating, monitoring, and coordinating AI agents powered by the Claude CLI. The Rust backend offers a high-performance, memory-safe, and CLI-first design, with RESTful API routes to support a PrimeReact frontend for visualization and control.
