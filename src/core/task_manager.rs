@@ -287,6 +287,7 @@ async fn execute_claude_cli_streaming(
     // Create command for Claude CLI using PTY
     let mut cmd = CommandBuilder::new("claude");
     cmd.arg("--dangerously-skip-permissions");
+    // Set working directory to Claude CLI location to fix yoga.wasm issue
     cmd.cwd("/Users/dovcaspi/nox_project_debug");
     
     // Spawn the process with PTY
@@ -294,19 +295,20 @@ async fn execute_claude_cli_streaming(
         .map_err(|e| anyhow::anyhow!("Failed to spawn Claude CLI with PTY: {}", e))?;
     
     // Get master PTY for I/O
-    let mut master = pty_pair.master;
+    let master = pty_pair.master;
     
-    // Clone the master for reader
+    // Get reader and writer from master PTY
     let master_reader = master.try_clone_reader()
         .map_err(|e| anyhow::anyhow!("Failed to clone PTY reader: {}", e))?;
+    let master_writer = master.take_writer()
+        .map_err(|e| anyhow::anyhow!("Failed to get PTY writer: {}", e))?;
+    let master_writer = Arc::new(std::sync::Mutex::new(master_writer));
     
     // Send initial message to PTY
-    let full_message = format!("{}\n\nUser: {}\n", agent.system_prompt, initial_message);
-    // Get a writer from the master and write the initial message
+    let full_message = format!("{}\n", initial_message);
     {
         use std::io::Write;
-        let mut writer = master.take_writer()
-            .map_err(|e| anyhow::anyhow!("Failed to get PTY writer: {}", e))?;
+        let mut writer = master_writer.lock().unwrap();
         writer.write_all(full_message.as_bytes())
             .map_err(|e| anyhow::anyhow!("Failed to write to PTY: {}", e))?;
         writer.flush()
@@ -314,50 +316,83 @@ async fn execute_claude_cli_streaming(
     }
     
     // Log initial input
-    log_file.write_all(format!("**Input:** {}\n\n**Output:**\n", initial_message).as_bytes()).await?;
-    
+    log_file.write_all(format!("**Input:** {}\n\n", initial_message).as_bytes()).await?;
+    log_file.write_all("**Output:**\n".as_bytes()).await?;
+
     let mut accumulated_output = String::new();
     
-    // Handle PTY output streaming
-    let output_tx_clone = output_tx.clone();
-    let log_file_path_clone = log_file_path.clone();
-    let cancellation_flag_clone = Arc::clone(&cancellation_flag);
-    let pty_output_handle = tokio::spawn(async move {
-        use std::io::{BufRead, BufReader};
-        let mut reader = BufReader::new(master_reader);
-        let mut line = String::new();
-        
-        while !cancellation_flag_clone.load(Ordering::Relaxed) {
-            line.clear();
-            match reader.read_line(&mut line) {
-                Ok(0) => break, // EOF
-                Ok(_) => {
-                    // Send to output channel
-                    let _ = output_tx_clone.send(line.clone()).await;
-                    
-                    // Append to log file
-                    if let Ok(mut file) = tokio::fs::OpenOptions::new()
-                        .append(true)
-                        .open(&log_file_path_clone)
-                        .await 
-                    {
-                        let _ = file.write_all(line.as_bytes()).await;
+    // Spawn blocking task to handle PTY input (from channel to Claude)
+    let writer_handle = master_writer.clone();
+    let input_handle = tokio::task::spawn_blocking(move || {
+        use std::io::Write;
+        loop {
+            match input_rx.blocking_recv() {
+                Some(input) => {
+                    if let Ok(mut writer) = writer_handle.lock() {
+                        if let Err(e) = writer.write_all(input.as_bytes()) {
+                            error!("Failed to write to PTY: {}", e);
+                            break;
+                        }
+                        if let Err(e) = writer.flush() {
+                            error!("Failed to flush PTY writer: {}", e);
+                            break;
+                        }
                     }
                 }
-                Err(_) => break,
+                None => break,
             }
         }
     });
     
-    // Handle additional input to PTY (simplified for now)
-    let pty_input_handle = tokio::spawn(async move {
-        // For now, we'll just consume the input channel without writing
-        // PTY writing is more complex and would require proper synchronization
-        while let Some(_input) = input_rx.recv().await {
-            // Skip input handling for now to focus on output streaming
-            break;
+    // Spawn blocking task to handle PTY output (from Claude to channel)
+    let output_tx_clone = output_tx.clone();
+    let log_file_path_clone = log_file_path.clone();
+    let cancellation_flag_clone = Arc::clone(&cancellation_flag);
+    let pty_output_handle = tokio::task::spawn_blocking(move || {
+        use std::io::Read;
+        let mut reader = master_reader;
+        let mut buffer = [0u8; 8192];
+        
+        loop {
+            if cancellation_flag_clone.load(Ordering::Relaxed) {
+                break;
+            }
+            
+            match reader.read(&mut buffer) {
+                Ok(0) => {
+                    // EOF - process has terminated
+                    info!("PTY reader reached EOF");
+                    break;
+                }
+                Ok(n) => {
+                    let output = String::from_utf8_lossy(&buffer[..n]).to_string();
+                    
+                    // Send to output channel
+                    if let Err(_) = output_tx_clone.blocking_send(output.clone()) {
+                        break; // Channel closed
+                    }
+                    
+                    // Append to log file (async version)
+                    let log_path = log_file_path_clone.clone();
+                    let data = buffer[..n].to_vec();
+                    tokio::spawn(async move {
+                        if let Ok(mut file) = tokio::fs::OpenOptions::new()
+                            .append(true)
+                            .open(&log_path)
+                            .await
+                        {
+                            let _ = file.write_all(&data).await;
+                        }
+                    });
+                }
+                Err(e) => {
+                    error!("Failed to read from PTY: {}", e);
+                    break;
+                }
+            }
         }
     });
+    
     
     // Wait for process completion (portable-pty wait is sync)
     let exit_status = tokio::task::spawn_blocking(move || child.wait()).await
@@ -366,7 +401,7 @@ async fn execute_claude_cli_streaming(
     
     // Clean up handles
     pty_output_handle.abort();
-    pty_input_handle.abort();
+    input_handle.abort();
     
     // Read accumulated output from log file
     if let Ok(output) = tokio::fs::read_to_string(&log_file_path).await {
@@ -404,103 +439,17 @@ async fn execute_claude_cli_streaming(
     }
 }
 
-
-/// Get output receiver for a running task  
-pub async fn get_task_output_receiver(task_id: &str) -> Option<mpsc::Receiver<String>> {
-    let mut running_tasks = RUNNING_TASKS.lock().await;
-    if let Some(_task_execution) = running_tasks.get_mut(task_id) {
-        // Create a new channel pair for now - in real implementation, 
-        // this would require restructuring to return the actual receiver
-        let (_tx, rx) = mpsc::channel(1000);
-        Some(rx)
-    } else {
-        None
-    }
-}
-
-/// Send input to a running task
-pub async fn send_input_to_task(task_id: &str, input: String) -> Result<()> {
-    let running_tasks = RUNNING_TASKS.lock().await;
-    if let Some(task) = running_tasks.get(task_id) {
-        task.input_tx.send(input).await
-            .map_err(|e| anyhow::anyhow!("Failed to send input to task {}: {}", task_id, e))?;
-        Ok(())
-    } else {
-        Err(anyhow::anyhow!("Task {} is not running", task_id))
-    }
-}
-
-/// Get the log file path for a task
-pub async fn get_task_log_path(task_id: &str) -> Option<PathBuf> {
-    let running_tasks = RUNNING_TASKS.lock().await;
-    running_tasks.get(task_id).map(|task| task.log_file_path.clone())
-}
-
-/// Check if a task is currently running
-pub async fn is_task_running(task_id: &str) -> bool {
-    let running_tasks = RUNNING_TASKS.lock().await;
-    running_tasks.contains_key(task_id)
-}
-
-
-/// Get all running task IDs
-pub async fn get_running_task_ids() -> Vec<String> {
-    let running_tasks = RUNNING_TASKS.lock().await;
-    running_tasks.keys().cloned().collect()
-}
-
-/// Clean up finished tasks
-pub async fn cleanup_finished_tasks() -> Result<()> {
-    let mut running_tasks = RUNNING_TASKS.lock().await;
-    let mut finished_tasks = Vec::new();
-    
-    for (task_id, task_execution) in running_tasks.iter() {
-        if task_execution.task_handle.is_finished() {
-            finished_tasks.push(task_id.clone());
-        }
-    }
-    
-    for task_id in finished_tasks {
-        running_tasks.remove(&task_id);
-    }
-    
-    Ok(())
-}
-
-/// Stop a running task execution
-pub async fn stop_task_execution(task_id: &str) -> Result<()> {
-    let mut running_tasks = RUNNING_TASKS.lock().await;
-    if let Some(task_execution) = running_tasks.remove(task_id) {
-        task_execution.cancellation_flag.store(true, std::sync::atomic::Ordering::Relaxed);
-        task_execution.task_handle.abort();
-        info!("Stopped task execution: {}", task_id);
-        Ok(())
-    } else {
-        Err(anyhow::anyhow!("Task {} is not running", task_id))
-    }
-}
-
-/// Get the accumulated output for a task
-pub async fn get_task_accumulated_output(task_id: &str) -> Option<String> {
-    // Read from log file if it exists
-    if let Some(log_path) = get_task_log_path(task_id).await {
-        tokio::fs::read_to_string(log_path).await.ok()
-    } else {
-        None
-    }
-}
-
 /// Poll for new output from a running task (non-blocking)
 pub async fn poll_task_output(task_id: &str) -> Option<Vec<String>> {
     let mut running_tasks = RUNNING_TASKS.lock().await;
     if let Some(task_execution) = running_tasks.get_mut(task_id) {
         let mut output_lines = Vec::new();
-        
+
         // Try to receive all available output without blocking
         while let Ok(line) = task_execution.output_rx.try_recv() {
             output_lines.push(line);
         }
-        
+
         if !output_lines.is_empty() {
             Some(output_lines)
         } else {
