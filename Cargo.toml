@@ -33,6 +33,10 @@ path = "src/bin/test_claude_fixed.rs"
 name = "test-task-execution"
 path = "src/bin/test_task_execution.rs"
 
+[[bin]]
+name = "test-claude-json"
+path = "src/bin/test_claude_json.rs"
+
 [dependencies]
 tokio = { version = "1.28", features = ["full"] }
 clap = { version = "4.3", features = ["derive"] }

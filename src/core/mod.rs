@@ -4,6 +4,7 @@
 
 pub mod agent_manager;
 pub mod task_manager;
+pub mod claude_json_transport;
 pub mod registry_manager;
 pub mod git_manager;
 pub mod config_manager;
