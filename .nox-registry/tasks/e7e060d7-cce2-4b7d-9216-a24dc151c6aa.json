@@ -1,0 +1,18 @@
+{
+  "id": "e7e060d7-cce2-4b7d-9216-a24dc151c6aa",
+  "agent_id": "1bd2fa41-1171-40d2-9524-f8a59df216b1",
+  "title": "Set up TUI application structure",
+  "description": "Create a new TUI project with ratatui and crossterm\n\nImplementation Steps:\n1. Add ratatui and crossterm dependencies\n2. Set up terminal initialization and cleanup\n3. Create basic layout with header and content areas\n4. Implement keyboard event handling\n5. Add basic navigation between screens\n",
+  "priority": "High",
+  "status": "Todo",
+  "created_at": "2025-07-20T11:45:45.210447Z",
+  "started_at": null,
+  "completed_at": null,
+  "progress": 0,
+  "metadata": {
+    "estimated_duration": "45m",
+    "tags": "tui,ratatui,terminal,rust",
+    "template": "tui_basic_setup",
+    "category": "rust_cli"
+  }
+}
