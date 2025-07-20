@@ -4,7 +4,7 @@
   "title": "Simple Math Question",
   "description": "What is 5 + 3? Please provide just the number.",
   "priority": "High",
-  "status": "InProgress",
+  "status": "Cancelled",
   "created_at": "2025-07-19T16:16:44.931169Z",
   "started_at": "2025-07-19T16:16:44.999720Z",
   "completed_at": null,
