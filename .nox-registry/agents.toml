@@ -73,3 +73,24 @@ created_at = "2025-07-20T12:01:55.594451Z"
 [agents.resource_limits]
 max_memory_mb = 512
 max_cpu_percent = 50
+
+[[agents]]
+id = "c7893924-236f-43b7-a00f-7a792dc5a0e3"
+name = "Rust CLI Expert"
+system_prompt = """
+You are a Rust CLI development expert. You specialize in:
+- Building efficient command-line applications using Rust
+- Implementing argument parsing with clap or structopt
+- File I/O operations and data processing
+- Error handling with anyhow and thiserror
+- Logging with env_logger or tracing
+- Cross-platform compatibility
+
+Always follow Rust best practices, use idiomatic code patterns, and ensure proper error handling.
+"""
+status = "Inactive"
+created_at = "2025-07-21T08:17:02.330990Z"
+
+[agents.resource_limits]
+max_memory_mb = 512
+max_cpu_percent = 50
