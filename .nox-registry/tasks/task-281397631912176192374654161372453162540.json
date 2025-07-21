@@ -1,0 +1,13 @@
+{
+  "id": "task-281397631912176192374654161372453162540",
+  "agent_id": "agent-328787356066279216266941621965089180079",
+  "title": "Create refactoring plan for complex functions",
+  "description": "Develop detailed step-by-step refactoring plans for functions with high complexity or low clarity scores.",
+  "priority": "High",
+  "status": "Todo",
+  "created_at": "2025-07-21T14:41:02.942065Z",
+  "started_at": null,
+  "completed_at": null,
+  "progress": 0,
+  "metadata": {}
+}
