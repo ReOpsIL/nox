@@ -1,0 +1,13 @@
+{
+  "id": "task-60900919658476435852423076375500009405",
+  "agent_id": "agent-267708253449580600712480773421923196358",
+  "title": "Write Google-style docstrings for refactored functions",
+  "description": "Create comprehensive docstrings following Google Python Style Guide for all refactored functions.",
+  "priority": "High",
+  "status": "Todo",
+  "created_at": "2025-07-21T14:41:04.293659Z",
+  "started_at": null,
+  "completed_at": null,
+  "progress": 0,
+  "metadata": {}
+}
