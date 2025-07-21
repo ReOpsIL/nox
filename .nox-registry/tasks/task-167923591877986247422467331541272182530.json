@@ -1,0 +1,13 @@
+{
+  "id": "task-167923591877986247422467331541272182530",
+  "agent_id": "agent-276130524859612457745967668308233516171",
+  "title": "Review class methods and structure",
+  "description": "Analyze class methods for complexity, cohesion, and adherence to single responsibility principle.",
+  "priority": "Medium",
+  "status": "Todo",
+  "created_at": "2025-07-21T14:41:02.512145Z",
+  "started_at": null,
+  "completed_at": null,
+  "progress": 0,
+  "metadata": {}
+}
