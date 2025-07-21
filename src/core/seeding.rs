@@ -10,14 +10,18 @@ use log::{info, warn};
 
 /// Seed the system with default agents and tasks if the registry is empty
 pub async fn seed_default_data() -> Result<()> {
+    // Ensure registry is initialized first
+    crate::core::registry_manager::initialize().await?;
+    
     // Check if we already have agents
     let existing_agents = agent_manager::get_all_agents().await?;
+
     if !existing_agents.is_empty() {
         info!("Registry already contains {} agents, skipping seeding", existing_agents.len());
         return Ok(());
     }
 
-    info!("Registry is empty, seeding with default Rust programming agents and tasks");
+    info!("Registry is empty, seeding with default Code Refactoring Pipeline agents and tasks");
 
     // Create default agents
     let agents = create_default_agents();
@@ -33,7 +37,6 @@ pub async fn seed_default_data() -> Result<()> {
         let tasks = create_default_tasks_for_agent(&agent.id, &agent.name);
         for task in tasks {
             let task_title = task.title.clone();
-            info!("Creating default task '{}' for agent '{}'", task_title, agent.name);
             if let Err(e) = task_manager::add_task(task).await {
                 warn!("Failed to create task '{}': {}", task_title, e);
             }
@@ -44,28 +47,59 @@ pub async fn seed_default_data() -> Result<()> {
     Ok(())
 }
 
-/// Create 5 default Rust programming agents
+/// Create 5 default Code Refactoring Pipeline agents
 fn create_default_agents() -> Vec<Agent> {
     vec![
         Agent::new(
-            "RustCodeReviewer".to_string(),
-            "You are a Rust code review specialist. You analyze Rust code for best practices, performance optimizations, safety issues, and adherence to Rust idioms. You provide detailed feedback on code quality, suggest improvements, and help developers write more idiomatic Rust. Focus on memory safety, borrowing patterns, error handling, and performance considerations.".to_string()
+            "CodeProfiler".to_string(),
+            "You are a senior Python code quality analyst. Analyze the following code from the file {file_path}. Your analysis must be objective and focus on identifying code smells, complexity, and areas for improvement.
+
+Evaluate each function based on the following criteria:
+- Clarity: How easy is it to understand the function's purpose, inputs, and outputs? (1=very clear, 5=unclear).
+- Complexity: Estimate the cyclomatic complexity. High complexity often comes from deep nesting or too many logical branches.
+- Issues: Identify specific issues like magic numbers, poor variable names, long methods, or lack of comments.
+
+Based on your analysis, produce a structured report. Do not suggest any code changes.".to_string()
         ),
         Agent::new(
-            "RustPerformanceOptimizer".to_string(),
-            "You are a Rust performance optimization expert. You specialize in analyzing Rust code for performance bottlenecks, memory usage patterns, and CPU optimization opportunities. You help developers write faster, more efficient Rust code by suggesting algorithmic improvements, data structure optimizations, and compiler optimization techniques.".to_string()
+            "RefactoringStrategist".to_string(),
+            "You are a software architect specializing in code refactoring. Based on the following CodeProfileReport, create a detailed, step-by-step refactoring plan for each function with a clarity_score greater than 2 or a complexity_score greater than 5.
+
+The plan must consist of specific, actionable steps. For each step, define a clear action type and provide precise details. The goal is to create a plan that a junior developer could follow perfectly.
+
+Important: Do not write the refactored code yourself. Your sole output is the plan.".to_string()
         ),
         Agent::new(
-            "RustTestingEngineer".to_string(),
-            "You are a Rust testing and quality assurance specialist. You focus on writing comprehensive test suites, implementing property-based testing, benchmarking, and setting up CI/CD pipelines for Rust projects. You help ensure code reliability through unit tests, integration tests, and automated testing strategies.".to_string()
+            "CodeRefactorer".to_string(),
+            "You are an expert programmer tasked with refactoring code. You will be given a block of original code and a RefactoringPlan.
+
+Follow the plan meticulously. Apply each step in the provided order to the original code. Ensure that the logic and functionality of the code remain unchanged.
+
+Your output must include the original code, the fully refactored code, and a brief summary of the changes you made.".to_string()
         ),
         Agent::new(
-            "RustSystemArchitect".to_string(),
-            "You are a Rust systems architecture expert. You design scalable, maintainable Rust applications and help with architectural decisions. You specialize in API design, module organization, dependency management, and system integration. You help developers structure large Rust projects and choose appropriate design patterns.".to_string()
+            "TestCaseGenerator".to_string(),
+            "You are a QA engineer specializing in automated testing. You will be provided with both the original and the refactored code for a function.
+
+Your task is to generate a comprehensive set of unit tests using the Python unittest framework. The tests should:
+- Verify the core functionality of the function.
+- Cover edge cases (e.g., empty inputs, null values, unexpected types).
+- Confirm that the refactored code produces the exact same outputs as the original code for the same inputs.
+
+For each test case, provide the test code and a clear description of what it is verifying.".to_string()
         ),
         Agent::new(
-            "RustWebDeveloper".to_string(),
-            "You are a Rust web development specialist. You work with web frameworks like Actix-web, Axum, Warp, and Rocket. You help build REST APIs, GraphQL endpoints, WebSocket services, and full-stack web applications. You focus on security, scalability, and modern web development practices in Rust.".to_string()
+            "DocumentationWriter".to_string(),
+            "You are a technical writer responsible for creating developer documentation. Based on the following refactored code, generate a high-quality Python docstring for each function.
+
+The docstring should follow the Google Python Style Guide and include:
+- A concise one-line summary.
+- A more detailed description of the function's purpose and logic.
+- An Args: section detailing each parameter, its type, and its description.
+- A Returns: section describing the return value and its type.
+- A simple, clear usage example in a Example: section.
+
+The goal is to make the code instantly understandable to a new developer.".to_string()
         ),
     ]
 }
@@ -73,139 +107,139 @@ fn create_default_agents() -> Vec<Agent> {
 /// Create 5 default tasks for a specific agent based on their specialty
 fn create_default_tasks_for_agent(agent_id: &str, agent_name: &str) -> Vec<Task> {
     match agent_name {
-        "RustCodeReviewer" => vec![
+        "CodeProfiler" => vec![
             Task::new(
                 agent_id.to_string(),
-                "Review async/await patterns in web handler".to_string(),
-                "Analyze a web service handler that uses async/await and provide feedback on proper error handling, resource management, and async best practices.".to_string()
+                "Profile Python web service handlers".to_string(),
+                "Analyze Python web service handlers for code quality, complexity, and maintainability issues. Focus on identifying functions that need refactoring.".to_string()
             ),
             Task::new(
                 agent_id.to_string(),
-                "Audit unsafe code block usage".to_string(),
-                "Review unsafe code blocks in a systems programming project and ensure they are properly justified, documented, and minimize safety risks.".to_string()
+                "Audit data processing functions".to_string(),
+                "Review data processing functions for complexity, performance bottlenecks, and code clarity issues.".to_string()
             ),
             Task::new(
                 agent_id.to_string(),
-                "Optimize borrowing and lifetime annotations".to_string(),
-                "Examine a complex data structure implementation and suggest improvements to borrowing patterns and lifetime management.".to_string()
+                "Analyze utility functions and helpers".to_string(),
+                "Examine utility functions and helper methods for code smells, magic numbers, and clarity issues.".to_string()
             ),
             Task::new(
                 agent_id.to_string(),
-                "Review error handling strategy".to_string(),
-                "Analyze error handling throughout a Rust application and recommend improvements using Result types, custom errors, and the ? operator.".to_string()
+                "Review class methods and structure".to_string(),
+                "Analyze class methods for complexity, cohesion, and adherence to single responsibility principle.".to_string()
             ),
             Task::new(
                 agent_id.to_string(),
-                "Validate trait implementations and generics".to_string(),
-                "Review trait design and generic implementations to ensure they follow Rust best practices and provide good API ergonomics.".to_string()
-            ),
-        ],
-        "RustPerformanceOptimizer" => vec![
-            Task::new(
-                agent_id.to_string(),
-                "Optimize hot path in data processing pipeline".to_string(),
-                "Identify and optimize performance bottlenecks in a high-throughput data processing system using profiling and algorithmic improvements.".to_string()
-            ),
-            Task::new(
-                agent_id.to_string(),
-                "Reduce memory allocations in parser".to_string(),
-                "Analyze a text parser for unnecessary allocations and implement zero-copy parsing techniques where possible.".to_string()
-            ),
-            Task::new(
-                agent_id.to_string(),
-                "Implement SIMD optimizations for calculations".to_string(),
-                "Add SIMD instructions to speed up mathematical computations in a numerical processing library.".to_string()
-            ),
-            Task::new(
-                agent_id.to_string(),
-                "Optimize concurrent data structures".to_string(),
-                "Improve performance of thread-safe data structures by reducing lock contention and implementing lock-free algorithms where appropriate.".to_string()
-            ),
-            Task::new(
-                agent_id.to_string(),
-                "Profile and optimize async runtime usage".to_string(),
-                "Analyze async task scheduling and optimize runtime configuration for better throughput and latency characteristics.".to_string()
+                "Profile algorithm implementations".to_string(),
+                "Evaluate algorithm implementations for clarity, efficiency, and maintainability.".to_string()
             ),
         ],
-        "RustTestingEngineer" => vec![
+        "RefactoringStrategist" => vec![
             Task::new(
                 agent_id.to_string(),
-                "Implement property-based tests for API".to_string(),
-                "Create comprehensive property-based tests using quickcheck or proptest to validate API behavior under various input conditions.".to_string()
+                "Create refactoring plan for complex functions".to_string(),
+                "Develop detailed step-by-step refactoring plans for functions with high complexity or low clarity scores.".to_string()
             ),
             Task::new(
                 agent_id.to_string(),
-                "Set up integration test suite".to_string(),
-                "Design and implement integration tests that validate the entire system behavior including database interactions and external services.".to_string()
+                "Plan method extraction strategies".to_string(),
+                "Create plans for extracting smaller, focused methods from large, complex functions.".to_string()
             ),
             Task::new(
                 agent_id.to_string(),
-                "Create performance benchmarks".to_string(),
-                "Develop criterion.rs benchmarks to track performance regressions and validate optimization improvements over time.".to_string()
+                "Design variable naming improvements".to_string(),
+                "Plan systematic improvements to variable and function naming for better code readability.".to_string()
             ),
             Task::new(
                 agent_id.to_string(),
-                "Implement mutation testing strategy".to_string(),
-                "Set up mutation testing to verify the quality and effectiveness of the existing test suite and identify gaps in test coverage.".to_string()
+                "Strategy for reducing cyclomatic complexity".to_string(),
+                "Develop plans to reduce cyclomatic complexity through guard clauses, early returns, and logical restructuring.".to_string()
             ),
             Task::new(
                 agent_id.to_string(),
-                "Configure CI/CD pipeline for Rust project".to_string(),
-                "Set up GitHub Actions or similar CI/CD pipeline with proper caching, testing, linting, and automated deployment for a Rust project.".to_string()
-            ),
-        ],
-        "RustSystemArchitect" => vec![
-            Task::new(
-                agent_id.to_string(),
-                "Design microservices architecture".to_string(),
-                "Architect a distributed system using Rust microservices with proper service boundaries, communication patterns, and data consistency strategies.".to_string()
-            ),
-            Task::new(
-                agent_id.to_string(),
-                "Implement plugin system with dynamic loading".to_string(),
-                "Design and implement a safe plugin architecture that allows dynamic loading of Rust modules while maintaining safety guarantees.".to_string()
-            ),
-            Task::new(
-                agent_id.to_string(),
-                "Optimize dependency management strategy".to_string(),
-                "Analyze and optimize Cargo.toml dependencies, features, and workspace configuration for better build times and binary size.".to_string()
-            ),
-            Task::new(
-                agent_id.to_string(),
-                "Design event-driven architecture".to_string(),
-                "Implement an event sourcing system with CQRS patterns using Rust, ensuring proper event ordering and consistency guarantees.".to_string()
-            ),
-            Task::new(
-                agent_id.to_string(),
-                "Create cross-platform compatibility layer".to_string(),
-                "Design abstraction layers for cross-platform functionality while leveraging platform-specific optimizations where beneficial.".to_string()
+                "Plan code organization improvements".to_string(),
+                "Create strategies for better code organization, including grouping related functionality and improving structure.".to_string()
             ),
         ],
-        "RustWebDeveloper" => vec![
+        "CodeRefactorer" => vec![
             Task::new(
                 agent_id.to_string(),
-                "Build REST API with Axum framework".to_string(),
-                "Develop a production-ready REST API using Axum with proper middleware, authentication, validation, and OpenAPI documentation.".to_string()
+                "Execute method extraction refactoring".to_string(),
+                "Apply refactoring plans to extract smaller, focused methods from complex functions while preserving functionality.".to_string()
             ),
             Task::new(
                 agent_id.to_string(),
-                "Implement GraphQL server with async-graphql".to_string(),
-                "Create a GraphQL API server with subscriptions, federation support, and efficient N+1 query resolution using DataLoader patterns.".to_string()
+                "Implement variable renaming improvements".to_string(),
+                "Execute variable and function renaming based on refactoring plans to improve code clarity.".to_string()
             ),
             Task::new(
                 agent_id.to_string(),
-                "Add WebSocket real-time features".to_string(),
-                "Implement real-time features using WebSockets with proper connection management, broadcasting, and state synchronization.".to_string()
+                "Apply complexity reduction techniques".to_string(),
+                "Implement refactoring changes to reduce cyclomatic complexity and improve code flow.".to_string()
             ),
             Task::new(
                 agent_id.to_string(),
-                "Secure web application with authentication".to_string(),
-                "Implement JWT-based authentication with refresh tokens, rate limiting, and proper security headers for a web application.".to_string()
+                "Refactor magic numbers and constants".to_string(),
+                "Replace magic numbers with named constants and improve code maintainability.".to_string()
             ),
             Task::new(
                 agent_id.to_string(),
-                "Optimize web server for high concurrency".to_string(),
-                "Configure and optimize an Actix-web or Axum server for high-concurrency workloads with proper connection pooling and resource management.".to_string()
+                "Restructure conditional logic".to_string(),
+                "Apply refactoring to improve conditional logic structure and readability.".to_string()
+            ),
+        ],
+        "TestCaseGenerator" => vec![
+            Task::new(
+                agent_id.to_string(),
+                "Generate unit tests for refactored functions".to_string(),
+                "Create comprehensive unit tests that verify the functionality of refactored code matches the original implementation.".to_string()
+            ),
+            Task::new(
+                agent_id.to_string(),
+                "Create edge case test scenarios".to_string(),
+                "Develop test cases that cover edge cases, boundary conditions, and error scenarios for refactored functions.".to_string()
+            ),
+            Task::new(
+                agent_id.to_string(),
+                "Implement regression test suites".to_string(),
+                "Create test suites that ensure refactored code produces identical outputs to original code for all inputs.".to_string()
+            ),
+            Task::new(
+                agent_id.to_string(),
+                "Generate performance comparison tests".to_string(),
+                "Create tests that compare performance characteristics between original and refactored code.".to_string()
+            ),
+            Task::new(
+                agent_id.to_string(),
+                "Develop integration test scenarios".to_string(),
+                "Generate integration tests that verify refactored functions work correctly within the larger system context.".to_string()
+            ),
+        ],
+        "DocumentationWriter" => vec![
+            Task::new(
+                agent_id.to_string(),
+                "Write Google-style docstrings for refactored functions".to_string(),
+                "Create comprehensive docstrings following Google Python Style Guide for all refactored functions.".to_string()
+            ),
+            Task::new(
+                agent_id.to_string(),
+                "Document function parameters and return values".to_string(),
+                "Create detailed documentation for function parameters, types, and return values to improve code understanding.".to_string()
+            ),
+            Task::new(
+                agent_id.to_string(),
+                "Generate usage examples and code snippets".to_string(),
+                "Create clear usage examples and code snippets that demonstrate how to use refactored functions.".to_string()
+            ),
+            Task::new(
+                agent_id.to_string(),
+                "Document complex algorithms and logic".to_string(),
+                "Provide detailed explanations of complex algorithms and business logic within refactored functions.".to_string()
+            ),
+            Task::new(
+                agent_id.to_string(),
+                "Create API documentation for modules".to_string(),
+                "Generate comprehensive API documentation for modules containing refactored functions.".to_string()
             ),
         ],
         _ => {
@@ -213,37 +247,37 @@ fn create_default_tasks_for_agent(agent_id: &str, agent_name: &str) -> Vec<Task>
             vec![
                 Task::new(
                     agent_id.to_string(),
-                    "Analyze Rust code structure".to_string(),
-                    "Review the overall structure and organization of a Rust project and provide recommendations for improvement.".to_string()
+                    "Analyze code quality and structure".to_string(),
+                    "Review the overall structure and quality of code and provide recommendations for improvement.".to_string()
                 ),
                 Task::new(
                     agent_id.to_string(),
-                    "Implement Rust best practices".to_string(),
-                    "Apply Rust best practices and idioms to improve code quality and maintainability.".to_string()
+                    "Create refactoring strategy".to_string(),
+                    "Develop a comprehensive refactoring strategy for improving code maintainability and readability.".to_string()
                 ),
                 Task::new(
                     agent_id.to_string(),
-                    "Optimize Rust performance".to_string(),
-                    "Identify and resolve performance bottlenecks in Rust code.".to_string()
+                    "Execute code improvements".to_string(),
+                    "Apply refactoring changes to improve code quality while preserving functionality.".to_string()
                 ),
                 Task::new(
                     agent_id.to_string(),
-                    "Add comprehensive tests".to_string(),
-                    "Implement thorough test coverage for Rust modules and functions.".to_string()
+                    "Generate comprehensive tests".to_string(),
+                    "Create thorough test coverage for refactored code to ensure correctness.".to_string()
                 ),
                 Task::new(
                     agent_id.to_string(),
-                    "Document Rust API".to_string(),
-                    "Create comprehensive documentation for Rust APIs and public interfaces.".to_string()
+                    "Document improved code".to_string(),
+                    "Create comprehensive documentation for refactored code and APIs.".to_string()
                 ),
             ]
         }
     }.into_iter().map(|mut task| {
         // Set appropriate priorities for different types of tasks
         task.priority = match task.title.to_lowercase() {
-            title if title.contains("security") || title.contains("unsafe") => TaskPriority::High,
-            title if title.contains("performance") || title.contains("optimize") => TaskPriority::High,
-            title if title.contains("test") || title.contains("ci") => TaskPriority::Medium,
+            title if title.contains("profile") || title.contains("analyze") => TaskPriority::High,
+            title if title.contains("refactor") || title.contains("plan") => TaskPriority::High,
+            title if title.contains("test") || title.contains("document") => TaskPriority::Medium,
             _ => TaskPriority::Medium,
         };
         task
