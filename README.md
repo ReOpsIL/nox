@@ -1,7 +1,6 @@
 
 # Nox Autonomous Agent Ecosystem: System Handbook
 
-![Nox](nox_s.jpg)
 
 ![Nox](nox1.jpg)
 

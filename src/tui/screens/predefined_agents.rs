@@ -61,7 +61,7 @@ impl PredefinedAgentsScreen {
                 .style(Style::default().fg(Color::Gray))
                 .alignment(Alignment::Center)
                 .block(Block::default()
-                    .title("📂 Categories")
+                    .title("▶ Categories")
                     .borders(Borders::ALL));
             f.render_widget(empty_msg, area);
             return;
@@ -79,7 +79,7 @@ impl PredefinedAgentsScreen {
 
                 ListItem::new(vec![
                     Line::from(Span::styled(
-                        format!("📂 {}", category.name),
+                        format!("▶ {}", category.name),
                         style
                     )),
                     Line::from(Span::styled(
@@ -92,7 +92,7 @@ impl PredefinedAgentsScreen {
 
         let list = List::new(items)
             .block(Block::default()
-                .title("📂 Categories (↑↓ to navigate)")
+                .title("▶ Categories (↑↓ to navigate)")
                 .borders(Borders::ALL))
             .highlight_style(Style::default().bg(Color::DarkGray))
             .highlight_symbol("▶ ");
@@ -136,7 +136,7 @@ impl PredefinedAgentsScreen {
                 let is_checked = i < app_state.predefined_agent_selection.len() 
                     && app_state.predefined_agent_selection[i];
 
-                let checkbox = if is_checked { "☑" } else { "☐" };
+                let checkbox = if is_checked { "◉" } else { "○" };
                 
                 let name_style = if is_selected {
                     Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)
@@ -199,7 +199,7 @@ impl PredefinedAgentsScreen {
                 .style(Style::default().fg(Color::Gray))
                 .alignment(Alignment::Center)
                 .block(Block::default()
-                    .title("📋 Agent Details")
+                    .title("▶ Agent Details")
                     .borders(Borders::ALL));
             f.render_widget(placeholder, area);
         }
@@ -224,7 +224,7 @@ impl PredefinedAgentsScreen {
 
         let paragraph = Paragraph::new(content)
             .block(Block::default()
-                .title("📋 Agent Details")
+                .title("▶ Agent Details")
                 .borders(Borders::ALL))
             .wrap(Wrap { trim: true });
 
@@ -251,7 +251,7 @@ impl PredefinedAgentsScreen {
 
         let list = List::new(items)
             .block(Block::default()
-                .title("📋 Default Tasks")
+                .title("▶ Default Tasks")
                 .borders(Borders::ALL));
 
         f.render_widget(list, area);
