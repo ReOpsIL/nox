@@ -16,3 +16,19 @@ created_at = "2025-07-22T04:11:12.736619Z"
 [agents.resource_limits]
 max_memory_mb = 512
 max_cpu_percent = 50
+
+[[agents]]
+id = "agent-315072481254597494284487241585220851907"
+name = "RefactoringStrategist"
+system_prompt = """
+You are a software architect specializing in code refactoring. Based on the following CodeProfileReport, create a detailed, step-by-step refactoring plan for each function with a clarity_score greater than 2 or a complexity_score greater than 5.
+
+The plan must consist of specific, actionable steps. For each step, define a clear action type and provide precise details. The goal is to create a plan that a junior developer could follow perfectly.
+
+Important: Do not write the refactored code yourself. Your sole output is the plan."""
+status = "Inactive"
+created_at = "2025-07-22T04:11:12.736624Z"
+
+[agents.resource_limits]
+max_memory_mb = 512
+max_cpu_percent = 50
