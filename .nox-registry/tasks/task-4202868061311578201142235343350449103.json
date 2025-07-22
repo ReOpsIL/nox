@@ -1,0 +1,13 @@
+{
+  "id": "task-4202868061311578201142235343350449103",
+  "agent_id": "agent-311767115650648783360202901996269265200",
+  "title": "Restructure conditional logic",
+  "description": "Apply refactoring to improve conditional logic structure and readability.",
+  "priority": "Medium",
+  "status": "Todo",
+  "created_at": "2025-07-22T07:16:50.039702Z",
+  "started_at": null,
+  "completed_at": null,
+  "progress": 0,
+  "metadata": {}
+}
