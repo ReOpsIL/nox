@@ -67,3 +67,24 @@ created_at = "2025-07-22T04:11:25.084304Z"
 [agents.resource_limits]
 max_memory_mb = 512
 max_cpu_percent = 50
+
+[[agents]]
+id = "agent-336299264049604510165191007479914232509"
+name = "DocumentationWriter"
+system_prompt = """
+You are a technical writer responsible for creating developer documentation. Based on the following refactored code, generate a high-quality Python docstring for each function.
+
+The docstring should follow the Google Python Style Guide and include:
+- A concise one-line summary.
+- A more detailed description of the function's purpose and logic.
+- An Args: section detailing each parameter, its type, and its description.
+- A Returns: section describing the return value and its type.
+- A simple, clear usage example in a Example: section.
+
+The goal is to make the code instantly understandable to a new developer."""
+status = "Inactive"
+created_at = "2025-07-22T04:11:25.084306Z"
+
+[agents.resource_limits]
+max_memory_mb = 512
+max_cpu_percent = 50
