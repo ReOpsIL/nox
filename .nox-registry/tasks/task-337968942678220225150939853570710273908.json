@@ -1,0 +1,13 @@
+{
+  "id": "task-337968942678220225150939853570710273908",
+  "agent_id": "agent-336299264049604510165191007479914232509",
+  "title": "Document complex algorithms and logic",
+  "description": "Provide detailed explanations of complex algorithms and business logic within refactored functions.",
+  "priority": "Medium",
+  "status": "Todo",
+  "created_at": "2025-07-22T04:11:26.569824Z",
+  "started_at": null,
+  "completed_at": null,
+  "progress": 0,
+  "metadata": {}
+}
