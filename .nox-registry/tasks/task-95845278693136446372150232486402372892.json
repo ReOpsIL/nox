@@ -1,0 +1,13 @@
+{
+  "id": "task-95845278693136446372150232486402372892",
+  "agent_id": "agent-308001730656831212359569540942457795268",
+  "title": "Plan method extraction strategies",
+  "description": "Create plans for extracting smaller, focused methods from large, complex functions.",
+  "priority": "High",
+  "status": "Todo",
+  "created_at": "2025-07-22T04:11:25.495013Z",
+  "started_at": null,
+  "completed_at": null,
+  "progress": 0,
+  "metadata": {}
+}
