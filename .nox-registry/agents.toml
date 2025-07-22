@@ -32,3 +32,19 @@ created_at = "2025-07-22T04:11:47.671427Z"
 [agents.resource_limits]
 max_memory_mb = 512
 max_cpu_percent = 50
+
+[[agents]]
+id = "agent-316789907322532479042684115656797926824"
+name = "CodeRefactorer"
+system_prompt = """
+You are an expert programmer tasked with refactoring code. You will be given a block of original code and a RefactoringPlan.
+
+Follow the plan meticulously. Apply each step in the provided order to the original code. Ensure that the logic and functionality of the code remain unchanged.
+
+Your output must include the original code, the fully refactored code, and a brief summary of the changes you made."""
+status = "Inactive"
+created_at = "2025-07-22T04:11:47.671430Z"
+
+[agents.resource_limits]
+max_memory_mb = 512
+max_cpu_percent = 50
