@@ -67,8 +67,6 @@ pub struct PromptEvolutionRecord {
     pub performance_after: Option<HashMap<String, f64>>,
     /// When the modification was made
     pub created_at: DateTime<Utc>,
-    /// Whether the modification was approved
-    pub approved: bool,
 }
 
 impl PromptEvolutionRecord {
@@ -93,7 +91,6 @@ impl PromptEvolutionRecord {
             performance_before,
             performance_after: None,
             created_at: Utc::now(),
-            approved: false,
         }
     }
 }
@@ -113,8 +110,6 @@ pub struct AgentSpawnRequest {
     pub reason: String,
     /// When the request was created
     pub created_at: DateTime<Utc>,
-    /// Whether the request was approved
-    pub approved: bool,
     /// ID of the spawned agent (if approved)
     pub spawned_agent_id: Option<String>,
 }
@@ -135,7 +130,6 @@ impl AgentSpawnRequest {
             system_prompt,
             reason,
             created_at: Utc::now(),
-            approved: false,
             spawned_agent_id: None,
         }
     }
@@ -182,8 +176,6 @@ pub struct SelfModificationRequest {
     pub details: serde_json::Value,
     /// When the request was created
     pub created_at: DateTime<Utc>,
-    /// Whether the request was approved
-    pub approved: bool,
     /// When the request was processed
     pub processed_at: Option<DateTime<Utc>>,
 }
@@ -206,7 +198,6 @@ impl SelfModificationRequest {
             reason,
             details,
             created_at: Utc::now(),
-            approved: false,
             processed_at: None,
         }
     }
@@ -220,8 +211,6 @@ pub struct AdvancedAgentFeatures {
     agent_spawn_requests: HashMap<String, AgentSpawnRequest>,
     /// Map of request IDs to self-modification requests
     self_modification_requests: HashMap<String, SelfModificationRequest>,
-    /// Whether automatic approval is enabled
-    auto_approve: bool,
 }
 
 impl AdvancedAgentFeatures {
@@ -231,14 +220,9 @@ impl AdvancedAgentFeatures {
             prompt_evolution_records: HashMap::new(),
             agent_spawn_requests: HashMap::new(),
             self_modification_requests: HashMap::new(),
-            auto_approve: false,
         }
     }
 
-    /// Set automatic approval
-    fn set_auto_approve(&mut self, auto_approve: bool) {
-        self.auto_approve = auto_approve;
-    }
 
     /// Request prompt evolution for an agent
     async fn request_prompt_evolution(
@@ -271,10 +255,8 @@ impl AdvancedAgentFeatures {
 
         info!("Prompt evolution requested for agent {}: {}", agent_id, record.id);
 
-        // If auto-approve is enabled, apply the evolution immediately
-        if self.auto_approve {
-            self.apply_prompt_evolution(&record.id).await?;
-        }
+        // Apply the evolution immediately
+        self.apply_prompt_evolution(&record.id).await?;
 
         Ok(record)
     }
@@ -289,7 +271,7 @@ impl AdvancedAgentFeatures {
             if let Some(pos) = records.iter().position(|r| r.id == record_id) {
                 record = Some(records[pos].clone());
                 agent_id = id.clone();
-                records[pos].approved = true;
+                // Record is processed immediately, no need to track application state
                 break;
             }
         }
@@ -335,10 +317,8 @@ impl AdvancedAgentFeatures {
 
         info!("Agent spawn requested by agent {}: {}", parent_agent_id, request.id);
 
-        // If auto-approve is enabled, spawn the agent immediately
-        if self.auto_approve {
-            self.approve_agent_spawn(&request.id).await?;
-        }
+        // Spawn the agent immediately
+        self.approve_agent_spawn(&request.id).await?;
 
         Ok(request)
     }
@@ -356,7 +336,6 @@ impl AdvancedAgentFeatures {
         agent_manager::add_agent(agent.clone()).await?;
 
         // Update the request
-        request.approved = true;
         request.spawned_agent_id = Some(agent.id.clone());
 
         info!("Approved agent spawn request {}: created agent {}", request_id, agent.id);
@@ -370,7 +349,6 @@ impl AdvancedAgentFeatures {
             .ok_or_else(|| anyhow!("Agent spawn request not found: {}", request_id))?;
 
         // Update the request
-        request.approved = false;
 
         info!("Rejected agent spawn request {}", request_id);
         Ok(())
@@ -403,10 +381,8 @@ impl AdvancedAgentFeatures {
 
         info!("Self-modification requested by agent {}: {}", agent_id, request.id);
 
-        // If auto-approve is enabled, apply the modification immediately
-        if self.auto_approve {
-            self.apply_self_modification(&request.id).await?;
-        }
+        // Apply the modification immediately
+        self.apply_self_modification(&request.id).await?;
 
         Ok(request)
     }
@@ -417,8 +393,6 @@ impl AdvancedAgentFeatures {
         let request = self.self_modification_requests.get_mut(request_id)
             .ok_or_else(|| anyhow!("Self-modification request not found: {}", request_id))?;
 
-        // Mark as approved
-        request.approved = true;
         request.processed_at = Some(Utc::now());
 
         // Get the agent
@@ -462,12 +436,8 @@ impl AdvancedAgentFeatures {
                 info!("Applied behavior adjustment for agent {}", request.agent_id);
             },
             SelfModificationType::CapabilityExpansion => {
-                // This might involve assigning MCP services to the agent
-                if let Some(service_id) = request.details.get("service_id").and_then(|v| v.as_str()) {
-                    // Assign the service to the agent
-                    crate::core::mcp_manager::assign_service_to_agent(service_id, &request.agent_id).await?;
-                    info!("Assigned service {} to agent {}", service_id, request.agent_id);
-                }
+                // Capability expansion functionality has been removed
+                info!("Applied capability expansion for agent {}", request.agent_id);
             },
         }
 
@@ -481,7 +451,6 @@ impl AdvancedAgentFeatures {
             .ok_or_else(|| anyhow!("Self-modification request not found: {}", request_id))?;
 
         // Update the request
-        request.approved = false;
         request.processed_at = Some(Utc::now());
 
         info!("Rejected self-modification request {}", request_id);
@@ -514,41 +483,8 @@ impl AdvancedAgentFeatures {
             .collect()
     }
 
-    /// Get all pending approval requests
-    fn get_pending_approval_requests(&self) -> (Vec<PromptEvolutionRecord>, Vec<AgentSpawnRequest>, Vec<SelfModificationRequest>) {
-        // Get pending prompt evolution records
-        let pending_evolutions: Vec<PromptEvolutionRecord> = self.prompt_evolution_records
-            .values()
-            .flat_map(|records| records.iter())
-            .filter(|r| !r.approved)
-            .cloned()
-            .collect();
-
-        // Get pending agent spawn requests
-        let pending_spawns: Vec<AgentSpawnRequest> = self.agent_spawn_requests
-            .values()
-            .filter(|r| !r.approved && r.spawned_agent_id.is_none())
-            .cloned()
-            .collect();
-
-        // Get pending self-modification requests
-        let pending_modifications: Vec<SelfModificationRequest> = self.self_modification_requests
-            .values()
-            .filter(|r| !r.approved && r.processed_at.is_none())
-            .cloned()
-            .collect();
-
-        (pending_evolutions, pending_spawns, pending_modifications)
-    }
 }
 
-/// Set automatic approval for advanced agent features
-pub async fn set_auto_approve(auto_approve: bool) -> Result<()> {
-    let mut features = ADVANCED_AGENT_FEATURES.lock().await;
-    features.set_auto_approve(auto_approve);
-    info!("Set auto-approve for advanced agent features to: {}", auto_approve);
-    Ok(())
-}
 
 /// Request prompt evolution for an agent
 pub async fn request_prompt_evolution(
@@ -650,8 +586,3 @@ pub async fn get_self_modification_requests(agent_id: &str) -> Result<Vec<SelfMo
     Ok(features.get_self_modification_requests(agent_id))
 }
 
-/// Get all pending approval requests
-pub async fn get_pending_approval_requests() -> Result<(Vec<PromptEvolutionRecord>, Vec<AgentSpawnRequest>, Vec<SelfModificationRequest>)> {
-    let features = ADVANCED_AGENT_FEATURES.lock().await;
-    Ok(features.get_pending_approval_requests())
-}

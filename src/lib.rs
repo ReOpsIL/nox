@@ -15,7 +15,6 @@ pub use core::{
     agent_manager,
     claude_process_manager,
     config_manager,
-    git_manager,
     registry_manager,
     task_manager,
 };

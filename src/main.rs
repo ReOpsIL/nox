@@ -50,11 +50,6 @@ enum Commands {
         subcommand: TaskCommands,
     },
 
-    /// Git version control commands
-    Git {
-        #[command(subcommand)]
-        subcommand: GitCommands,
-    },
 }
 
 #[derive(Subcommand)]
@@ -155,41 +150,6 @@ enum TaskCommands {
     },
 }
 
-#[derive(Subcommand)]
-enum GitCommands {
-    /// Show commit history
-    History {
-        /// Maximum number of commits to show
-        #[arg(long, default_value = "10")]
-        limit: usize,
-    },
-
-    /// Roll back to a previous commit
-    Rollback {
-        /// Commit hash to roll back to
-        commit_hash: String,
-        /// Confirm the rollback operation
-        #[arg(long)]
-        confirm: bool,
-    },
-
-    /// Branch operations (list, create, switch, delete)
-    Branch {
-        /// Action to perform (list, create, switch, delete)
-        action: String,
-        /// Branch name (required for create, switch, delete)
-        branch_name: Option<String>,
-        /// Force delete even if branch is not fully merged
-        #[arg(long)]
-        force: bool,
-    },
-
-    /// Merge a branch into the current branch
-    Merge {
-        /// Name of the branch to merge
-        branch_name: String,
-    },
-}
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -288,26 +248,6 @@ async fn main() -> Result<()> {
                 TaskCommands::Show { task_id } => {
                     info!("Showing task details: {}", task_id);
                     commands::task::show::execute(task_id).await
-                },
-            }
-        },
-        Commands::Git { subcommand } => {
-            match subcommand {
-                GitCommands::History { limit } => {
-                    info!("Showing git history");
-                    commands::git::history::execute(limit).await
-                },
-                GitCommands::Rollback { commit_hash, confirm } => {
-                    info!("Rolling back to commit: {}", commit_hash);
-                    commands::git::rollback::execute(commit_hash, confirm).await
-                },
-                GitCommands::Branch { action, branch_name, force } => {
-                    info!("Performing git branch operation: {}", action);
-                    commands::git::branch::execute(&action, branch_name, force).await
-                },
-                GitCommands::Merge { branch_name } => {
-                    info!("Merging branch: {}", branch_name);
-                    commands::git::merge::execute(branch_name).await
                 },
             }
         },

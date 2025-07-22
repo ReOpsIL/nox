@@ -2,7 +2,7 @@
 //! 
 //! This module handles the persistence of agents and tasks in the .nox-registry directory.
 
-use crate::core::{config_manager, git_manager};
+use crate::core::config_manager;
 use crate::types::{Agent, Task};
 use anyhow::{anyhow, Result};
 use log::{error, info};
@@ -56,7 +56,6 @@ impl RegistryManager {
         }
 
         // Initialize git repository
-        git_manager::initialize_repo(&registry_path).await?;
 
         Ok(())
     }
@@ -79,7 +78,7 @@ impl RegistryManager {
 
     /// Save agents to the registry
     async fn save_agents(agents: &[Agent]) -> Result<()> {
-        let (registry_path, agents_file, _) = Self::get_paths().await?;
+        let (_registry_path, agents_file, _) = Self::get_paths().await?;
         
         let agent_registry = AgentRegistry { agents: agents.to_vec() };
         let toml_string = toml::to_string(&agent_registry)?;
@@ -88,7 +87,6 @@ impl RegistryManager {
         file.write_all(toml_string.as_bytes())?;
 
         // Commit changes to git
-        git_manager::commit_changes(&registry_path, "Updated agents.toml").await?;
 
         Ok(())
     }
@@ -112,7 +110,7 @@ impl RegistryManager {
 
     /// Save a task to the registry
     async fn save_task(task: &Task) -> Result<()> {
-        let (registry_path, _, tasks_dir) = Self::get_paths().await?;
+        let (_registry_path, _, tasks_dir) = Self::get_paths().await?;
         let task_file = tasks_dir.join(format!("{}.json", task.id));
         let json_string = serde_json::to_string_pretty(task)?;
 
@@ -120,21 +118,19 @@ impl RegistryManager {
         file.write_all(json_string.as_bytes())?;
 
         // Commit changes to git
-        git_manager::commit_changes(&registry_path, &format!("Updated task {}", task.id)).await?;
 
         Ok(())
     }
 
     /// Delete a task from the registry
     async fn delete_task(task_id: &str) -> Result<()> {
-        let (registry_path, _, tasks_dir) = Self::get_paths().await?;
+        let (_registry_path, _, tasks_dir) = Self::get_paths().await?;
         let task_file = tasks_dir.join(format!("{}.json", task_id));
 
         if task_file.exists() {
             fs::remove_file(task_file)?;
 
             // Commit changes to git
-            git_manager::commit_changes(&registry_path, &format!("Deleted task {}", task_id)).await?;
         }
 
         Ok(())

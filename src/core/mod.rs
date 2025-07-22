@@ -6,13 +6,10 @@ pub mod agent_manager;
 pub mod task_manager;
 pub mod claude_json_transport;
 pub mod registry_manager;
-pub mod git_manager;
 pub mod config_manager;
 pub mod claude_process_manager;
-pub mod mcp_manager;
 pub mod advanced_agent_features;
 pub mod resource_manager;
-pub mod security_manager;
 pub mod seeding;
 pub mod predefined_agents;
 
@@ -65,7 +62,6 @@ pub async fn initialize_with_level(level: InitLevel) -> Result<()> {
             }
             if current_level < 2 {
                 registry_manager::initialize().await?;
-                security_manager::initialize().await?;
                 INIT_LEVEL.store(2, Ordering::SeqCst);
                 log::info!("Nox system initialized (basic)");
             }
@@ -78,7 +74,6 @@ pub async fn initialize_with_level(level: InitLevel) -> Result<()> {
             }
             if current_level < 2 {
                 registry_manager::initialize().await?;
-                security_manager::initialize().await?;
                 INIT_LEVEL.store(2, Ordering::SeqCst);
             }
             if current_level < 3 {
@@ -116,8 +111,6 @@ pub async fn start(dev_mode: bool) -> Result<()> {
 
     // Set auto-approve mode for testing if in dev mode
     if dev_mode {
-        security_manager::set_auto_approve(true).await?;
-        advanced_agent_features::set_auto_approve(true).await?;
         log::info!("Development mode enabled: auto-approval activated");
     }
 
@@ -159,9 +152,6 @@ pub async fn stop() -> Result<()> {
     // Stop resource monitoring
     resource_manager::stop_monitoring().await?;
 
-    // Commit any pending changes to the registry
-    let registry_path = config_manager::get_registry_path().await?;
-    git_manager::commit_changes(&registry_path, "System shutdown [SIGNIFICANT]").await?;
 
     log::info!("Nox agent ecosystem stopped");
     Ok(())
@@ -183,12 +173,7 @@ pub async fn get_status() -> Result<String> {
     // Get resource usage
     let (cpu_usage, memory_usage, _disk_usage, _network_usage) = resource_manager::get_system_usage().await?;
 
-    // Get security info
-    let pending_approvals = security_manager::get_pending_requests().await?.len();
 
-    // Get MCP service info
-    let services = mcp_manager::get_all_services().await?;
-    let running_services = services.iter().filter(|s| s.status == mcp_manager::ServiceStatus::Running).count();
 
     // Format the status message
     let status = format!(
@@ -196,13 +181,10 @@ pub async fn get_status() -> Result<String> {
          Agents: {}/{} active\n\
          Tasks: {} pending, {} in progress, {} completed\n\
          Resources: {:.1}% CPU, {} MB memory\n\
-         Security: {} pending approvals\n\
-         Services: {}/{} running",
+",
         active_agents, total_agents,
         pending_tasks, in_progress_tasks, completed_tasks,
-        cpu_usage, memory_usage,
-        pending_approvals,
-        running_services, services.len()
+        cpu_usage, memory_usage
     );
 
     Ok(status)
