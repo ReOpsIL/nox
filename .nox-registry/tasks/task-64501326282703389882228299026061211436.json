@@ -1,0 +1,13 @@
+{
+  "id": "task-64501326282703389882228299026061211436",
+  "agent_id": "agent-311767115650648783360202901996269265200",
+  "title": "Apply complexity reduction techniques",
+  "description": "Implement refactoring changes to reduce cyclomatic complexity and improve code flow.",
+  "priority": "Medium",
+  "status": "Todo",
+  "created_at": "2025-07-22T07:16:50.039698Z",
+  "started_at": null,
+  "completed_at": null,
+  "progress": 0,
+  "metadata": {}
+}
