@@ -1,0 +1,13 @@
+{
+  "id": "task-276168050470485051414170691907650059643",
+  "agent_id": "agent-315072481254597494284487241585220851907",
+  "title": "Plan code organization improvements",
+  "description": "Create strategies for better code organization, including grouping related functionality and improving structure.",
+  "priority": "High",
+  "status": "Todo",
+  "created_at": "2025-07-22T04:11:13.389497Z",
+  "started_at": null,
+  "completed_at": null,
+  "progress": 0,
+  "metadata": {}
+}
