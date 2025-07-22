@@ -1,0 +1,13 @@
+{
+  "id": "task-56670503112751784521062082299870566624",
+  "agent_id": "agent-78766289953661692729091672122949279415",
+  "title": "Generate performance comparison tests",
+  "description": "Create tests that compare performance characteristics between original and refactored code.",
+  "priority": "Medium",
+  "status": "Todo",
+  "created_at": "2025-07-22T07:16:50.403999Z",
+  "started_at": null,
+  "completed_at": null,
+  "progress": 0,
+  "metadata": {}
+}
