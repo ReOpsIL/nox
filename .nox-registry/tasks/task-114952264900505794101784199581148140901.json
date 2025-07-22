@@ -1,0 +1,13 @@
+{
+  "id": "task-114952264900505794101784199581148140901",
+  "agent_id": "agent-93579942497471125686062250416475353815",
+  "title": "Analyze utility functions and helpers",
+  "description": "Examine utility functions and helper methods for code smells, magic numbers, and clarity issues.",
+  "priority": "High",
+  "status": "Todo",
+  "created_at": "2025-07-22T07:16:49.269836Z",
+  "started_at": null,
+  "completed_at": null,
+  "progress": 0,
+  "metadata": {}
+}
