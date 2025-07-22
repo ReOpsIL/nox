@@ -1,0 +1,13 @@
+{
+  "id": "task-15197516559889634235710532177183059661",
+  "agent_id": "agent-311767115650648783360202901996269265200",
+  "title": "Refactor magic numbers and constants",
+  "description": "Replace magic numbers with named constants and improve code maintainability.",
+  "priority": "High",
+  "status": "Todo",
+  "created_at": "2025-07-22T07:16:50.039700Z",
+  "started_at": null,
+  "completed_at": null,
+  "progress": 0,
+  "metadata": {}
+}
