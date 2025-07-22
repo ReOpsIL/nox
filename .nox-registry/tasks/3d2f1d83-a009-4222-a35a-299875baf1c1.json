@@ -1,0 +1,18 @@
+{
+  "id": "3d2f1d83-a009-4222-a35a-299875baf1c1",
+  "agent_id": "48454f7e-0e46-45ab-911c-8bc33e30f774",
+  "title": "Set up basic CLI structure",
+  "description": "Create a new CLI project with proper argument parsing and basic commands\n\nImplementation Steps:\n1. Initialize new Rust project with Cargo\n2. Add clap dependency for argument parsing\n3. Set up basic command structure\n4. Implement help and version commands\n5. Add basic error handling\n",
+  "priority": "High",
+  "status": "Todo",
+  "created_at": "2025-07-22T07:30:49.218628Z",
+  "started_at": null,
+  "completed_at": null,
+  "progress": 0,
+  "metadata": {
+    "estimated_duration": "30m",
+    "category": "rust_cli",
+    "tags": "cli,setup,rust",
+    "template": "cli_basic_setup"
+  }
+}
