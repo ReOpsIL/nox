@@ -1,0 +1,18 @@
+{
+  "id": "7910a08d-1742-4563-a657-bf1f9f37423c",
+  "agent_id": "48454f7e-0e46-45ab-911c-8bc33e30f774",
+  "title": "Implement file I/O operations",
+  "description": "Add file reading, writing, and processing capabilities\n\nImplementation Steps:\n1. Add file reading functionality\n2. Implement file writing and creation\n3. Add directory traversal capabilities\n4. Handle file permissions and errors\n5. Add progress indicators for large files\n",
+  "priority": "Medium",
+  "status": "Todo",
+  "created_at": "2025-07-22T07:30:49.287826Z",
+  "started_at": null,
+  "completed_at": null,
+  "progress": 0,
+  "metadata": {
+    "estimated_duration": "45m",
+    "tags": "cli,file-io,rust",
+    "template": "cli_file_operations",
+    "category": "rust_cli"
+  }
+}
