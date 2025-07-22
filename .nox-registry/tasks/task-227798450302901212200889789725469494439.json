@@ -1,0 +1,13 @@
+{
+  "id": "task-227798450302901212200889789725469494439",
+  "agent_id": "agent-130698402057660215254370744760458312777",
+  "title": "Document function parameters and return values",
+  "description": "Create detailed documentation for function parameters, types, and return values to improve code understanding.",
+  "priority": "Medium",
+  "status": "Todo",
+  "created_at": "2025-07-22T07:16:50.882281Z",
+  "started_at": null,
+  "completed_at": null,
+  "progress": 0,
+  "metadata": {}
+}
