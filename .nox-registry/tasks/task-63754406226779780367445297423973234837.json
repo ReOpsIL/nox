@@ -1,0 +1,13 @@
+{
+  "id": "task-63754406226779780367445297423973234837",
+  "agent_id": "agent-47240103936762954028809201566035198382",
+  "title": "Strategy for reducing cyclomatic complexity",
+  "description": "Develop plans to reduce cyclomatic complexity through guard clauses, early returns, and logical restructuring.",
+  "priority": "Medium",
+  "status": "Todo",
+  "created_at": "2025-07-22T04:12:22.541363Z",
+  "started_at": null,
+  "completed_at": null,
+  "progress": 0,
+  "metadata": {}
+}
