@@ -1,0 +1,13 @@
+{
+  "id": "task-256993245652748595231054926974686218591",
+  "agent_id": "agent-174512160299869602824971253931226761294",
+  "title": "Generate usage examples and code snippets",
+  "description": "Create clear usage examples and code snippets that demonstrate how to use refactored functions.",
+  "priority": "Medium",
+  "status": "Todo",
+  "created_at": "2025-07-22T04:12:24.645141Z",
+  "started_at": null,
+  "completed_at": null,
+  "progress": 0,
+  "metadata": {}
+}
