@@ -1,12 +1,15 @@
 //! Implementation of the task update command
 
-use crate::core::task_manager;
+use crate::core::{self, task_manager};
 use crate::types::TaskStatus;
 use anyhow::{anyhow, Result};
 use log::info;
 
 /// Execute the task update command
 pub async fn execute(task_id: String, status: String) -> Result<()> {
+    // Ensure system is initialized for registry access
+    core::ensure_basic_init().await?;
+    
     info!("Updating task status: {}", task_id);
     
     // Parse the status string

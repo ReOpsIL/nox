@@ -4,11 +4,13 @@
 
 use anyhow::Result;
 use log::{error, info};
-use crate::core::task_manager;
-use crate::core::agent_manager;
+use crate::core::{self, task_manager, agent_manager};
 
 /// Show detailed information about a task
 pub async fn execute(task_id: String) -> Result<()> {
+    // Ensure system is initialized for registry access
+    core::ensure_basic_init().await?;
+    
     // Get the task
     let task = match task_manager::get_task(&task_id).await? {
         Some(task) => task,

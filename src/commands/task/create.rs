@@ -1,12 +1,15 @@
 //! Implementation of the task create command
 
-use crate::core::{agent_manager, task_manager};
+use crate::core::{self, agent_manager, task_manager};
 use crate::types::Task;
 use anyhow::{anyhow, Result};
 use log::info;
 
 /// Execute the task create command
 pub async fn execute(agent_id: String, title: String, desc: String) -> Result<()> {
+    // Ensure system is initialized for registry access
+    core::ensure_basic_init().await?;
+    
     info!("Creating new task for agent: {}", agent_id);
     
     // Check if the agent exists

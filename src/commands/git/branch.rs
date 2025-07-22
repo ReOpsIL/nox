@@ -1,14 +1,13 @@
 //! Implementation of the git branch command
 
-use crate::core::git_manager;
+use crate::core::{config_manager, git_manager};
 use anyhow::Result;
 use log::{info, warn};
-use std::path::PathBuf;
 
 /// Execute the git branch command
 pub async fn execute(action: &str, branch_name: Option<String>, force: bool) -> Result<()> {
     // Get the registry path
-    let registry_path = PathBuf::from(".nox-registry");
+    let registry_path = config_manager::get_registry_path().await?;
     
     match action {
         "list" => {

@@ -280,6 +280,9 @@ impl App {
     }
 
     pub async fn refresh_data(&mut self) -> Result<()> {
+        // Ensure basic initialization before loading data
+        crate::core::ensure_basic_init().await?;
+        
         self.state.agents = agent_manager::get_all_agents().await?;
         self.state.tasks = task_manager::get_all_tasks().await?;
 

@@ -1,6 +1,6 @@
 //! Implementation of the agent delete command
 
-use crate::core::agent_manager;
+use crate::core::{self, agent_manager};
 use crate::types::AgentStatus;
 use anyhow::{anyhow, Result};
 use log::info;
@@ -8,6 +8,9 @@ use std::io::{self, Write};
 
 /// Execute the agent delete command
 pub async fn execute(name: String, force: bool) -> Result<()> {
+    // Ensure system is initialized for registry access
+    core::ensure_basic_init().await?;
+    
     info!("Deleting agent: {}", name);
     
     // Get the agent from the registry

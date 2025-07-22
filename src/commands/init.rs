@@ -8,11 +8,8 @@ use log::info;
 pub async fn execute() -> Result<()> {
     info!("Initializing Nox agent ecosystem");
     
-    // Create default configuration file if it doesn't exist
-    core::config_manager::create_default_config().await?;
-    
-    // Call the core initialization function
-    core::initialize().await?;
+    // Use the unified creation system
+    core::create_system().await?;
     
     info!("Nox agent ecosystem initialized successfully");
     Ok(())

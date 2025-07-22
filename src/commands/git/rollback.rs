@@ -1,9 +1,8 @@
 //! Implementation of the git rollback command
 
-use crate::core::git_manager;
+use crate::core::{config_manager, git_manager};
 use anyhow::Result;
 use log::{info, warn};
-use std::path::PathBuf;
 
 /// Execute the git rollback command
 pub async fn execute(commit_hash: String, confirm: bool) -> Result<()> {
@@ -17,7 +16,7 @@ pub async fn execute(commit_hash: String, confirm: bool) -> Result<()> {
     }
     
     // Get the registry path
-    let registry_path = PathBuf::from(".nox-registry");
+    let registry_path = config_manager::get_registry_path().await?;
     
     // Verify the commit exists
     let history = git_manager::get_commit_history(&registry_path, 100).await?;

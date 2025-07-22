@@ -12,7 +12,7 @@ use log::info;
 
 /// Start the API server
 pub async fn start_server() -> anyhow::Result<()> {
-    // Get server configuration (will auto-initialize if needed)
+    // Server configuration will be available through ensure_basic_init in the serve command
     let server_config = config_manager::get_server_config().await?;
     
     // Use provided port or default from config

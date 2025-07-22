@@ -6,6 +6,9 @@ use log::info;
 
 /// Execute the health command
 pub async fn execute() -> Result<()> {
+    // Ensure basic initialization for system checks
+    core::ensure_basic_init().await?;
+    
     info!("Checking system health");
     
     // Call the core check_health function

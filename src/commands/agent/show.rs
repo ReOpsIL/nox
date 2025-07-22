@@ -1,11 +1,14 @@
 //! Implementation of the agent show command
 
-use crate::core::agent_manager;
+use crate::core::{self, agent_manager};
 use anyhow::{anyhow, Result};
 use log::info;
 
 /// Execute the agent show command
 pub async fn execute(name: String) -> Result<()> {
+    // Ensure system is initialized for registry access
+    core::ensure_basic_init().await?;
+    
     info!("Showing agent details: {}", name);
     
     // Get the agent from the registry

@@ -1,12 +1,15 @@
 //! Implementation of the agent stop command
 
-use crate::core::agent_manager;
+use crate::core::{self, agent_manager};
 use crate::types::AgentStatus;
 use anyhow::{anyhow, Result};
 use log::info;
 
 /// Execute the agent stop command
 pub async fn execute(name: String) -> Result<()> {
+    // Ensure system is initialized for registry access
+    core::ensure_basic_init().await?;
+    
     info!("Stopping agent: {}", name);
     
     // Get the agent from the registry

@@ -6,6 +6,9 @@ use log::info;
 
 /// Execute the status command
 pub async fn execute() -> Result<()> {
+    // Ensure basic initialization for reading system state
+    core::ensure_basic_init().await?;
+    
     info!("Getting system status");
     
     // Call the core get_status function

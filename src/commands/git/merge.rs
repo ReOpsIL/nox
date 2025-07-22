@@ -1,16 +1,15 @@
 //! Implementation of the git merge command
 
-use crate::core::git_manager;
+use crate::core::{config_manager, git_manager};
 use anyhow::Result;
 use log::{info, warn};
-use std::path::PathBuf;
 
 /// Execute the git merge command
 pub async fn execute(branch_name: String) -> Result<()> {
     info!("Merging branch: {}", branch_name);
     
     // Get the registry path
-    let registry_path = PathBuf::from(".nox-registry");
+    let registry_path = config_manager::get_registry_path().await?;
     
     // Get the current branch
     let current_branch = git_manager::get_current_branch(&registry_path).await?;

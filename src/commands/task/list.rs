@@ -1,11 +1,14 @@
 //! Implementation of the task list command
 
-use crate::core::{agent_manager, task_manager};
+use crate::core::{self, agent_manager, task_manager};
 use anyhow::Result;
 use log::info;
 
 /// Execute the task list command
 pub async fn execute(agent_id: Option<String>) -> Result<()> {
+    // Ensure basic initialization for registry access
+    core::ensure_basic_init().await?;
+    
     if let Some(id) = &agent_id {
         info!("Listing tasks for agent: {}", id);
         

@@ -10,9 +10,7 @@ use log::{info, warn};
 
 /// Seed the system with default agents and tasks if the registry is empty
 pub async fn seed_default_data() -> Result<()> {
-    // Ensure registry is initialized first
-    crate::core::registry_manager::initialize().await?;
-    
+    // Registry should already be initialized by the caller
     // Check if we already have agents
     let existing_agents = agent_manager::get_all_agents().await?;
 

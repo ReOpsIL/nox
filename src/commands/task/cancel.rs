@@ -1,12 +1,15 @@
 //! Implementation of the task cancel command
 
-use crate::core::task_manager;
+use crate::core::{self, task_manager};
 use crate::types::TaskStatus;
 use anyhow::{anyhow, Result};
 use log::info;
 
 /// Execute the task cancel command
 pub async fn execute(task_id: String) -> Result<()> {
+    // Ensure system is initialized for registry access
+    core::ensure_basic_init().await?;
+    
     info!("Cancelling task: {}", task_id);
     
     // Get the task from the registry

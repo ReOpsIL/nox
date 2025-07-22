@@ -1,11 +1,14 @@
 //! Implementation of the agent update command
 
-use crate::core::agent_manager;
+use crate::core::{self, agent_manager};
 use anyhow::{anyhow, Result};
 use log::info;
 
 /// Execute the agent update command
 pub async fn execute(id: String, name: String, system_prompt: String) -> Result<()> {
+    // Ensure system is initialized for registry access
+    core::ensure_basic_init().await?;
+    
     info!("Updating agent: {} (id: {})", name, id);
     
     // Get the agent from the registry by ID

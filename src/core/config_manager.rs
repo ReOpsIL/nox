@@ -246,7 +246,6 @@ pub async fn update_value<T: serde::Serialize + std::fmt::Debug + Into<config::V
 }
 
 /// Get the registry path
-#[allow(dead_code)]
 pub async fn get_registry_path() -> Result<PathBuf> {
     ensure_initialized().await?;
     let config = get_config().await?;

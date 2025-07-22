@@ -1,11 +1,14 @@
 //! Implementation of the agent list command
 
-use crate::core::agent_manager;
+use crate::core::{self, agent_manager};
 use anyhow::Result;
 use log::info;
 
 /// Execute the agent list command
 pub async fn execute() -> Result<()> {
+    // Ensure basic initialization for registry access
+    core::ensure_basic_init().await?;
+    
     info!("Listing all agents");
     
     // Get all agents from the registry
